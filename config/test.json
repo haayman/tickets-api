@@ -1,0 +1,10 @@
+{
+  "jwtPrivateKey": "test",
+  "database": {
+    "name": "test",
+    "connection": "mongodb+srv://arjen:LG86_jvif5pzD4t@plusleo-zpubl.gcp.mongodb.net/reserveren_test?retryWrites=true"
+  },
+  "payment": {
+    "mollie_key": "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
+  }
+}

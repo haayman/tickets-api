@@ -1,0 +1,89 @@
+const Prijs = require("./Prijs");
+const Uitvoering = require("./Uitvoering");
+
+module.exports = (sequelize, DataTypes) => {
+  const Voorstelling = sequelize.define(
+    "Voorstelling",
+    {
+      title: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
+      description: {
+        type: DataTypes.TEXT,
+        allowNull: false
+      },
+      active: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        default: true
+      },
+      url: {
+        type: DataTypes.STRING,
+        validate: {
+          isUrl: true
+        }
+      },
+      locatie: {
+        type: DataTypes.STRING
+      },
+      opmerkingen: {
+        type: DataTypes.STRING
+      },
+      poster: {
+        type: DataTypes.STRING,
+        validate: {
+          isUrl: true
+        }
+      },
+      thumbnail: {
+        type: DataTypes.STRING,
+        validate: {
+          isUrl: true
+        }
+      }
+    },
+    {
+      name: {
+        singular: "voorstelling",
+        plural: "voorstellingen"
+      }
+    }
+  );
+
+  Voorstelling.prototype.toJSONA = async function() {
+    let obj = this.toJSON();
+    obj.uitvoeringen = await Promise.all(
+      this.uitvoeringen.map(async v => v.toJSONA())
+    );
+
+    return obj;
+  };
+
+  Voorstelling.associate = function(models) {
+    const embed = require("sequelize-embed")(sequelize);
+    const { mkInclude } = embed.util.helpers;
+
+    models.Voorstelling.Prijzen = models.Voorstelling.hasMany(models.Prijs);
+    // models.Prijs.belongsTo(models.Voorstelling);
+
+    models.Voorstelling.Uitvoeringen = models.Voorstelling.hasMany(
+      models.Uitvoering
+    );
+    // models.Uitvoering.belongsTo(models.Voorstelling);
+
+    // https://www.npmjs.com/package/sequelize-embed
+    Voorstelling.updateIncludes = (voorstellingData, options) => {
+      if (options.include) {
+        let include = options.include.map(include => mkInclude(include));
+        _options = Object.assign({}, options, { reload: include });
+        embed.update(Voorstelling, voorstellingData, include, _options);
+      } else {
+        Voorstelling.update(voorstellingData, options);
+      }
+    };
+  };
+
+  return Voorstelling;
+};
