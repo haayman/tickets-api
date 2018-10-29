@@ -1,29 +1,41 @@
 const Mailer = require("./Mailer");
-const config = require("config");
-const EmailTemplates = require("swig-email-templates");
+const format = require('date-fns/format');
+const nl = require('date-fns/locale/nl')
+
 
 class ReserveringMail {
-  static send(reservering, templateName, params = {}) {
+  static send(reservering, templateName, subject, params = {}) {
     const mail = new Mailer();
-    const afzender = config.get("email.afzender");
-    const afzender_mail = config.get("email.mail_afzender");
-    const subjects = config.get("email.subjects");
 
-    let templates = new EmailTemplates();
+    mail
+      .setTemplate("index")
+      .setTo(reservering.email, reservering.naam)
+      .setSubject(subject);
 
-    templates.render(
-      "./templates/Telmah.html",
-      { reservering: reservering },
-      (err, html, text, subject) => {
-        transporter.sendMail({
-          from: afzender,
-          to: "arjen.haayman@gmail.com",
-          subject: subject,
-          html: html,
-          text: text
-        });
-      }
+    if (params.to) {
+      mail.setTo(params.to)
+    }
+
+    mail.send(Object.assign({}, params, {
+      template: templateName,
+      reservering,
+      format,
+      nl
+    }));
+  }
+
+  static async render(reservering, templateName, params = {}) {
+    const mail = new Mailer();
+    const content = await mail.setTemplate("index").render(
+      Object.assign({}, params, {
+        template: templateName,
+        reservering: reservering,
+        format,
+        nl
+      })
     );
+
+    return content;
   }
 }
 

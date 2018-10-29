@@ -1,7 +1,7 @@
 const models = require("./models");
 
 models.sequelize
-  .sync()
+  .sync({ force: true })
   .then(async () => {
     console.log("connected");
     try {

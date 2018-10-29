@@ -8,7 +8,7 @@ module.exports = {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
   },
   server: {
-    url: "https://reserveren.plusleo.nl"
+    url: "https://plusleo.localtunnel.me"
   },
   // mail_transport: {
   //   host: "smtp.bhosted.nl",

@@ -2,9 +2,5 @@
   "database": {
     "password": "PG_PASSWORD",
     "user": "PG_USER"
-  },
-  "server": {
-    "url": "SERVER_URL",
-    "port": "PORT"
   }
 }

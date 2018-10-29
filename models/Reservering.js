@@ -1,26 +1,49 @@
-const { Payment } = require("./index");
-
 const config = require("config");
 
-const moment = require("moment");
+const TicketAggregate = require("./Ticket.Aggregate");
+const ReserveringMail = require("../components/ReserveringMail");
+
+var differenceInCalendarDays = require('date-fns/difference_in_calendar_days')
+const globalData = require('../components/globalData');
 
 module.exports = (sequelize, DataTypes) => {
+  const Payment = sequelize.models.Payment;
+
   let Reservering = sequelize.define(
-    "Reservering",
-    {
-      naam: { type: DataTypes.STRING, allowUnknown: false },
+    "Reservering", {
+      id: {
+        primaryKey: true,
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        allowNull: false
+      },
+      naam: {
+        type: DataTypes.STRING,
+        allowUnknown: false
+      },
       email: {
         type: DataTypes.STRING,
         allowUnknown: false,
-        validate: { isEmail: true }
+        validate: {
+          isEmail: true
+        }
       },
-      opmerking: { type: DataTypes.STRING },
-      opmerking_gebruiker: { type: DataTypes.STRING },
-      status: { type: DataTypes.STRING },
-      wachtlijst: { type: DataTypes.BOOLEAN },
-      bedrag: { type: DataTypes.DECIMAL(5, 2) }
-    },
-    {
+      opmerking: {
+        type: DataTypes.STRING
+      },
+      opmerking_gebruiker: {
+        type: DataTypes.STRING
+      },
+      status: {
+        type: DataTypes.STRING
+      },
+      wachtlijst: {
+        type: DataTypes.BOOLEAN
+      },
+      bedrag: {
+        type: DataTypes.DECIMAL(5, 2)
+      }
+    }, {
       name: {
         singular: "reservering",
         plural: "reserveringen"
@@ -28,13 +51,17 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       getterMethods: {
         bedrag() {
-          return this.tickets.reduce((bedrag, t) => bedrag + t.getBedrag(), 0);
+          return this.tickets ?
+            this.tickets.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) : null;
         },
         saldo() {
           // bereken het totaal betaalde bedrag
+          if (!this.payments) {
+            return null;
+          }
           let saldo = this.payments.reduce((saldo, payment) => {
             if (payment.isPaid) {
-              return saldo + (payment.amount - payment.amountRefunded);
+              return saldo + (+payment.amount - (payment.amountRefunded || 0));
             } else {
               return saldo;
             }
@@ -54,17 +81,16 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         validTickets() {
-          return this.tickets
-            ? this.tickets.reduce((validTickets, ticket) => {
-                return validTickets.concat(ticket.validTickets);
-              }, [])
-            : [];
+          return this.Tickets ?
+            this.Tickets.filter(t => !(t.geannuleerd || t.verkocht)) : [];
+          // this.Tickets.reduce((validTickets, ticket) => {
+          //   return validTickets.concat(ticket.validTickets);
+          // }, []) : [];
         },
 
         async moetInWachtrij() {
-          const vrije_plaatsen = await this.uitvoering.getVrijePlaatsen(
-            this.id
-          );
+          const uitvoering = await this.getUitvoering();
+          const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
           return vrije_plaatsen <= 0;
         },
 
@@ -73,6 +99,9 @@ module.exports = (sequelize, DataTypes) => {
          */
 
         tegoed() {
+          if (!this.validTickets) {
+            return null;
+          }
           return this.validTickets.reduce(
             (tegoed, ticket) => tegoed + ticket.tegoed,
             0
@@ -85,8 +114,11 @@ module.exports = (sequelize, DataTypes) => {
 
         isPaid() {
           let retval = false;
+          if (!this.payment) {
+            return null;
+          }
 
-          for (let payment of this.getDataValue(payments)) {
+          for (let payment of this.payments) {
             if (!payment.isPaid) {
               return false;
             } else {
@@ -97,41 +129,103 @@ module.exports = (sequelize, DataTypes) => {
         },
 
         redirectUrl() {
-          return config.get("server.url") + "/api/payment/done/" + this.id;
+          return this.getRoot() + "/api/payment/done/" + this.id;
         },
 
         webhookUrl() {
-          return config.get("server.url") + "/api/payment/bank/" + this.id;
+          return this.getWebhookRoot() + "/api/payment/bank/" + this.id;
         }
       },
 
-      hooks: {
-        beforeSave: async function(reservering) {
-          if (reservering.onbetaaldeTickets.length) {
-            const payment = Payment.build({
-              tickets: reservering.onbetaaldeTickets
-            });
-            await payment.newPayment(reservering);
-            await payment.save();
-            reservering.addPayment(payment);
-          }
-        }
-      }
+      hooks: {}
     }
   );
 
-  Reservering.prototype.paymentUrl = async function() {
+  Reservering.initTickets = async function (reservering) {
+    if (!reservering) {
+      return;
+    }
+    if (reservering.length !== undefined) {
+      await Promise.all(reservering.map(r => r.initTickets()));
+    } else {
+      await reservering.initTickets();
+    }
+  }
+
+  Reservering.prototype.initTickets = async function () {
+    if (!this.uitvoering) this.uitvoering = await this.getUitvoering();
+    if (!this.tickets) {
+      const voorstelling = this.uitvoering.voorstelling || await this.uitvoering.getVoorstelling();
+      const prijzen = voorstelling.prijzen || await voorstelling.getPrijzen();
+      const Tickets = this.Tickets || await this.getTickets();
+      this.tickets = await Promise.all(
+        prijzen.map(async prijs => {
+          return new TicketAggregate(
+            this,
+            prijs,
+            Tickets.filter(t => t.prijsId == prijs.id)
+          );
+        })
+      );
+    }
+    if (!this.payments) this.payments = await this.getPayments();
+    if (!this.logs) this.logs = await this.getLogs();
+  };
+
+  Reservering.prototype.toJSONA = async function () {
+    const json = await this.toJSON();
+    json.uitvoering = await this.getUitvoering();
+    json.tickets = this.tickets;
+    json.payments = await this.getPayments();
+    json.paymentUrl = this.paymentUrl();
+    if (this.Logs) {
+      json.logs = this.Logs;
+    }
+    if (this.StatusUpdates) {
+      json.StatusUpdates = this.StatusUpdates;
+    }
+    return json;
+  };
+
+  Reservering.prototype.setStatus = async function (status, betaalstatus = true) {
+    this.status = status;
+    const StatusUpdate = this.sequelize.models.StatusUpdate;
+    await this.addStatusUpdate(StatusUpdate.build({
+      status,
+      betaalstatus
+    }));
+  }
+
+
+  Reservering.prototype.paymentUrl = function () {
     let url;
+    if (!this.payments) return null;
     for (let payment of this.payments) {
-      if ((url = await payment.paymentUrl)) {
+      if ((url = payment.paymentUrl)) {
         return url;
       }
     }
     return null;
   };
 
-  Reservering.prototype.extraBetaling = async function() {
-    const payment = Payment.create();
+  Reservering.prototype.createPaymentIfNeeded = async function () {
+    if (!this.wachtlijst && this.onbetaaldeTickets.length) {
+      const payment = Payment.build({
+        reserveringId: this.id
+      });
+      await payment.newPayment(this);
+      // await payment.save();
+      // await this.addPayment(payment);
+      // waarom is dit nog nodig???
+      this.payments = (this.payments || []).concat([
+        payment
+      ]);
+    }
+
+  }
+
+  Reservering.prototype.extraBetaling = async function () {
+    const payment = Payment.build();
 
     // hier wordt automatisch een nieuw payment + bedrag aangemaakt
     await payment.setReservering(this);
@@ -139,71 +233,122 @@ module.exports = (sequelize, DataTypes) => {
     return payment;
   };
 
-  Reservering.prototype.haalUitWachtrij = async function() {
+  Reservering.prototype.haalUitWachtrij = async function () {
     this.wachtlijst = false;
     await this.save();
-    //  ReserveringMail::send(this, 'uit_wachtlijst');
+    ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst ${this}`);
   };
 
-  Reservering.prototype.logMessage = function(message) {
+  Reservering.prototype.logMessage = async function (message) {
+    const Log = Reservering.sequelize.models.Log;
     // if( user = Application.getUser()) {
     //   message += ` (door ${user.name})`;
     // }
 
-    const log = this.sequalize.models.Log.create({
-      message,
-      reserveringId: this.id
+    await Log.create({
+      reserveringId: this.id,
+      message: message
     });
   };
 
-  Reservering.prototype.refund = async function() {
-    const tekoop = this.validTickets.filter(t => t.tekoop);
+  Reservering.prototype.getBetalingUrl = function () {
+    return this.getRoot() + `/reserveren/${this.id}/betalen`
+  }
+
+  Reservering.prototype.getResendUrl = function () {
+    return this.getRoot() + `/reserveren/${this.id}/resend`
+  }
+
+  Reservering.prototype.getEditLink = function () {
+    return this.getRoot() + `/reserveren/${this.id}/edit`
+  }
+
+  Reservering.prototype.getTicketUrl = function () {
+    return this.getRoot() + `/reserveren/${this.id}/details`
+  }
+
+  Reservering.prototype.getQrUrl = function () {
+    return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`
+  }
+
+  Reservering.prototype.getRoot = function () {
+    return globalData.get('server');
+  }
+
+  Reservering.prototype.getWebhookRoot = function () {
+    const root = globalData.get('localtunnel') ?
+      globalData.get('localtunnel') :
+      globalData.get('server')
+    return root;
+  }
+
+  Reservering.prototype.refund = async function () {
+    const terugbetalen = this.Tickets.filter(t => t.terugbetalen);
     let payments = {};
-    tekoop.forEach(t => {
-      if (t.paymentId) {
-        if (!payments[t.paymentId]) {
-          payments[t.paymentId] = 0;
+    await Promise.all(terugbetalen.map(async t => {
+      if (t.PaymentId) {
+        if (!payments[t.PaymentId]) {
+          payments[t.PaymentId] = 0;
         }
-        payments[t.paymentId] += t.prijs.prijs;
+        t.prijs = await t.getPrijs();
+        payments[t.PaymentId] += t.prijs.prijs;
       }
-    });
+    }));
 
     await Promise.all(
-      Object.keys.forEach(async paymentId => {
+      Object.keys(payments).map(async paymentId => {
         const amount = payments[paymentId];
-        let payment = await Payment.findById(paymentId);
-        if (payment.refund(amount)) {
+        let payment = await Payment.findById(paymentId, {
+          include: [Payment.Tickets]
+        });
+        const refunded = await payment.refund(amount);
+        if (refunded) {
           await Promise.all(
-            tekoop.forEach(async ticket => {
-              ticket.verkocht = true;
-              ticket.save();
+            terugbetalen.map(async ticket => {
+              ticket.terugbetalen = false;
+              await ticket.save();
             })
           );
+          await this.logMessage(`${payment.toString()}: ${amount} teruggestort`);
         }
       })
     );
   };
 
-  Reservering.prototype.toString = function() {
-    return Ticket.description(this.tickets);
+  Reservering.prototype.toString = function () {
+    return this.sequelize.models.Ticket.description(this.Tickets);
   };
 
-  Reservering.prototype.teruggeefbaar = async function() {
+  Reservering.prototype.teruggeefbaar = async function () {
     const uitvoering = await this.getUitvoering();
-    const date = moment(uitvoering.aanvang);
-    const today = moment(new Date());
-    const duration = moment.duration(today.diff(date));
+    const today = new Date();
     const days = config.get("teruggave_termijn");
+    const diff = await differenceInCalendarDays(uitvoering.aanvang, today)
 
-    return duration.asDays() > days;
+    return diff > days;
   };
 
-  Reservering.prototype.hasRefunds = async function() {
+  Reservering.prototype.hasRefunds = async function () {
     const payments = await this.getPayments();
     return payments.find(p => p.refunds).length;
   };
 
-  Reservering.associate = function(models) {
+  Reservering.verwerkRefunds = async function () {
+    const Ticket = Reservering.sequelize.models.Ticket
+    const reserveringen = await Reservering.findAll({
+      include: [{
+        model: Ticket,
+        where: {
+          terugbetalen: true
+        },
+        required: true
+      }]
+    })
+
+    await Promise.all(reserveringen.map(async reservering => reservering.refund()))
+  }
+
+  Reservering.associate = function (models) {
     Reservering.Uitvoering = models.Reservering.belongsTo(models.Uitvoering, {
       onDelete: "RESTRICT",
       foreignKey: {

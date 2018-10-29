@@ -1,12 +1,7 @@
 const path = require("path");
 
 module.exports = {
-  name: "My app (live)",
-  // database: {
-  //   name: "production",
-  //   connection:
-  //     "mongodb+srv://arjen:LG86_jvif5pzD4t@plusleo-zpubl.gcp.mongodb.net/reserveren?retryWrites=true"
-  // },
+  name: "PlusLeo tickets",
   database: {
     dialect: "sqlite",
     storage: path.resolve(__dirname, "..", "data", "tickets.sqlite"),
@@ -22,8 +17,8 @@ module.exports = {
       force: true
     }
   },
-  jwtPrivateKey:
-    "Dit is de sleutel waarmee de signon package wordt versleuteld",
+  namespace: "PlusLeoDbNamespace", // t.b.v transacties
+  jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
     port: 3000
   },
@@ -35,14 +30,11 @@ module.exports = {
     afzender: "PlusLeo",
     afzender_email: "info@plusleo.nl",
     alwaysTo: "arjen.haayman@gmail.com",
-    subjects: {
-      paymentFailure: "Betaling mislukt",
-      gewijzigd: "nieuw ticket {1}",
-      wachtlijst: "Je staat op de wachtlijst",
-      confirmationPayment: "ticket {1}",
-      uit_wachtlijst: "ticket {1}"
-    }
+    subject_prefix: "[PlusLeo]",
   },
+
+  // mail-adres voor teruggave-verzoeken
+  penningmeester: 'penningmeester@plusleo.nl',
 
   // aantal dagen
   teruggave_termijn: 14

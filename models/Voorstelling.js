@@ -3,8 +3,7 @@ const Uitvoering = require("./Uitvoering");
 
 module.exports = (sequelize, DataTypes) => {
   const Voorstelling = sequelize.define(
-    "Voorstelling",
-    {
+    "Voorstelling", {
       title: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -17,7 +16,7 @@ module.exports = (sequelize, DataTypes) => {
       active: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        default: true
+        defaultValue: true
       },
       url: {
         type: DataTypes.STRING,
@@ -43,8 +42,7 @@ module.exports = (sequelize, DataTypes) => {
           isUrl: true
         }
       }
-    },
-    {
+    }, {
       name: {
         singular: "voorstelling",
         plural: "voorstellingen"
@@ -52,18 +50,25 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Voorstelling.prototype.toJSONA = async function() {
+  Voorstelling.prototype.toJSONA = async function () {
     let obj = this.toJSON();
+    const uitvoeringen = await this.getUitvoeringen();
     obj.uitvoeringen = await Promise.all(
-      this.uitvoeringen.map(async v => v.toJSONA())
+      uitvoeringen.map(async v => v.toJSONA())
     );
 
     return obj;
   };
 
-  Voorstelling.associate = function(models) {
+  Voorstelling.prototype.toString = function () {
+    return this.title;
+  }
+
+  Voorstelling.associate = function (models) {
     const embed = require("sequelize-embed")(sequelize);
-    const { mkInclude } = embed.util.helpers;
+    const {
+      mkInclude
+    } = embed.util.helpers;
 
     models.Voorstelling.Prijzen = models.Voorstelling.hasMany(models.Prijs);
     // models.Prijs.belongsTo(models.Voorstelling);
@@ -77,7 +82,9 @@ module.exports = (sequelize, DataTypes) => {
     Voorstelling.updateIncludes = (voorstellingData, options) => {
       if (options.include) {
         let include = options.include.map(include => mkInclude(include));
-        _options = Object.assign({}, options, { reload: include });
+        _options = Object.assign({}, options, {
+          reload: include
+        });
         embed.update(Voorstelling, voorstellingData, include, _options);
       } else {
         Voorstelling.update(voorstellingData, options);

@@ -3,15 +3,21 @@ const mollie_key = config.get("payment.mollie_key");
 const mollie = require("@mollie/api-client")({
   apiKey: mollie_key
 });
+const async = require('async');
 
 module.exports = (sequelize, DataTypes) => {
   let Payment = sequelize.define(
-    "Payment",
-    {
-      paymentId: { type: DataTypes.STRING },
-      betaalstatus: { type: DataTypes.STRING }
-    },
-    {
+    "Payment", {
+      paymentId: {
+        type: DataTypes.STRING
+      },
+      betaalstatus: {
+        type: DataTypes.STRING
+      },
+      description: {
+        type: DataTypes.STRING
+      }
+    }, {
       getterMethods: {
         isPaid() {
           return this.payment ? this.payment.isPaid() : false;
@@ -23,20 +29,29 @@ module.exports = (sequelize, DataTypes) => {
           return this.payment ? this.payment.amount.value : null;
         },
         refunds() {
-          return this.payment ? this.payment.refunds() : null;
+          return this.payment ? this.payment.payment_refunds : null;
         },
         paidAt() {
           return this.payment ? this.payment.paidAt : null;
         }
       },
       hooks: {
-        afterFind: () => this.initPayment
+        afterFind: async function (payment) {
+          if (!payment) {
+            return;
+          }
+          if (payment.length !== undefined) {
+            await Promise.all(payment.map(p => p.initPayment()));
+          } else {
+            await payment.initPayment();
+          }
+        }
       },
       timestamps: true
     }
   );
 
-  Payment.prototype.initPayment = async function() {
+  Payment.prototype.initPayment = async function () {
     if (!this.payment) {
       if (this.paymentId) {
         this.payment = await mollie.payments.get(this.paymentId);
@@ -44,21 +59,33 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  Payment.prototype.setStatus = function() {
-    this.betaalStatus = this.payment.status;
+  Payment.prototype.setStatus = async function () {
+    this.betaalstatus = this.payment.status;
+    await this.save()
+
+    let reservering = await this.getReservering();
+    await reservering.setStatus(this.betaalstatus);
+    reservering.save();
 
     if (this.payment.isPaid()) {
-      this.tickets.array.forEach(ticket => {
+      const tickets = await this.getTickets()
+      await Promise.all(tickets.map(async ticket => {
         ticket.betaald = true;
-      });
+        await ticket.save();
+      }));
     }
   };
 
+  Payment.prototype.toString = function () {
+    const Ticket = Payment.sequelize.models.Ticket;
+    return Ticket.description(this.tickets);
+  }
+
   Payment.prototype.status = {
-    get: function() {
+    get: function () {
       return this.payment ? this.payment.status : null;
     },
-    set: function(status) {
+    set: function (status) {
       this.setDataValue("status", status);
 
       switch (status) {
@@ -66,66 +93,80 @@ module.exports = (sequelize, DataTypes) => {
           {
             this.tickets.filter(t => t.tekoop).forEach(t => {
               t.verkocht = true;
+              t.save();
             });
           }
           break;
-        case "expired": {
-          this.tickets.forEach(t => t.setPayment(null));
-          this.tickets = [];
-          break;
-        }
+        case "expired":
+          {
+            this.tickets.forEach(t => t.setPayment(null));
+            this.setTickets([]);
+            break;
+          }
       }
     }
   };
 
-  Payment.prototype.setReservering = async function(reservering) {
-    if (!this.getReservering()) {
-      await Model.prototype.call(this, reservering); // parent setReservering() ??
-      await Promise.all(
-        reservering.onbetaaldeTickets.forEach(async t => {
-          await ticket.setPayment(this);
-        })
-      );
-      reservering.betaalStatus = this.payment.status;
-    }
-  };
+  // Payment.prototype.setReservering = async function(reservering) {
+  //   if (!this.getReservering()) {
+  //     await Model.prototype.call(this, reservering); // parent setReservering() ??
+  //     await Promise.all(
+  //       reservering.onbetaaldeTickets.forEach(async t => {
+  //         await ticket.setPayment(this);
+  //       })
+  //     );
+  //     reservering.betaalStatus = this.payment.status;
+  //   }
+  // };
 
-  Payment.prototype.newPayment = async function(reservering) {
+  // wordt aangeroepen vanuit Reservering.preSave()
+  Payment.prototype.newPayment = async function (reservering) {
+    const Ticket = this.sequelize.models.Ticket;
     const tickets = reservering.onbetaaldeTickets;
+    const description = Ticket.description(tickets);
     this.payment = await mollie.payments.create({
       amount: {
         currency: "EUR",
-        value: (Ticket.totaalBedrag(tickets) * 100).toFixed(2)
+        value: Ticket.totaalBedrag(tickets).toFixed(2)
       },
-      description: Ticket.description(tickets),
-      redirectUrl: reservering.redirectUrl(),
-      webhookUrl: reservering.webhookUrl(),
-      metadata: { reservering_id: reservering.id }
+      description: description,
+      redirectUrl: reservering.redirectUrl,
+      webhookUrl: reservering.webhookUrl,
+      metadata: {
+        reservering_id: reservering.id,
+        payment_id: this.id
+      }
     });
+
     this.paymentId = this.payment.id;
-    tickets.forEach(t => {
-      ticket.addPayment(this);
+    this.description = description;
+    reservering.setStatus(this.payment.status);
+    await reservering.save();
+    await this.save(); // get id
+
+    await Promise.all(tickets.map(async ticket => {
+      ticket.PaymentId = this.id;
+      // ticket.setPayment(this);
+      await ticket.save();
+    }));
+  };
+
+  Payment.prototype.isRefundable = function (amount) {
+    return this.payment.isRefundable();
+  };
+
+  Payment.prototype.refund = async function (amount) {
+    const refund = await mollie.payments_refunds.create({
+      paymentId: this.paymentId,
+      amount: {
+        currency: "EUR",
+        value: amount.toFixed(2)
+      }
     });
+    return refund;
   };
 
-  Payment.prototype.isRefundable = function(amount) {
-    return (
-      (amount != this.payment.amount &&
-        this.payment.canBePartiallyRefunded()) ||
-      (this.payment.canBeRefunded() &&
-        this.payment.getAmountRemaining() >= amount)
-    );
-  };
-
-  Payment.prototype.refund = async function(amount) {
-    const result = await this.payment.refund({
-      currency: "EUR",
-      value: amount.toFixed(2)
-    });
-    return result;
-  };
-
-  Payment.prototype.setExpired = async function() {
+  Payment.prototype.setExpired = async function () {
     const reservering = await this.getReservering();
     const tickets = await this.getTickets();
     await Promise.all(
@@ -136,7 +177,7 @@ module.exports = (sequelize, DataTypes) => {
     await reservering.extraBetaling();
   };
 
-  Payment.associate = function(models) {
+  Payment.associate = function (models) {
     Payment.Reservering = models.Payment.belongsTo(models.Reservering, {
       onDelete: "CASCADE",
       foreignKey: {

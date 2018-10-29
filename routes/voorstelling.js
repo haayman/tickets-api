@@ -1,30 +1,42 @@
 const winston = require("winston");
 const auth = require("../middleware/auth");
 const express = require("express");
-const { Voorstelling, Uitvoering, Prijs } = require("../models");
+const {
+  Voorstelling
+} = require("../models");
+const parseQuery = require('./helpers/parseQuery');
 
 const router = express.Router();
-const getDelta = require("./getDelta");
 
 router.get("/", async (req, res) => {
-  let params = {};
-  if (req.query.all == undefined) {
-    params.active = true;
-  }
-  let voorstellingen = await Voorstelling.findAll({
-    where: params,
-    include: [Voorstelling.Uitvoeringen, Voorstelling.Prijzen]
-  });
+  let params = parseQuery(Voorstelling, req.query);
+
+  let voorstellingen = await Voorstelling.findAll(params);
   const json = await Promise.all(voorstellingen.map(async v => v.toJSONA()));
   res.send(json);
+});
+
+router.get("/:id", async (req, res) => {
+  let params = parseQuery(Voorstelling, req.query);
+
+  const voorstelling = await Voorstelling.findById(req.params.id, params);
+  if (!voorstelling) {
+    return res.status(404).send("niet gevonden");
+  } else {
+    const json = await voorstelling.toJSONA();
+    res.send(json);
+  }
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
   try {
     const voorstelling = await Voorstelling.create(req.body, {
-      include: [
-        { association: Voorstelling.Prijzen },
-        { association: Voorstelling.Uitvoeringen }
+      include: [{
+          association: Voorstelling.Prijzen
+        },
+        {
+          association: Voorstelling.Uitvoeringen
+        }
       ]
     });
     res.send(voorstelling);
@@ -54,17 +66,6 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
   res.send(voorstelling);
 });
 
-router.get("/:id", async (req, res) => {
-  const voorstelling = await Voorstelling.findById(req.params.id, {
-    include: [Voorstelling.Uitvoeringen, Voorstelling.Prijzen]
-  });
-  if (!voorstelling) {
-    return res.status(404).send("niet gevonden");
-  } else {
-    // const json = await voorstelling.toJSONA();
-    res.send(voorstelling);
-  }
-});
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
   const voorstelling = await Voorstelling.findByIdAndDelete(req.params.id);

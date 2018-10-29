@@ -1,0 +1,9 @@
+<div class="card mt-3">
+  <div class="card-body">
+    <h1 class="card-title"><%= voorstelling.title %></h1> 
+    <img src="<%= voorstelling.poster %>" class="float-right" style="max-height: 200px"> 
+    <p class="card-text" style="white-space: pre-wrap"><%- voorstelling.description %></p> 
+    <p class="card-text">Locatie: <%- voorstelling.locatie %></p> 
+    <p><a href="<%=voorstelling.url%>" target="_blank">Meer informatie</a></p>
+  </div>
+</div>

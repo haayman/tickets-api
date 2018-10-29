@@ -1,0 +1,9 @@
+<div class="card p-3 mt-3">
+  <p>Hallo  <%= reservering.naam %></p>
+  <p>Er is een aantal plaatsen vrijgekomen, waardoor je niet langer in de wachtrij staat</p>
+	<em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">te betalen</a></em>
+</div>
+
+<%- include('partials/reservering') %>
+<%- include('partials/payments') %>
+<%- include('partials/bewaar')%>

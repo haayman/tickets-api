@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<head>
+	<%- include('partials/head')%>
+</head>
+<body>
+	<div>
+		<div role="main">
+			<div class="container">
+				<%- include(template, {
+					reservering, 
+					voorstelling : reservering.uitvoering.voorstelling
+				}) %>
+			</div>
+		</div>
+		<div class="footer container" role="footer">
+		<%- include('partials/footer')%>
+		</div>
+	</div>
+</body>
+
+

@@ -1,69 +1,76 @@
-const { Ticket } = require("./");
-
 module.exports = class {
-  constructor(reservering, prijs, transaction) {
+  constructor(reservering, prijs, tickets = []) {
     this.reservering = reservering;
     this.prijs = prijs;
-    this.transaction = transaction;
-    this.tickets = reservering.tickets
-      ? reservering.tickets.filter(t => t.prijsId == prijs.id)
-      : [];
+    this.tickets = tickets;
+
+    this.Ticket = reservering.sequelize.models.Ticket;
   }
 
   get aantal() {
     return this.validTickets ? this.validTickets.length : 0;
   }
 
+  toJSON() {
+    return {
+      prijs: this.prijs,
+      tickets: this.tickets,
+      aantal: this.aantal,
+      aantalBetaald: this.aantalBetaald,
+      aantalTekoop: this.aantalTekoop,
+      bedrag: this.getBedrag
+    };
+  }
+
   async setAantal(aantal) {
     const oldAantal = this.aantal;
-    const transaction = this.transaction;
 
     if (oldAantal < aantal) {
       let diff = aantal - oldAantal;
-      this.reservering.logMessage(`wijziging ${diff} x ${this.prijs}`, {
-        transaction
-      });
+      await this.reservering.logMessage(`${diff} x ${this.prijs} ${oldAantal?'bij':''}besteld`);
+
+      // kijk of er tickets te koop zijn. Deze worden bij deze verkocht
+      await this.reservering.uitvoering.verwerkTekoop(diff);
+
       while (diff--) {
-        const ticket = await Ticket.create(
-          {
-            reserveringId: this.reservering.id,
-            reservering: this.reservering,
-            prijsId: this.prijs.id,
-            prijs: this.prijs
-          },
-          {
-            transaction,
-            include: [
-              { association: Ticket.Reservering },
-              { association: Ticket.Prijs }
-            ]
-          }
-        );
+        const ticket = await this.Ticket.create({
+          reserveringId: this.reservering.id,
+          prijsId: this.prijs.id
+        });
+
+        // nadat ticket is opgeslagen met id's prijs en reservering toevoegen
+        ticket.prijs = this.prijs;
+        ticket.reservering = this.reservering;
+
         this.tickets.push(ticket);
       }
     } else if (oldAantal > aantal) {
       let diff = oldAantal - aantal;
       let tickets = this.validTickets;
+      await this.reservering.logMessage(`${diff} x ${this.prijs} geannuleerd`);
       for (let i = 0; i < diff; i++) {
         let ticket = tickets[i];
-        if (!ticket.payment) {
-          await this.reservering.logMessage(`verwijder ${ticket}`, {
-            transaction
-          });
-          await ticket.delete({ transaction });
-        } else if (ticket.isPaid()) {
-          this.reservering.logMessage(`zet te koop ${ticket}`, { transaction });
-          ticket.tekoop = true;
-          await ticket.save({ transaction });
+        if (!ticket.PaymentId) {
+          await ticket.destroy();
+          this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
+        } else {
+          let payment = await ticket.getPayment();
+          if (payment.isPaid) {
+            await this.reservering.logMessage(`zet te koop ${ticket.id}`);
+            ticket.tekoop = true;
+            await ticket.save();
+          } else {
+            await ticket.destroy();
+            this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
+          }
         }
       }
     }
   }
 
   get validTickets() {
-    this.tickets
-      ? this.tickets.filter(t => !(t.geannuleerd || t.verkocht))
-      : [];
+    return this.tickets ?
+      this.tickets.filter(t => !(t.geannuleerd || t.verkocht)) : [];
   }
 
   get aantalBetaald() {
