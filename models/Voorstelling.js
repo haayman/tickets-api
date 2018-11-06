@@ -50,12 +50,21 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  Voorstelling.prototype.toJSONA = async function () {
+  Voorstelling.prototype.toJSONA = async function (res = null) {
     let obj = this.toJSON();
     const uitvoeringen = await this.getUitvoeringen();
-    obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
+    if (obj.prijzen) {
+      obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
+      if (res) {
+        const user = res.locals.user;
+        obj.prijzen = obj.prijzen.filter((p) => {
+          return !p.role || (user && user.isAuthorized(p.role));
+        })
+
+      }
+    }
     obj.uitvoeringen = await Promise.all(
-      uitvoeringen.map(async v => v.toJSONA())
+      uitvoeringen.map(async v => v.toJSONA(res))
     );
 
     return obj;

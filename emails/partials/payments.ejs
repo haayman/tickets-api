@@ -1,3 +1,4 @@
+<% if ( reservering.payments.length ) { %>
 <div class="card mt-3 p-3">
 <h2>Betalingen</h2>
 
@@ -8,9 +9,7 @@
       <th>betaald</th>
       <th>status</th>
       <th>bedrag</th>
-    <!--   <% if( reservering.hasRefunds ) { %>
-       <th>terugstortingen</th>
-       <% } %>-->
+      <th>terugstortingen</th>
     </tr>
   </thead>
   <tbody>
@@ -18,14 +17,18 @@
     <tr>
       <td><%= payment.description %></td>
       <td><%= payment.paidAt ? format(payment.paidAt, 'DD-MM HH:mm') : '' %></td>
-      <td><% url = payment.paymentUrl; 
-        if( url ) {%>
-        <a href="<%= url %>">Nog te betalen</a>
+      <td><% 
+        if( payment.paymentUrl ) {%>
+        <a href="<%= payment.paymentUrl %>">Nog te betalen</a>
         <% } else {%>
           <%= payment.status %>
         <% } %>
         </td>
-        <td><%= payment.amount %>
+        <td><%= payment.amount %></td>
+        <% if( payment.amountRefunded ) { %>
+        <td><%= payment.amountRefunded %></td>
+        <% } %>
     </tr>
   <% }) %>
 </div>
+<% } %>

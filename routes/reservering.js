@@ -55,6 +55,13 @@ router.post("/", async (req, res) => {
 
     Reservering.verwerkRefunds();
 
+    const saldo = reservering.saldo;
+    if (!saldo) {
+      // vrijkaartjes
+      const strReservering = await reservering.asString();
+      ReserveringMail.send(reservering, "ticket", strReservering);
+    }
+
     if (reservering.wachtlijst) {
       //   const payment = Payment.build({});
       //   await payment.setReservering(reservering);
