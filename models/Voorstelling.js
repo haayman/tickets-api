@@ -53,6 +53,7 @@ module.exports = (sequelize, DataTypes) => {
   Voorstelling.prototype.toJSONA = async function () {
     let obj = this.toJSON();
     const uitvoeringen = await this.getUitvoeringen();
+    obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
     obj.uitvoeringen = await Promise.all(
       uitvoeringen.map(async v => v.toJSONA())
     );
