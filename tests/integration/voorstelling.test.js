@@ -1,40 +1,37 @@
 const request = require("supertest");
-const config = require("config");
-const mongoose = require("mongoose");
 let app = require("../../app");
-const { User } = require("../../models/User");
-const { Voorstelling } = require("../../models/Voorstelling");
+const {
+  User,
+  Voorstelling
+} = require("../../models/");
 
-const dbConfig = config.get("database");
 
 let authToken;
 
 beforeAll(async () => {
-  const admin = new User({
+  const admin = await User.create({
     username: "administrator",
     name: "Admin",
     password: "my name is admin",
     email: "admin@plusleo.nl",
     role: "admin"
   });
-  await admin.save();
   authToken = admin.getAuthToken();
-  await admin.delete();
+  await admin.destroy();
 });
-
-//beforeAll(async () => (app = require("../../app")));
-afterAll(done => mongoose.disconnect(done));
 
 afterEach(async () => {
-  await Voorstelling.deleteMany({});
+  await Voorstelling.destroy({
+    where: {},
+    truncate: true
+  });
 });
 
-describe("/voorstelling", () => {
+describe("/api/voorstelling", () => {
   describe("/GET", () => {
     it("should return all voorstellingen", async () => {
       try {
-        await Voorstelling.collection.insertMany([
-          {
+        await Voorstelling.bulkCreate([{
             title: "title1",
             description: "Description 1",
             aantal_plaatsen: 60,
@@ -56,12 +53,20 @@ describe("/voorstelling", () => {
             prijzen: [],
             uitvoeringen: []
           }
-        ]);
+        ], {
+          include: [{
+              association: Voorstelling.Prijzen
+            },
+            {
+              association: Voorstelling.Uitvoeringen
+            }
+          ]
+        })
       } catch (ex) {
-        //ignore
+        //throw ex
       }
       const res = await request(app)
-        .get("/voorstelling")
+        .get("/api/voorstelling")
         .set("x-auth-token", authToken);
       expect(res.status).toBe(200);
       expect(res.body.length).toBe(2);
@@ -71,7 +76,7 @@ describe("/voorstelling", () => {
 
     describe("/GET/id", () => {
       it("should return specific voorstelling", async () => {
-        let voorstelling = new Voorstelling({
+        let voorstelling = await Voorstelling.create({
           title: "title1",
           description: "Description 1",
           aantal_plaatsen: 60,
@@ -82,26 +87,18 @@ describe("/voorstelling", () => {
           prijzen: [],
           uitvoeringen: []
         });
-        await voorstelling.save();
 
-        const id = voorstelling._id.toString();
+        const id = voorstelling.id;
         const res = await request(app)
-          .get("/voorstelling/" + id)
+          .get("/api/voorstelling/" + id)
           .set("x-auth-token", authToken);
         expect(res.status).toBe(200);
-        expect(res.body._id.toString()).toBe(id);
-      });
-
-      it("should return 404 invalid id", async () => {
-        const res = await request(app)
-          .get("/voorstelling/1")
-          .set("x-auth-token", authToken);
-        expect(res.status).toBe(404);
+        expect(res.body.id).toBe(id);
       });
 
       it("should return 404 not found", async () => {
         const res = await request(app)
-          .get("/voorstelling/41224d776a326fb40f000001")
+          .get("/api/voorstelling/0")
           .set("x-auth-token", authToken); // valid objectid
         expect(res.status).toBe(404);
       });
@@ -113,7 +110,7 @@ describe("/voorstelling", () => {
 
     it("should fail validation. missing description. return 400", async () => {
       const res = await request(app)
-        .post("/voorstelling/")
+        .post("/api/voorstelling/")
         .set("x-auth-token", authToken)
         .send({
           title: "title1",
@@ -130,7 +127,7 @@ describe("/voorstelling", () => {
 
     it("should fail validation. missing prijs.description. return 400", async () => {
       const res = await request(app)
-        .post("/voorstelling/")
+        .post("/api/voorstelling/")
         .set("x-auth-token", authToken)
         .send({
           title: "title1",
@@ -140,12 +137,10 @@ describe("/voorstelling", () => {
           url: "https://plusleo.nl/",
           locatie: "locatie 1",
           opmerkingen: "opmerkingen1",
-          prijzen: [
-            {
-              // description: "volwassenen",
-              number: 10
-            }
-          ],
+          prijzen: [{
+            // description: "volwassenen",
+            number: 10
+          }],
           uitvoeringen: []
         });
       expect(res.status).toBe(400);
@@ -153,7 +148,7 @@ describe("/voorstelling", () => {
 
     it("should fail validation. missing uitvoering.aanvang. return 400", async () => {
       const res = await request(app)
-        .post("/voorstelling/")
+        .post("/api/voorstelling/")
         .set("x-auth-token", authToken)
         .send({
           title: "title1",
@@ -163,8 +158,7 @@ describe("/voorstelling", () => {
           url: "https://plusleo.nl/",
           locatie: "locatie 1",
           opmerkingen: "opmerkingen1",
-          prijzen: [
-            {
+          prijzen: [{
               description: "volwassenen",
               prijs: 10
             },
@@ -177,20 +171,18 @@ describe("/voorstelling", () => {
               prijs: 0
             }
           ],
-          uitvoeringen: [
-            {
-              aanvang: new Date(2018, 1, 1),
-              deur_open: new Date(2018, 1, 1),
-              aantal_plaatsen: -1
-            }
-          ]
+          uitvoeringen: [{
+            aanvang: new Date(2018, 1, 1),
+            deur_open: new Date(2018, 1, 1),
+            aantal_plaatsen: -1
+          }]
         });
       expect(res.status).toBe(400);
     });
 
     it("should successfully post", async () => {
       const res = await request(app)
-        .post("/voorstelling/")
+        .post("/api/voorstelling/")
         .set("x-auth-token", authToken)
         .send({
           title: "title1",
@@ -203,7 +195,7 @@ describe("/voorstelling", () => {
           uitvoeringen: []
         });
       expect(res.status).toBe(200);
-      expect(res.body._id).toBeDefined();
+      expect(res.body.id).toBeDefined();
 
       const voorstelling = await Voorstelling.find({
         title: "title1"

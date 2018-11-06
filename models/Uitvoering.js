@@ -80,6 +80,7 @@ module.exports = (sequelize, DataTypes) => {
       and geannuleerd=false and 
       reserveringId IN (select id from Reservering where 
         uitvoeringId = :uitvoeringId 
+        AND deletedAt IS NULL
         AND wachtlijst = :wachtlijst ${reserveringClause})`;
 
     const [result] = await sequelize.query(sql, {
@@ -135,7 +136,10 @@ module.exports = (sequelize, DataTypes) => {
   Uitvoering.prototype.tekoop = async function (aantal = null) {
     const Ticket = Uitvoering.sequelize.models.Ticket;
     const sql = `SELECT * from Ticket
-      WHERE reserveringId in (SELECT id from reservering where uitvoeringId=:uitvoeringId)
+      WHERE reserveringId in (
+        SELECT id from reservering WHERE 
+          uitvoeringId=:uitvoeringId 
+          AND deletedAt IS NULL )
       AND tekoop=true`;
 
     const tickets = await sequelize.query(sql, {

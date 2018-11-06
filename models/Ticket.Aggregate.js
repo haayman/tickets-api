@@ -27,7 +27,9 @@ module.exports = class {
 
     if (oldAantal < aantal) {
       let diff = aantal - oldAantal;
-      await this.reservering.logMessage(`${diff} x ${this.prijs} ${oldAantal?'bij':''}besteld`);
+      await this.reservering.logMessage(
+        `${diff} x ${this.prijs.asString()} ${oldAantal ? "bij" : ""}besteld`
+      );
 
       // kijk of er tickets te koop zijn. Deze worden bij deze verkocht
       await this.reservering.uitvoering.verwerkTekoop(diff);
@@ -47,21 +49,28 @@ module.exports = class {
     } else if (oldAantal > aantal) {
       let diff = oldAantal - aantal;
       let tickets = this.validTickets;
-      await this.reservering.logMessage(`${diff} x ${this.prijs} geannuleerd`);
+      const strPrijs = await this.prijs.asString();
+      await this.reservering.logMessage(`${diff} x ${strPrijs} geannuleerd`);
       for (let i = 0; i < diff; i++) {
         let ticket = tickets[i];
+        const ticketDescription = await ticket.asString();
         if (!ticket.PaymentId) {
           await ticket.destroy();
-          this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
+          this.tickets = this.tickets.filter(t => t.id !== ticket.id);
         } else {
           let payment = await ticket.getPayment();
           if (payment.isPaid) {
-            await this.reservering.logMessage(`zet te koop ${ticket.id}`);
-            ticket.tekoop = true;
+            if (this.reservering.teruggeefbaar()) {
+              await this.reservering.logMessage(`${ticketDescription} terugbetalen`);
+              ticket.terugbetalen = true;
+            } else {
+              await this.reservering.logMessage(`zet te koop ${ticketDescription}`);
+              ticket.tekoop = true;
+            }
             await ticket.save();
           } else {
             await ticket.destroy();
-            this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
+            this.tickets = this.tickets.filter(t => t.id !== ticket.id);
           }
         }
       }
@@ -115,11 +124,11 @@ module.exports = class {
     return this.aantalTeKoop * this.prijs.prijs;
   }
 
-  toString() {
+  asString() {
     const aantal = this.aantal;
     const totaal = aantal * this.prijs.prijs;
     const aantalTekoop = this.aantalTekoop;
-    let retval = `${this.aantal}x ${this.prijs}: €${totaal}`;
+    let retval = `${this.aantal}x ${this.prijs.asString()}: €${totaal}`;
     if (aantalTekoop) {
       retval += ` waarvan ${aantalTekoop} te koop`;
     }

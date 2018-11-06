@@ -5,6 +5,8 @@ var path = require("path");
 var Sequelize = require("sequelize");
 var basename = path.basename(__filename);
 var config = require("config");
+
+// t.b.v. transactions
 const cls = require("continuation-local-storage");
 const namespace = cls.createNamespace(config.get("namespace"));
 Sequelize.useCLS(namespace);

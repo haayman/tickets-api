@@ -1,11 +1,21 @@
 const Mailer = require("./Mailer");
 const format = require('date-fns/format');
 const nl = require('date-fns/locale/nl')
-
+const parseQuery = require('../routes/helpers/parseReserveringQuery');
 
 class ReserveringMail {
-  static send(reservering, templateName, subject, params = {}) {
+  static async send(reservering, templateName, subject, params = {}) {
     const mail = new Mailer();
+    const {
+      Reservering
+    } = reservering.sequelize.models;
+
+    await reservering.reload(parseQuery(Reservering, {
+      include: [
+        'tickets',
+        'Payments'
+      ]
+    }));
 
     mail
       .setTemplate("index")
@@ -22,6 +32,7 @@ class ReserveringMail {
       format,
       nl
     }));
+    reservering.logMessage(`Mail '${subject}' verzonden`)
   }
 
   static async render(reservering, templateName, params = {}) {

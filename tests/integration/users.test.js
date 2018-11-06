@@ -1,39 +1,39 @@
 const request = require("supertest");
-const config = require("config");
-const mongoose = require("mongoose");
 let app = require("../../app");
-const { User } = require("../../models/User");
-
-const dbConfig = config.get("database");
+const {
+  User,
+  sequelize
+} = require("../../models");
 
 let authToken;
 
 beforeAll(async () => {
-  const admin = new User({
+  await sequelize.sync({
+    force: true
+  });
+
+  const admin = await User.create({
     username: "administrator",
     name: "Admin",
     password: "my name is admin",
     email: "admin@plusleo.nl",
     role: "admin"
   });
-  await admin.save();
   authToken = admin.getAuthToken();
-  await admin.delete();
+  await admin.destroy();
 });
-
-//beforeAll(async () => (app = require("../../app")));
-afterAll(done => mongoose.disconnect(done));
 
 afterEach(async () => {
-  await User.deleteMany({});
+  await User.destroy({
+    where: {}
+  });
 });
 
-describe("/users", () => {
+describe("/api/user", () => {
   describe("/GET", () => {
     it("should return all users", async () => {
       try {
-        await User.collection.insertMany([
-          {
+        await User.bulkCreate([{
             username: "user1",
             name: "User 1",
             email: "user@plusleo.nl",
@@ -49,10 +49,10 @@ describe("/users", () => {
           }
         ]);
       } catch (ex) {
-        //ignore
+        console.log(ex);
       }
       const res = await request(app)
-        .get("/users")
+        .get("/api/user")
         .set("x-auth-token", authToken);
       expect(res.status).toBe(200);
       expect(res.body.length).toBe(2);
@@ -62,33 +62,25 @@ describe("/users", () => {
 
     describe("/GET/id", () => {
       it("should return specific user", async () => {
-        let user = new User({
+        let user = await User.create({
           username: "user1",
           name: "User 1",
           email: "user@plusleo.nl",
           password: "test1",
           role: "speler"
         });
-        await user.save();
 
-        const id = user._id.toString();
+        const id = user.id;
         const res = await request(app)
-          .get("/users/" + id)
+          .get("/api/user/" + id)
           .set("x-auth-token", authToken);
         expect(res.status).toBe(200);
-        expect(res.body._id.toString()).toBe(id);
-      });
-
-      it("should return 404 invalid id", async () => {
-        const res = await request(app)
-          .get("/users/1")
-          .set("x-auth-token", authToken);
-        expect(res.status).toBe(404);
+        expect(res.body.id).toBe(id);
       });
 
       it("should return 404 not found", async () => {
         const res = await request(app)
-          .get("/users/41224d776a326fb40f000001")
+          .get("/api/user/0")
           .set("x-auth-token", authToken); // valid objectid
         expect(res.status).toBe(404);
       });
@@ -99,7 +91,7 @@ describe("/users", () => {
 
     it("should fail validation. password missing return 400", async () => {
       const res = await request(app)
-        .post("/users/")
+        .post("/api/user/")
         .set("x-auth-token", authToken)
         .send({
           username: "user1",
@@ -113,7 +105,7 @@ describe("/users", () => {
 
     it("should fail validation. invalid role. return 400", async () => {
       const res = await request(app)
-        .post("/users/")
+        .post("/api/user/")
         .set("x-auth-token", authToken)
         .send({
           username: "user1",
@@ -127,7 +119,7 @@ describe("/users", () => {
 
     it("User already exists. return 400", async () => {
       await request(app)
-        .post("/users/")
+        .post("/api/user/")
         .set("x-auth-token", authToken)
         .send({
           username: "user1",
@@ -137,7 +129,7 @@ describe("/users", () => {
           role: "role"
         });
       const res = await request(app)
-        .post("/users/")
+        .post("/api/user/")
         .set("x-auth-token", authToken)
         .send({
           username: "user1",
@@ -152,7 +144,7 @@ describe("/users", () => {
 
     it("should successfully post", async () => {
       const res = await request(app)
-        .post("/users/")
+        .post("/api/user/")
         .set("x-auth-token", authToken)
         .send({
           username: "user1",
@@ -162,10 +154,12 @@ describe("/users", () => {
           role: "speler"
         });
       expect(res.status).toBe(200);
-      expect(res.body._id).toBeDefined();
+      expect(res.body.id).toBeDefined();
       expect(res.header).toHaveProperty("x-auth-token");
 
-      const user = await User.find({ username: "user1" });
+      const user = await User.find({
+        username: "user1"
+      });
       expect(user).not.toBeNull();
     });
   });
