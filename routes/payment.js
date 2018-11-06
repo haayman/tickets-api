@@ -17,7 +17,11 @@ const router = express.Router();
 router.post("/bank/:id", async (req, res) => {
   winston.info(req.body);
   const mollie_payment = await mollie.payments.get(req.body.id);
-  const reservering = await Reservering.findById(req.params.id);
+  const reservering = await Reservering.findById(req.params.id, {
+    include: [{
+      association: Reservering.Payments
+    }]
+  });
   const payment = reservering.payments.find((p) => p.paymentId == mollie_payment.id);
   if (payment.betaalstatus == mollie_payment.status) {
     // dubbele melding
@@ -33,13 +37,16 @@ router.post("/bank/:id", async (req, res) => {
   });
 
   const tickets = await payment.getTickets();
-  reservering.logMessage(`Status ${Ticket.describe(tickets)}: ${payment.betaalstatus}`);
+  const description = await Ticket.description(tickets);
+  reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
+
+  const ticketDescription = await reservering.asString();
 
   if (payment.betaalstatus == "paid") {
     ReserveringMail.send(
       reservering,
       "confirmationPayment",
-      `ticket ${reservering}`
+      `ticket ${ticketDescription}`
     );
   } else {
     ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");

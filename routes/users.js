@@ -31,7 +31,7 @@ router.post("/", auth(["admin"]), async (req, res) => {
     res.header("x-auth-token", user.getAuthToken()).send(user);
   } catch (e) {
     // console.error(e);
-    res.status(400).send(e.message);
+    res.status(400).send(e);
   }
 });
 

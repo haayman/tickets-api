@@ -22,7 +22,7 @@
         if( url ) {%>
         <a href="<%= url %>">Nog te betalen</a>
         <% } else {%>
-          <%= payment.betaalstatus %>
+          <%= payment.status %>
         <% } %>
         </td>
         <td><%= payment.amount %>

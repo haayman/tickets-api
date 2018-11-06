@@ -13,9 +13,6 @@ module.exports = {
       timestamps: true,
       freezeTableName: true
     },
-    sync: {
-      force: true
-    }
   },
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",

@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING
       }
     }, {
+      paranoid: true, // zorgt er voor dat dit nooit echt verwijderd wordt
       getterMethods: {
         isPaid() {
           return this.payment ? this.payment.isPaid() : false;
@@ -26,13 +27,19 @@ module.exports = (sequelize, DataTypes) => {
           return this.payment ? this.payment.getPaymentUrl() : null;
         },
         amount() {
-          return this.payment ? this.payment.amount.value : null;
+          return this.payment ? +this.payment.amount.value : undefined;
         },
-        refunds() {
-          return this.payment ? this.payment.payment_refunds : null;
+        amountRefunded() {
+          return this.payment && this.payment.amountRefunded ? +this.payment.amountRefunded.value : undefined;
+        },
+        amountRemaining() {
+          return this.payment && this.payment.amountRemaining ? +this.payment.amountRemaining.value : undefined;
         },
         paidAt() {
-          return this.payment ? this.payment.paidAt : null;
+          return this.payment ? this.payment.paidAt : undefined;
+        },
+        status() {
+          return this.payment ? this.payment.status : undefined;
         }
       },
       hooks: {
@@ -76,8 +83,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   };
 
-  Payment.prototype.toString = function () {
+  Payment.prototype.asString = async function () {
     const Ticket = Payment.sequelize.models.Ticket;
+    if (!this.tickets) {
+      this.tickets = await this.getTickets();
+    }
     return Ticket.description(this.tickets);
   }
 
@@ -123,7 +133,7 @@ module.exports = (sequelize, DataTypes) => {
   Payment.prototype.newPayment = async function (reservering) {
     const Ticket = this.sequelize.models.Ticket;
     const tickets = reservering.onbetaaldeTickets;
-    const description = Ticket.description(tickets);
+    const description = await Ticket.description(tickets);
     this.payment = await mollie.payments.create({
       amount: {
         currency: "EUR",
@@ -184,7 +194,9 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false
       }
     });
-    Payment.Tickets = models.Payment.hasMany(models.Ticket);
+    Payment.Tickets = models.Payment.hasMany(models.Ticket, {
+      onDelete: 'cascade'
+    });
   };
 
   return Payment;

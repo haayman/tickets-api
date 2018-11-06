@@ -7,7 +7,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       getterMethods: {
-        description() {
+        asString() {
           return this.betaalstatus ? `betaling ${this.status}` : this.status;
         }
       }

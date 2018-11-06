@@ -5,6 +5,8 @@ const ReserveringMail = require("../components/ReserveringMail");
 
 var differenceInCalendarDays = require('date-fns/difference_in_calendar_days')
 const globalData = require('../components/globalData');
+const stackTrace = require('stack-trace');
+const path = require('path');
 
 module.exports = (sequelize, DataTypes) => {
   const Payment = sequelize.models.Payment;
@@ -48,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
         singular: "reservering",
         plural: "reserveringen"
       },
+      paranoid: true, // zorgt er voor dat dit nooit echt verwijderd wordt
       timestamps: true,
       getterMethods: {
         bedrag() {
@@ -88,11 +91,6 @@ module.exports = (sequelize, DataTypes) => {
           // }, []) : [];
         },
 
-        async moetInWachtrij() {
-          const uitvoering = await this.getUitvoering();
-          const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
-          return vrije_plaatsen <= 0;
-        },
 
         /**
          * het bedrag dat teveel is betaald
@@ -137,7 +135,24 @@ module.exports = (sequelize, DataTypes) => {
         }
       },
 
-      hooks: {}
+      hooks: {
+        beforeDestroy: (async (reservering) => {
+          const {
+            Payment,
+            Ticket
+          } = require('./');
+          Payment.destroy({
+            where: {
+              reserveringId: reservering.id
+            }
+          });
+          Ticket.destroy({
+            where: {
+              reserveringId: reservering.id
+            }
+          });
+        })
+      }
     }
   );
 
@@ -178,6 +193,7 @@ module.exports = (sequelize, DataTypes) => {
     json.tickets = this.tickets;
     json.payments = await this.getPayments();
     json.paymentUrl = this.paymentUrl();
+    json.teruggeefbaar = await this.teruggeefbaar();
     if (this.Logs) {
       json.logs = this.Logs;
     }
@@ -196,20 +212,32 @@ module.exports = (sequelize, DataTypes) => {
     }));
   }
 
+  Reservering.prototype.moetInWachtrij = async function () {
+      const uitvoering = await this.getUitvoering();
+      const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
+      return vrije_plaatsen <= 0;
+    },
 
-  Reservering.prototype.paymentUrl = function () {
-    let url;
-    if (!this.payments) return null;
-    for (let payment of this.payments) {
-      if ((url = payment.paymentUrl)) {
-        return url;
+    Reservering.prototype.paymentUrl = function () {
+      let url;
+      if (!this.payments) return null;
+      for (let payment of this.payments) {
+        if ((url = payment.paymentUrl)) {
+          return url;
+        }
       }
-    }
-    return null;
-  };
+      return null;
+    };
 
   Reservering.prototype.createPaymentIfNeeded = async function () {
-    if (!this.wachtlijst && this.onbetaaldeTickets.length) {
+    if (!this.Tickets) {
+      this.Tickets = await this.getTickets();
+    }
+    if (!this.payments) {
+      this.payments = await this.getPayments();
+    }
+    if (!this.wachtlijst && this.onbetaaldeTickets.length &&
+      this.payments.filter(p => p.status == 'open').length === 0) {
       const payment = Payment.build({
         reserveringId: this.id
       });
@@ -245,9 +273,13 @@ module.exports = (sequelize, DataTypes) => {
     //   message += ` (door ${user.name})`;
     // }
 
+    const trace = stackTrace.get();
+    const caller = trace[1];
+
     await Log.create({
       reserveringId: this.id,
-      message: message
+      message: message,
+      sourceCode: `${path.basename(caller.getFileName())}(${caller.getLineNumber()})`
     });
   };
 
@@ -283,6 +315,7 @@ module.exports = (sequelize, DataTypes) => {
   }
 
   Reservering.prototype.refund = async function () {
+    if (!this.Tickets) this.Tickets = await this.getTickets();
     const terugbetalen = this.Tickets.filter(t => t.terugbetalen);
     let payments = {};
     await Promise.all(terugbetalen.map(async t => {
@@ -306,24 +339,29 @@ module.exports = (sequelize, DataTypes) => {
           await Promise.all(
             terugbetalen.map(async ticket => {
               ticket.terugbetalen = false;
+              ticket.verkocht = true;
               await ticket.save();
             })
           );
-          await this.logMessage(`${payment.toString()}: ${amount} teruggestort`);
+          const Ticket = Reservering.sequelize.models.Ticket;
+          const paymentDescription = await Ticket.description(terugbetalen);
+          await this.logMessage(`${paymentDescription}: €${amount.toFixed(2)} teruggestort`);
         }
       })
     );
   };
 
-  Reservering.prototype.toString = function () {
-    return this.sequelize.models.Ticket.description(this.Tickets);
+  Reservering.prototype.asString = async function () {
+    const tickets = this.Tickets ? this.Tickets : await this.getTickets();
+    const description = await this.sequelize.models.Ticket.description(tickets);
+    return description;
   };
 
   Reservering.prototype.teruggeefbaar = async function () {
     const uitvoering = await this.getUitvoering();
     const today = new Date();
     const days = config.get("teruggave_termijn");
-    const diff = await differenceInCalendarDays(uitvoering.aanvang, today)
+    const diff = differenceInCalendarDays(uitvoering.aanvang, today)
 
     return diff > days;
   };
@@ -356,10 +394,16 @@ module.exports = (sequelize, DataTypes) => {
       }
     });
 
-    Reservering.Tickets = models.Reservering.hasMany(models.Ticket);
-    Reservering.Payments = models.Reservering.hasMany(models.Payment);
+    Reservering.Tickets = models.Reservering.hasMany(models.Ticket, {
+      onDelete: 'cascade'
+    });
+    Reservering.Payments = models.Reservering.hasMany(models.Payment, {
+      onDelete: 'cascade'
+    });
     Reservering.Logs = models.Reservering.hasMany(models.Log);
-    Reservering.StatusUpdates = models.Reservering.hasMany(models.StatusUpdate);
+    Reservering.StatusUpdates = models.Reservering.hasMany(models.StatusUpdate, {
+      onDelete: 'cascade'
+    });
   };
 
   return Reservering;

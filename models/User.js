@@ -6,8 +6,7 @@ const crypto = require("crypto");
 
 module.exports = (sequelize, DataTypes) => {
   let User = sequelize.define(
-    "User",
-    {
+    "User", {
       username: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -29,29 +28,35 @@ module.exports = (sequelize, DataTypes) => {
         }
       },
       password: {
-        type: DataTypes.TEXT
+        type: DataTypes.TEXT,
+        allowNull: false
       },
       role: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
           isRole(value) {
-            return ROLES.includes(value);
+            if (!ROLES.includes(value)) {
+              throw new Error(`ongeldige rol: ${value}`);
+            }
           }
         }
       }
-    },
-    {
+    }, {
       defaultScope: {
-        attributes: { exclude: ["password"] }
+        attributes: {
+          exclude: ["password"]
+        }
       },
       scopes: {
         withPassword: {
-          attributes: { include: ["password"] }
+          attributes: {
+            include: ["password"]
+          }
         }
       },
       hooks: {
-        beforeSave: function(user) {
+        beforeSave: function (user) {
           return new Promise((resolve, reject) => {
             if (!user.changed("password")) resolve();
             hashPassword(user.password).hash((error, hash) => {
@@ -67,12 +72,12 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  User.prototype.checkPassword = function(password) {
+  User.prototype.checkPassword = function (password) {
     // let user = this;
     return new Promise((resolve, reject) => {
       hashPassword(password).verifyAgainst(
         this.getDataValue("password"),
-        function(error, verified) {
+        function (error, verified) {
           if (error) reject(error);
           else resolve(verified);
         }
@@ -80,9 +85,8 @@ module.exports = (sequelize, DataTypes) => {
     });
   };
 
-  User.prototype.getAuthToken = function() {
-    return jwt.sign(
-      {
+  User.prototype.getAuthToken = function () {
+    return jwt.sign({
         id: this.getDataValue("id"),
         role: this.getDataValue("role")
       },
@@ -90,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
     );
   };
 
-  User.prototype.getEditLink = function() {
+  User.prototype.getEditLink = function () {
     return (
       config.get("server.url") +
       "/forgotten/" +
@@ -100,14 +104,14 @@ module.exports = (sequelize, DataTypes) => {
     );
   };
 
-  User.prototype.getHash = function() {
+  User.prototype.getHash = function () {
     return (
       crypto
-        .createHash("sha1")
-        .update("" + this.id) // convert to string
-        .update(this.email)
-        // .update(this.password)
-        .digest("hex")
+      .createHash("sha1")
+      .update("" + this.id) // convert to string
+      .update(this.email)
+      // .update(this.password)
+      .digest("hex")
     );
   };
 
