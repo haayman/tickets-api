@@ -5,7 +5,6 @@ const {
   User
 } = require("../models");
 const Mailer = require("../components/Mailer");
-const setUser = require("../middleware/user");
 
 const router = express.Router();
 
@@ -35,7 +34,7 @@ router.post("/", auth(["admin"]), async (req, res) => {
   }
 });
 
-router.put("/:id", setUser, async (req, res) => {
+router.put("/:id", async (req, res) => {
   let id = req.params.id;
   if (!req.params.id) {
     return res.status(400).send("no id");
@@ -46,7 +45,7 @@ router.put("/:id", setUser, async (req, res) => {
     return res.status(404).send(`not found: ${id}`);
   }
 
-  if (!req.user) {
+  if (!res.locals.user) {
     // not logged in
     const hash = req.query.hash;
     if (!hash) {
@@ -63,12 +62,12 @@ router.put("/:id", setUser, async (req, res) => {
   res.send(user);
 });
 
-router.get("/:id", setUser, async (req, res) => {
+router.get("/:id", async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
-  if (!req.user) {
+  if (!res.locals.user) {
     // not logged in
     const hash = req.query.hash;
     if (!hash) {
