@@ -37,7 +37,8 @@ module.exports = class {
       while (diff--) {
         const ticket = await this.Ticket.create({
           reserveringId: this.reservering.id,
-          prijsId: this.prijs.id
+          prijsId: this.prijs.id,
+          betaald: this.prijs.prijs == 0 // vrijkaartjes zijn automatisch betaald
         });
 
         // nadat ticket is opgeslagen met id's prijs en reservering toevoegen

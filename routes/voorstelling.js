@@ -12,7 +12,7 @@ router.get("/", async (req, res) => {
   let params = parseQuery(Voorstelling, req.query);
 
   let voorstellingen = await Voorstelling.findAll(params);
-  const json = await Promise.all(voorstellingen.map(async v => v.toJSONA()));
+  const json = await Promise.all(voorstellingen.map(async v => v.toJSONA(res)));
   res.send(json);
 });
 
@@ -23,7 +23,7 @@ router.get("/:id", async (req, res) => {
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   } else {
-    const json = await voorstelling.toJSONA();
+    const json = await voorstelling.toJSONA(res);
     res.send(json);
   }
 });

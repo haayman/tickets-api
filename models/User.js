@@ -115,5 +115,30 @@ module.exports = (sequelize, DataTypes) => {
     );
   };
 
+  User.prototype.isAdministrator = function () {
+    return this.role === "admin";
+  }
+
+  User.prototype.isSpeler = function () {
+    return this.role === "speler" || this.isAdministrator();
+  }
+
+  User.prototype.isKassa = function () {
+    return this.role === "kassa";
+  }
+
+  User.prototype.isAuthorized = function (authorizationRequired) {
+    switch (authorizationRequired) {
+      case true:
+        return true;
+      case "admin":
+        return this.isAdministrator();
+      case "speler":
+        return this.isSpeler();
+      case "kassa":
+        return this.isKassa();
+    }
+  }
+
   return User;
 };
