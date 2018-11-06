@@ -1,6 +1,0 @@
-{
-  "jwtPrivateKey": "test",
-  "payment": {
-    "mollie_key": "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
-  }
-}
