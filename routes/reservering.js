@@ -63,10 +63,6 @@ router.post("/", async (req, res) => {
     }
 
     if (reservering.wachtlijst) {
-      //   const payment = Payment.build({});
-      //   await payment.setReservering(reservering);
-      //   payment.save({ transaction });
-      // } else {
       ReserveringMail.send(
         reservering,
         "wachtlijst",
