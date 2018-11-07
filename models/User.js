@@ -3,6 +3,7 @@ const config = require("config");
 const hashPassword = require("password-hash-and-salt");
 const ROLES = ["admin", "speler", "kassa"];
 const crypto = require("crypto");
+const globalData = require('../components/globalData');
 
 module.exports = (sequelize, DataTypes) => {
   let User = sequelize.define(
@@ -96,7 +97,7 @@ module.exports = (sequelize, DataTypes) => {
 
   User.prototype.getEditLink = function () {
     return (
-      config.get("server.url") +
+      globalData.get('server') +
       "/forgotten/" +
       this.getDataValue("id") +
       "/" +
