@@ -5,7 +5,6 @@ const parseQuery = require('../routes/helpers/parseReserveringQuery');
 
 class ReserveringMail {
   static async send(reservering, templateName, subject, params = {}) {
-    const mail = new Mailer();
     const {
       Reservering
     } = reservering.sequelize.models;
@@ -17,6 +16,7 @@ class ReserveringMail {
       ]
     }));
 
+    const mail = new Mailer();
     mail
       .setTemplate("index")
       .setTo(reservering.email, reservering.naam)

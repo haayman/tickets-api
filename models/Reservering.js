@@ -3,10 +3,11 @@ const config = require("config");
 const TicketAggregate = require("./Ticket.Aggregate");
 const ReserveringMail = require("../components/ReserveringMail");
 
-var differenceInCalendarDays = require('date-fns/difference_in_calendar_days')
-const globalData = require('../components/globalData');
-const stackTrace = require('stack-trace');
-const path = require('path');
+var differenceInCalendarDays = require("date-fns/difference_in_calendar_days");
+const globalData = require("../components/globalData");
+const stackTrace = require("stack-trace");
+const path = require("path");
+const iban = require("iban");
 
 module.exports = (sequelize, DataTypes) => {
   const Payment = sequelize.models.Payment;
@@ -44,6 +45,19 @@ module.exports = (sequelize, DataTypes) => {
       },
       bedrag: {
         type: DataTypes.DECIMAL(5, 2)
+      },
+      iban: {
+        type: DataTypes.STRING,
+        validate: {
+          validIBAN() {
+            if (!iban.isValid(this.iban)) {
+              throw new Error("Ongeldig IBAN nummer");
+            }
+          }
+        }
+      },
+      tennamevan: {
+        type: DataTypes.STRING
       }
     }, {
       name: {
@@ -55,7 +69,8 @@ module.exports = (sequelize, DataTypes) => {
       getterMethods: {
         bedrag() {
           return this.tickets ?
-            this.tickets.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) : null;
+            this.tickets.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
+            null;
         },
         saldo() {
           // bereken het totaal betaalde bedrag
@@ -90,7 +105,6 @@ module.exports = (sequelize, DataTypes) => {
           //   return validTickets.concat(ticket.validTickets);
           // }, []) : [];
         },
-
 
         /**
          * het bedrag dat teveel is betaald
@@ -136,11 +150,11 @@ module.exports = (sequelize, DataTypes) => {
       },
 
       hooks: {
-        beforeDestroy: (async (reservering) => {
+        beforeDestroy: async reservering => {
           const {
             Payment,
             Ticket
-          } = require('./');
+          } = require("./");
           Payment.destroy({
             where: {
               reserveringId: reservering.id
@@ -151,7 +165,7 @@ module.exports = (sequelize, DataTypes) => {
               reserveringId: reservering.id
             }
           });
-        })
+        }
       }
     }
   );
@@ -165,14 +179,16 @@ module.exports = (sequelize, DataTypes) => {
     } else {
       await reservering.initTickets();
     }
-  }
+  };
 
   Reservering.prototype.initTickets = async function () {
     if (!this.uitvoering) this.uitvoering = await this.getUitvoering();
     if (!this.tickets) {
-      const voorstelling = this.uitvoering.voorstelling || await this.uitvoering.getVoorstelling();
-      const prijzen = voorstelling.prijzen || await voorstelling.getPrijzen();
-      const Tickets = this.Tickets || await this.getTickets();
+      const voorstelling =
+        this.uitvoering.voorstelling ||
+        (await this.uitvoering.getVoorstelling());
+      const prijzen = voorstelling.prijzen || (await voorstelling.getPrijzen());
+      const Tickets = this.Tickets || (await this.getTickets());
       this.tickets = await Promise.all(
         prijzen.map(async prijs => {
           return new TicketAggregate(
@@ -187,7 +203,19 @@ module.exports = (sequelize, DataTypes) => {
     if (!this.logs) this.logs = await this.getLogs();
   };
 
-  Reservering.prototype.toJSONA = async function () {
+  Reservering.prototype.getAttr = async function (attr) {
+    let value = this[attr];
+    if (typeof value === 'function') {
+      value = this[attr]();
+    }
+    if (value instanceof Promise) {
+      value = await value;
+    }
+
+    return value;
+  }
+
+  Reservering.prototype.toJSONA = async function (req = null) {
     const json = await this.toJSON();
     json.uitvoering = await this.getUitvoering();
     json.tickets = this.tickets;
@@ -200,34 +228,43 @@ module.exports = (sequelize, DataTypes) => {
     if (this.StatusUpdates) {
       json.StatusUpdates = this.StatusUpdates;
     }
+    if (req && req.extraFields) {
+      await Promise.all(req.extraFields.map(async (attr) => {
+        json[attr] = await this.getAttr(attr);
+      }));
+    }
     return json;
   };
 
-  Reservering.prototype.setStatus = async function (status, betaalstatus = true) {
+  Reservering.prototype.setStatus = async function (
+    status,
+    betaalstatus = true
+  ) {
     this.status = status;
     const StatusUpdate = this.sequelize.models.StatusUpdate;
-    await this.addStatusUpdate(StatusUpdate.build({
-      status,
-      betaalstatus
-    }));
-  }
+    await this.addStatusUpdate(
+      StatusUpdate.build({
+        status,
+        betaalstatus
+      })
+    );
+  };
 
-  Reservering.prototype.moetInWachtrij = async function () {
-      const uitvoering = await this.getUitvoering();
-      const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
-      return vrije_plaatsen <= 0;
-    },
-
-    Reservering.prototype.paymentUrl = function () {
-      let url;
-      if (!this.payments) return null;
-      for (let payment of this.payments) {
-        if ((url = payment.paymentUrl)) {
-          return url;
-        }
+  (Reservering.prototype.moetInWachtrij = async function () {
+    const uitvoering = await this.getUitvoering();
+    const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
+    return vrije_plaatsen <= 0;
+  }),
+  (Reservering.prototype.paymentUrl = function () {
+    let url;
+    if (!this.payments) return null;
+    for (let payment of this.payments) {
+      if ((url = payment.paymentUrl)) {
+        return url;
       }
-      return null;
-    };
+    }
+    return null;
+  });
 
   Reservering.prototype.createPaymentIfNeeded = async function () {
     if (!this.Tickets) {
@@ -236,8 +273,11 @@ module.exports = (sequelize, DataTypes) => {
     if (!this.payments) {
       this.payments = await this.getPayments();
     }
-    if (!this.wachtlijst && this.onbetaaldeTickets.length &&
-      this.payments.filter(p => p.status == 'open').length === 0) {
+    if (
+      !this.wachtlijst &&
+      this.onbetaaldeTickets.length &&
+      this.payments.filter(p => p.status == "open").length === 0
+    ) {
       const payment = Payment.build({
         reserveringId: this.id
       });
@@ -245,12 +285,9 @@ module.exports = (sequelize, DataTypes) => {
       // await payment.save();
       // await this.addPayment(payment);
       // waarom is dit nog nodig???
-      this.payments = (this.payments || []).concat([
-        payment
-      ]);
+      this.payments = (this.payments || []).concat([payment]);
     }
-
-  }
+  };
 
   Reservering.prototype.extraBetaling = async function () {
     const payment = Payment.build();
@@ -279,77 +316,47 @@ module.exports = (sequelize, DataTypes) => {
     await Log.create({
       reserveringId: this.id,
       message: message,
-      sourceCode: `${path.basename(caller.getFileName())}(${caller.getLineNumber()})`
+      sourceCode: `${path.basename(
+        caller.getFileName()
+      )}(${caller.getLineNumber()})`
     });
   };
 
   Reservering.prototype.getBetalingUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/betalen`
-  }
+    return this.getRoot() + `/reserveren/${this.id}/betalen`;
+  };
 
   Reservering.prototype.getResendUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/resend`
-  }
+    return this.getRoot() + `/reserveren/${this.id}/resend`;
+  };
 
   Reservering.prototype.getEditLink = function () {
-    return this.getRoot() + `/reserveren/${this.id}/edit`
-  }
+    return this.getRoot() + `/reserveren/${this.id}/edit`;
+  };
 
   Reservering.prototype.getTicketUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/details`
-  }
+    return this.getRoot() + `/reserveren/${this.id}/details`;
+  };
+
+  Reservering.prototype.getIBANUrl = function () {
+    return this.getRoot() + `/reserveren/${this.id}/iban`;
+  };
 
   Reservering.prototype.getQrUrl = function () {
-    return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`
-  }
+    return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`;
+  };
 
   Reservering.prototype.getRoot = function () {
-    return globalData.get('server');
-  }
+    return globalData.get("server");
+  };
 
   Reservering.prototype.getWebhookRoot = function () {
-    const root = globalData.get('localtunnel') ?
-      globalData.get('localtunnel') :
-      globalData.get('server')
+    const root = globalData.get("localtunnel") ?
+      globalData.get("localtunnel") :
+      globalData.get("server");
     return root;
-  }
-
-  Reservering.prototype.refund = async function () {
-    if (!this.Tickets) this.Tickets = await this.getTickets();
-    const terugbetalen = this.Tickets.filter(t => t.terugbetalen);
-    let payments = {};
-    await Promise.all(terugbetalen.map(async t => {
-      if (t.PaymentId) {
-        if (!payments[t.PaymentId]) {
-          payments[t.PaymentId] = 0;
-        }
-        t.prijs = await t.getPrijs();
-        payments[t.PaymentId] += t.prijs.prijs;
-      }
-    }));
-
-    await Promise.all(
-      Object.keys(payments).map(async paymentId => {
-        const amount = payments[paymentId];
-        let payment = await Payment.findById(paymentId, {
-          include: [Payment.Tickets]
-        });
-        const refunded = await payment.refund(amount);
-        if (refunded) {
-          await Promise.all(
-            terugbetalen.map(async ticket => {
-              ticket.terugbetalen = false;
-              ticket.verkocht = true;
-              await ticket.save();
-            })
-          );
-          const Ticket = Reservering.sequelize.models.Ticket;
-          const paymentDescription = await Ticket.description(terugbetalen);
-          await this.logMessage(`${paymentDescription}: €${amount.toFixed(2)} teruggestort`);
-        }
-      })
-    );
   };
+
 
   Reservering.prototype.asString = async function () {
     const tickets = this.Tickets ? this.Tickets : await this.getTickets();
@@ -361,7 +368,7 @@ module.exports = (sequelize, DataTypes) => {
     const uitvoering = await this.getUitvoering();
     const today = new Date();
     const days = config.get("teruggave_termijn");
-    const diff = differenceInCalendarDays(uitvoering.aanvang, today)
+    const diff = differenceInCalendarDays(uitvoering.aanvang, today);
 
     return diff > days;
   };
@@ -372,7 +379,10 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   Reservering.verwerkRefunds = async function () {
-    const Ticket = Reservering.sequelize.models.Ticket
+    const mixin = require('./Refund.mixin');
+    Object.assign(Reservering.prototype, mixin);
+
+    const Ticket = Reservering.sequelize.models.Ticket;
     const reserveringen = await Reservering.findAll({
       include: [{
         model: Ticket,
@@ -381,10 +391,14 @@ module.exports = (sequelize, DataTypes) => {
         },
         required: true
       }]
-    })
+    });
 
-    await Promise.all(reserveringen.map(async reservering => reservering.refund()))
-  }
+    await Promise.all(
+      reserveringen.map(async reservering => reservering.refund())
+    );
+  };
+
+
 
   Reservering.associate = function (models) {
     Reservering.Uitvoering = models.Reservering.belongsTo(models.Uitvoering, {
@@ -395,15 +409,17 @@ module.exports = (sequelize, DataTypes) => {
     });
 
     Reservering.Tickets = models.Reservering.hasMany(models.Ticket, {
-      onDelete: 'cascade'
+      onDelete: "cascade"
     });
     Reservering.Payments = models.Reservering.hasMany(models.Payment, {
-      onDelete: 'cascade'
+      onDelete: "cascade"
     });
     Reservering.Logs = models.Reservering.hasMany(models.Log);
-    Reservering.StatusUpdates = models.Reservering.hasMany(models.StatusUpdate, {
-      onDelete: 'cascade'
-    });
+    Reservering.StatusUpdates = models.Reservering.hasMany(
+      models.StatusUpdate, {
+        onDelete: "cascade"
+      }
+    );
   };
 
   return Reservering;
