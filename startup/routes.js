@@ -33,6 +33,8 @@ module.exports = function (app) {
   // static
   app.use("/dist", express.static(global.DOCUMENT_ROOT + "/dist"));
 
+  app.use("/css", express.static(global.DOCUMENT_ROOT + "/../src/styles"));
+
   // alle andere naar homepage
   app.use("/*", express.static(global.DOCUMENT_ROOT + "/public"));
 };
