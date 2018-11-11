@@ -1,8 +1,13 @@
 <p class="card mt-3 p-3">
-  Neem onderstaande code mee naar de kassa. Druk deze mail af, of liever: gebruik je telefoon.<br />
-    (QR-code niet zichtbaar? Laad de plaatjes in je e-mail!)<br />
-    <br />
-    <a class=text-center" href="<%= reservering.getTicketUrl() %>">
-        <img src="<%= reservering.getQrUrl() %>"/>
-    </a>
-</p>
+    <div class="card-header">
+        QR-code
+    </div>
+    <div class="card-body">
+    Neem onderstaande code mee naar de kassa. Druk deze mail af, of liever: gebruik je telefoon.<br />
+        (QR-code niet zichtbaar? Laad de plaatjes in je e-mail!)<br />
+        <br />
+        <a class=text-center" href="<%= reservering.getTicketUrl() %>">
+            <img src="<%= reservering.getQrUrl() %>"/>
+        </a>
+    </div>
+</div>
