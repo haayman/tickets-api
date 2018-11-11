@@ -28,6 +28,7 @@ module.exports = {
     afzender_email: "info@plusleo.nl",
     alwaysTo: "arjen.haayman@gmail.com",
     subject_prefix: "[PlusLeo]",
+    bcc: "info@plusleo.nl"
   },
 
   // mail-adres voor teruggave-verzoeken

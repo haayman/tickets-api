@@ -25,10 +25,11 @@ module.exports = class {
   async setAantal(aantal) {
     const oldAantal = this.aantal;
 
+    const strPrijs = await this.prijs.asString();
     if (oldAantal < aantal) {
       let diff = aantal - oldAantal;
       await this.reservering.logMessage(
-        `${diff} x ${this.prijs.asString()} ${oldAantal ? "bij" : ""}besteld`
+        `${diff} x ${strPrijs} ${oldAantal ? "bij" : ""}besteld`
       );
 
       // kijk of er tickets te koop zijn. Deze worden bij deze verkocht
@@ -50,7 +51,6 @@ module.exports = class {
     } else if (oldAantal > aantal) {
       let diff = oldAantal - aantal;
       let tickets = this.validTickets;
-      const strPrijs = await this.prijs.asString();
       await this.reservering.logMessage(`${diff} x ${strPrijs} geannuleerd`);
       for (let i = 0; i < diff; i++) {
         let ticket = tickets[i];

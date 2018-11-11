@@ -11,7 +11,9 @@ module.exports = class Mailer {
     this.from = this.getRecipient(
       config.get("email.afzender_email"),
       config.get("email.afzender")
+
     );
+
   }
   createTransport(params = {}) {
     params = Object.assign({}, config.get("mail_transport"), params);
@@ -53,12 +55,16 @@ module.exports = class Mailer {
   async send(params) {
     const template = this.initTemplate();
     const html = await template.render(this.template, params);
-    await this.transporter.sendMail({
+    const options = {
       from: this.from,
       to: this.to,
       subject: this.subject,
       html: html,
-    })
+    };
+    if (config.has("email.bcc")) {
+      options.bcc = config.get("email.bcc");
+    }
+    await this.transporter.sendMail(options)
   }
 
   async render(params) {

@@ -3,7 +3,6 @@ const mollie_key = config.get("payment.mollie_key");
 const mollie = require("@mollie/api-client")({
   apiKey: mollie_key
 });
-const async = require('async');
 
 module.exports = (sequelize, DataTypes) => {
   let Payment = sequelize.define(
@@ -40,6 +39,9 @@ module.exports = (sequelize, DataTypes) => {
         },
         status() {
           return this.payment ? this.payment.status : undefined;
+        },
+        refundable() {
+          return this.payment ? this.payment.isRefundable() : undefined;
         }
       },
       hooks: {
@@ -161,7 +163,8 @@ module.exports = (sequelize, DataTypes) => {
     }));
   };
 
-  Payment.prototype.isRefundable = function (amount) {
+  Payment.prototype.isRefundable = function () {
+    return false;
     return this.payment.isRefundable();
   };
 

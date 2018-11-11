@@ -12,7 +12,7 @@ const parseQuery = require("./helpers/parseReserveringQuery");
 
 const router = express.Router();
 
-router.get("/", auth(["admin", "speler", "kassa"]), async (req, res) => {
+router.get("/", auth(true), async (req, res) => {
   const params = parseQuery(Reservering, req.query);
   if (req.query.uitvoeringId) {
     params.where = {
@@ -23,7 +23,7 @@ router.get("/", auth(["admin", "speler", "kassa"]), async (req, res) => {
   let reserveringen = await Reservering.findAll(params);
   Reservering.removeHook("afterFind");
 
-  const json = await Promise.all(reserveringen.map(async r => r.toJSONA()));
+  const json = await Promise.all(reserveringen.map(async r => r.toJSONA(req.query)));
 
   res.send(json);
 });
@@ -137,7 +137,7 @@ router.get("/:id", async (req, res) => {
   if (!reservering) {
     return res.status(404).send("niet gevonden");
   } else {
-    const json = await reservering.toJSONA();
+    const json = await reservering.toJSONA(req.query);
     res.send(json);
   }
 });
@@ -183,8 +183,32 @@ router.post("/:id/newPayment", async (req, res) => {
   }
 });
 
-router.post("/:id/terugbetaling", async (req, res) => {
+router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
+  const mixin = require('../models/Refund.mixin');
+  Object.assign(Reservering.prototype, mixin);
+
+  const params = parseQuery(Reservering, {
+    include: ["tickets"]
+  });
+  const reservering = await Reservering.findByPk(req.params.id, params);
   if (!reservering) return res.status(404).send("niet gevonden");
+
+  const bedrag = await reservering.nonRefundableAmount();
+  if (bedrag) {
+
+    const tickets = await reservering.terugtebetalenTickets();
+    await Promise.all(tickets.map(async ticket => {
+      ticket.terugbetalen = false;
+      ticket.geannuleerd = true;
+      await ticket.save();
+    }))
+    await this.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`)
+
+    await ReserveringMail.send(reservering, 'terugbetaald', `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
+      bedrag: bedrag
+    });
+  }
+  res.send('OK');
 });
 
 router.get("/:id/mail", async (req, res) => {
@@ -215,6 +239,42 @@ router.get("/:id/qr", async (req, res) => {
   });
   res.type("png").send(png);
 });
+
+
+
+router.get("/:id/qr_teruggave", async (req, res) => {
+  const mixin = require('../models/Refund.mixin');
+  Object.assign(Reservering.prototype, mixin);
+  const params = parseQuery(Reservering, {
+    include: ['tickets', 'Payments']
+  })
+  const reservering = await Reservering.findById(req.params.id, params);
+  const getBic = require('bic-from-iban');
+  if (!reservering) return res.status(404).send("niet gevonden");
+
+  const qr = require("qr-image");
+  // https://gathering.tweakers.net/forum/list_messages/1800141
+  // https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/quick-response-code-guidelines-enable-data-capture-initiation
+  const bedrag = await reservering.nonRefundableAmount();
+  const IBAN = reservering.iban.replace(/\s/g, '');
+  const BIC = getBic.getBIC(IBAN) || "TRIONL2U";
+  const content = `BCD
+001
+1
+SCT
+${BIC}
+${reservering.tennamevan}
+${IBAN}
+EUR${bedrag.toFixed(2)}
+Terugstorting PlusLeo`
+
+  const png = qr.imageSync(content, {
+    type: "png",
+    size: 5,
+    margin: 3
+  });
+  res.type("png").send(png);
+})
 
 router.delete("/:id", async (req, res) => {
   const params = parseQuery(Reservering, {
