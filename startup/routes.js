@@ -11,7 +11,6 @@ const servername = require('../middleware/servername');
 const setUser = require("../middleware/user");
 
 module.exports = function (app) {
-  app.use(errorHandler);
   app.all('*', servername);
   app.all('*', setUser)
 
@@ -37,4 +36,8 @@ module.exports = function (app) {
 
   // alle andere naar homepage
   app.use("/*", express.static(global.DOCUMENT_ROOT + "/public"));
+
+  // error handler last
+  app.use(errorHandler);
+
 };
