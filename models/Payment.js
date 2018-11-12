@@ -15,6 +15,10 @@ module.exports = (sequelize, DataTypes) => {
       },
       description: {
         type: DataTypes.STRING
+      },
+      paidBack: {
+        type: DataTypes.DECIMAL(5, 2),
+        default: 0
       }
     }, {
       paranoid: true, // zorgt er voor dat dit nooit echt verwijderd wordt
@@ -29,11 +33,13 @@ module.exports = (sequelize, DataTypes) => {
           return this.payment ? +this.payment.amount.value : undefined;
         },
         amountRefunded() {
-          return this.payment && this.payment.amountRefunded ? +this.payment.amountRefunded.value : undefined;
+          return this.payment && this.payment.amountRefunded ?
+            +this.payment.amountRefunded.value + this.paidBack :
+            undefined;
         },
-        amountRemaining() {
-          return this.payment && this.payment.amountRemaining ? +this.payment.amountRemaining.value : undefined;
-        },
+        // amountRemaining() {
+        //   return this.payment && this.payment.amountRemaining ? +this.payment.amountRemaining.value : undefined;
+        // },
         paidAt() {
           return this.payment ? this.payment.paidAt : undefined;
         },
@@ -84,6 +90,18 @@ module.exports = (sequelize, DataTypes) => {
       }));
     }
   };
+
+  Payment.prototype.tickets = async function () {
+    const Ticket = this.sequelize.models.Ticket;
+    if (!this._tickets) {
+      this._tickets = await this.getTickets({
+        include: [{
+          association: Ticket.Prijs
+        }]
+      });
+    }
+    return this._tickets;
+  }
 
   Payment.prototype.asString = async function () {
     const Ticket = Payment.sequelize.models.Ticket;
@@ -161,11 +179,6 @@ module.exports = (sequelize, DataTypes) => {
       // ticket.setPayment(this);
       await ticket.save();
     }));
-  };
-
-  Payment.prototype.isRefundable = function () {
-    return false;
-    return this.payment.isRefundable();
   };
 
   Payment.prototype.refund = async function (amount) {

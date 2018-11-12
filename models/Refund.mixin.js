@@ -1,3 +1,10 @@
+const {
+  Payment,
+  Ticket
+} = require("./");
+const ReserveringMail = require('../components/ReserveringMail');
+const config = require('config');
+
 module.exports = {
   async terugtebetalenTickets() {
     if (!this.Tickets) this.Tickets = await this.getTickets();
@@ -35,9 +42,10 @@ module.exports = {
         let payment = await Payment.findById(paymentId, {
           include: [Payment.Tickets]
         });
-        if (payment.isRefundable()) {
+        if (payment.refundable) {
           const refunded = await payment.refund(amount);
           if (refunded) {
+            const terugbetalen = payment.Tickets.filter(t => t.terugbetalen);
             await Promise.all(
               terugbetalen.map(async ticket => {
                 ticket.terugbetalen = false;
@@ -45,7 +53,7 @@ module.exports = {
                 await ticket.save();
               })
             );
-            const Ticket = Reservering.sequelize.models.Ticket;
+            const Ticket = this.sequelize.models.Ticket;
             const paymentDescription = await Ticket.description(terugbetalen);
             await this.logMessage(`${paymentDescription} teruggestort`);
           }
@@ -55,8 +63,7 @@ module.exports = {
             amount
           });
         }
-      })
-    );
+      }));
 
     if (nonRefundable.length) {
       if (!this.iban && !this.tennamevan) {
@@ -79,7 +86,7 @@ module.exports = {
     let retval = [];
     await Promise.all(Object.keys(payments).map(async paymentId => {
       const payment = await this.getPaymentById(+paymentId);
-      if (!payment.isRefundable()) {
+      if (!payment.refundable) {
         retval.push(payment)
       }
     }));
@@ -88,9 +95,15 @@ module.exports = {
 
   async nonRefundableAmount() {
     const payments = await this.nonRefundablePayments();
-    return payments.reduce((totaal, payment) => {
-      return totaal + payment.amount
-    }, 0);
+    let retval = 0;
+    await Promise.all(payments.map(async (payment) => {
+      let tickets = await payment.tickets();
+      tickets = tickets.filter(t => t.terugbetalen);
+      retval += tickets
+        .reduce((totaal, ticket) => totaal + ticket.prijs.prijs, 0)
+    }));
+
+    return retval;
   },
 
   async getPaymentById(paymentId) {

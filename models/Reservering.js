@@ -120,6 +120,16 @@ module.exports = (sequelize, DataTypes) => {
           );
         },
 
+        /**
+         * aantal gereserveerde plaatsen
+         */
+        aantal() {
+          if (!this.tickets) {
+            return null;
+          }
+          return this.tickets.reduce((aantal, ticket) => aantal + ticket.aantal, 0)
+        },
+
         onbetaaldeTickets() {
           return this.validTickets.filter(t => !t.betaald);
         },
@@ -301,7 +311,7 @@ module.exports = (sequelize, DataTypes) => {
   Reservering.prototype.haalUitWachtrij = async function () {
     this.wachtlijst = false;
     await this.save();
-    ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst ${this}`);
+    ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst`);
   };
 
   Reservering.prototype.logMessage = async function (message) {

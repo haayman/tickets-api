@@ -53,21 +53,21 @@ router.post("/", async (req, res) => {
     // stuur antwoord alvast
     res.send(reservering);
 
-    Reservering.verwerkRefunds();
+    // Reservering.verwerkRefunds();
 
     const saldo = reservering.saldo;
+    const strReservering = await reservering.asString();
     if (!saldo) {
       // vrijkaartjes
-      const strReservering = await reservering.asString();
       ReserveringMail.send(reservering, "ticket", strReservering);
-    }
-
-    if (reservering.wachtlijst) {
+    } else if (reservering.wachtlijst) {
       ReserveringMail.send(
         reservering,
         "wachtlijst",
         "Je staat op de wachtlijst"
       );
+    } else {
+      ReserveringMail.send(reservering, 'aangevraagd', 'ticket besteld')
     }
   });
 });
@@ -115,6 +115,9 @@ router.put("/:id", async (req, res) => {
       await reservering.createPaymentIfNeeded();
     } else {
       if (saldo > 0 && reservering.teruggeefbaar()) {
+        const mixin = require('../models/Refund.mixin');
+        Object.assign(Reservering.prototype, mixin);
+
         await reservering.refund();
       }
       ReserveringMail.send(reservering, "gewijzigd", "reservering gewijzigd");
@@ -123,9 +126,10 @@ router.put("/:id", async (req, res) => {
     // stuur antwoord alvast terug
     res.send(reservering);
 
-    // geen await. Deze gebruiker hoeft hier niet op te wachten
+    await Reservering.verwerkRefunds();
+    // wacht op verwerking refunds.
+    // pas als terugbetaald is, dan wachtlijst verwerken
     reservering.uitvoering.verwerkWachtlijst();
-    Reservering.verwerkRefunds();
   });
 });
 
@@ -200,9 +204,12 @@ router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
     await Promise.all(tickets.map(async ticket => {
       ticket.terugbetalen = false;
       ticket.geannuleerd = true;
+      const payment = ticket.Payment || await ticket.getPayment();
+      payment.paidBack = (payment.paidBack || 0) + ticket.prijs.prijs;
+      await payment.save()
       await ticket.save();
     }))
-    await this.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`)
+    await reservering.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`)
 
     await ReserveringMail.send(reservering, 'terugbetaald', `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
       bedrag: bedrag
@@ -220,7 +227,7 @@ router.get("/:id/mail", async (req, res) => {
   if (!reservering) return res.status(404).send("niet gevonden");
   const html = await ReserveringMail.render(
     reservering,
-    req.query.template,
+    req.query.template || 'ticket',
     req.query
   );
   res.send(html);
@@ -294,8 +301,8 @@ router.delete("/:id", async (req, res) => {
     const uitvoering = reservering.uitvoering;
     await reservering.destroy();
 
+    await Reservering.verwerkRefunds();
     uitvoering.verwerkWachtlijst();
-    Reservering.verwerkRefunds();
   })
 
 
