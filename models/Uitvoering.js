@@ -171,7 +171,8 @@ module.exports = (sequelize, DataTypes) => {
       ticket.terugbetalen = true;
 
       await ticket.save();
-      await reservering.logMessage(`${ticket} verkocht`);
+      const strTicket = await ticket.asString();
+      await reservering.logMessage(`${strTicket} verkocht`);
     }))
 
     await Promise.all(
