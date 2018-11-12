@@ -4,6 +4,7 @@ const hashPassword = require("password-hash-and-salt");
 const ROLES = ["admin", "speler", "kassa"];
 const crypto = require("crypto");
 const globalData = require('../components/globalData');
+const differenceInMinutes = require('date-fns/difference_in_minutes');
 
 module.exports = (sequelize, DataTypes) => {
   let User = sequelize.define(
@@ -89,11 +90,16 @@ module.exports = (sequelize, DataTypes) => {
   User.prototype.getAuthToken = function () {
     return jwt.sign({
         id: this.getDataValue("id"),
-        role: this.getDataValue("role")
+        role: this.getDataValue("role"),
+        timestamp: new Date()
       },
       config.get("jwtPrivateKey")
     );
   };
+
+  User.prototype.tokenExpired = function (token) {
+    return differenceInMinutes(new Date(), token.timestamp) >= 15;
+  }
 
   User.prototype.getEditLink = function () {
     return (

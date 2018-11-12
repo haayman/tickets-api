@@ -1,4 +1,3 @@
-const _ = require("lodash");
 const express = require("express");
 const {
   User
@@ -33,18 +32,27 @@ router.post("/", async (req, res) => {
 router.get("/CheckLoggedIn", async (req, res) => {
   let user = null,
     error = null;
-  const token = req.header("x-auth-token");
+  let token = req.header("x-auth-token");
   if (token) {
     try {
       user = jwt.verify(token, config.get("jwtPrivateKey"));
       user = await User.findById(user.id);
+      if (user.tokenExpired(token)) {
+        user = token = null;
+        error = "token expired";
+      } else {
+        token = user.getAuthToken(); // refresh token
+      }
     } catch (e) {
       user = null;
       error = e.message;
+      token = null;
     }
   }
 
-  res.send({
+  res.header({
+    authorization: token
+  }).send({
     error: error,
     loggedIn: !!user,
     user: user
