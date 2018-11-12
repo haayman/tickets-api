@@ -107,7 +107,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Uitvoering.prototype.vrijgekomen = async function () {
     let gelukkigen = [];
-    const vrije_plaatsen = await this.getVrijePlaatsen();
+    let vrije_plaatsen = await this.getVrijePlaatsen();
     const wachtenden = await this.wachtenden();
     wachtenden.forEach(w => {
       if (w.aantal <= vrije_plaatsen) {
@@ -182,7 +182,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Uitvoering.prototype.toString = function () {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format
-    return `${this.extra_text} ${format(this.aanvang, 'dddd d MMM HH:mm', {locale: nl})}`;
+    return `${this.extra_text||''} ${format(this.aanvang, 'dddd d MMM HH:mm', {locale: nl})}`;
 
   }
 
