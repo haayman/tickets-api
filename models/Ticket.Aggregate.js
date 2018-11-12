@@ -61,7 +61,8 @@ module.exports = class {
         } else {
           let payment = await ticket.getPayment();
           if (payment.isPaid) {
-            if (this.reservering.teruggeefbaar()) {
+            const teruggeefbaar = await this.reservering.teruggeefbaar();
+            if (teruggeefbaar) {
               await this.reservering.logMessage(`${ticketDescription} terugbetalen`);
               ticket.terugbetalen = true;
             } else {
