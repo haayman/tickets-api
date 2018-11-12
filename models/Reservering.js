@@ -359,7 +359,6 @@ module.exports = (sequelize, DataTypes) => {
   Reservering.prototype.getRoot = function () {
     //return globalData.get("server");
     return config.get('server.url');
-    // return 'https://reserveren.plusleo.nl/';
   };
 
   Reservering.prototype.getWebhookRoot = function () {

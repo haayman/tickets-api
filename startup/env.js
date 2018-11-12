@@ -11,7 +11,6 @@ async function connect() {
 }
 
 module.exports = function () {
-  console.log(process.env);
   if (process.env.COMPUTERNAME == "DEVCOM") {
     connect();
   }

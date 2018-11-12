@@ -2,5 +2,8 @@
   "database": {
     "password": "PG_PASSWORD",
     "user": "PG_USER"
+  },
+  "server": {
+    "port": "PORT"
   }
 }
