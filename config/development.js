@@ -8,7 +8,7 @@ module.exports = {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
   },
   server: {
-    url: "https://plusleo.localtunnel.me"
+    url: "https://dev.plusleo.nl"
   },
   // mail_transport: {
   //   host: "smtp.bhosted.nl",
@@ -20,8 +20,8 @@ module.exports = {
   //   // }
   // }
   mail_transport: {
-    debug: true,
-    logger: true,
+    // debug: true,
+    // logger: true,
     host: "smtp.t-mobilethuis.nl",
     port: 465,
     secure: true,

@@ -357,13 +357,17 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   Reservering.prototype.getRoot = function () {
-    return globalData.get("server");
+    //return globalData.get("server");
+    return config.get('server.url');
+    // return 'https://reserveren.plusleo.nl/';
   };
 
   Reservering.prototype.getWebhookRoot = function () {
     const root = globalData.get("localtunnel") ?
       globalData.get("localtunnel") :
-      globalData.get("server");
+      config.get("server.url");
+    console.log('webhook', root);
+    // return 'https://reserveren.plusleo.nl/';
     return root;
   };
 
