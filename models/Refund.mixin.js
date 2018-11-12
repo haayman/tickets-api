@@ -55,6 +55,9 @@ module.exports = {
             );
             const Ticket = this.sequelize.models.Ticket;
             const paymentDescription = await Ticket.description(terugbetalen);
+            ReserveringMail.send(this, 'teruggestort', `${paymentDescription} teruggestort`, {
+              bedrag: amount
+            });
             await this.logMessage(`${paymentDescription} teruggestort`);
           }
         } else {
