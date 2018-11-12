@@ -11,7 +11,8 @@ async function connect() {
 }
 
 module.exports = function () {
-  if (process.env.ENV !== "production") {
+  console.log(process.env);
+  if (process.env.COMPUTERNAME == "DEVCOM") {
     connect();
   }
 };

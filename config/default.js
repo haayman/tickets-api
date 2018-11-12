@@ -19,14 +19,14 @@ module.exports = {
   server: {
     port: 3000
   },
-  // mail_transport: {
-  //   sendmail: true,
-  //   path: "/usr/sbin/sendmail"
-  // },
+  mail_transport: {
+    sendmail: true,
+    path: "/usr/sbin/sendmail"
+  },
   email: {
     afzender: "PlusLeo",
     afzender_email: "info@plusleo.nl",
-    alwaysTo: "arjen.haayman@gmail.com",
+    //    alwaysTo: "arjen.haayman@gmail.com",
     subject_prefix: "[PlusLeo]",
     bcc: "info@plusleo.nl"
   },
