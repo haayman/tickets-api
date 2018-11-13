@@ -61,6 +61,8 @@ module.exports = (sequelize, DataTypes) => {
         beforeSave: function (user) {
           return new Promise((resolve, reject) => {
             if (!user.changed("password")) resolve();
+            // geen wachtwoord, maar wel een bestaande? OK
+            if (!user.password) resolve();
             hashPassword(user.password).hash((error, hash) => {
               if (error) reject(new Error(error));
               else {
