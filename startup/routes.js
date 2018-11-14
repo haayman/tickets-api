@@ -9,6 +9,7 @@ const payment = require("../routes/payment");
 const errorHandler = require("../middleware/error");
 const servername = require('../middleware/servername');
 const setUser = require("../middleware/user");
+const favicon = require('serve-favicon');
 
 module.exports = function (app) {
   app.all('*', servername);
@@ -34,8 +35,11 @@ module.exports = function (app) {
 
   app.use("/css", express.static(global.DOCUMENT_ROOT + "/../src/styles"));
 
+  app.use(favicon(global.DOCUMENT_ROOT + "/public/favicon.ico"))
+
   // alle andere naar homepage
   app.use("/*", express.static(global.DOCUMENT_ROOT + "/public"));
+
 
   // error handler last
   app.use(errorHandler);
