@@ -43,7 +43,7 @@ module.exports = class Mailer {
 
   initTemplate() {
     return new EmailTemplates({
-      root: path.join(__dirname, "./templates"),
+      root: path.join(path.resolve(__dirname, "../../email/templates")),
       views: {
         options: {
           extension: "ejs"
