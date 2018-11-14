@@ -105,7 +105,7 @@ module.exports = (sequelize, DataTypes) => {
 
   User.prototype.getEditLink = function () {
     return (
-      globalData.get('server') +
+      config.get('server.url') +
       "/forgotten/" +
       this.getDataValue("id") +
       "/" +
