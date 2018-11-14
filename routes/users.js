@@ -1,4 +1,3 @@
-const _ = require("lodash");
 const auth = require("../middleware/auth");
 const express = require("express");
 const {
