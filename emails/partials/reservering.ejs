@@ -80,10 +80,19 @@
 
 	<% if( reservering.opmerking ) { %>
 	<tr>
-		<th>Opmerking PlusLeo</th>
+		<th>Reactie PlusLeo</th>
 		<td><%= reservering.opmerking %></td>
 	</tr>
 	<% } %>
+
+	<tr>
+		<th>
+			Meer informatie
+		</th>
+		<td>
+			<a href="<%=reservering.uitvoering.voorstelling.url%>" target="_blank">Meer informatie</a>
+		</td>
+	</tr>
 
 </table>
 </div>
