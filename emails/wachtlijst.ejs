@@ -1,11 +1,18 @@
-<div class="card p-3 mt-3">
-<p>Hallo <%= reservering.naam %></p>
-<p>Bedankt voor de reservering</p>
-<p>
-  Helaas sta je op de wachtlijst. Zodra er voldoende plaatsen beschikbaar komen krijg je een e-mail<br />
-  Dan hoef je pas te betalen.
-</p>
-</div>
+<tr><td>
+<table class="card row ">
+  <tr class="card-body">
+    <td>
+      Hallo <%= reservering.naam %><br />
+      <br />
+      Bedankt voor de reservering<br />
+      <br />
+      Helaas sta je op de wachtlijst. Zodra er voldoende plaatsen beschikbaar komen krijg je een e-mail<br />
+      Dan hoef je pas te betalen.
+    </td>
+  </tr>
+</table>
+</td></tr>
 
 <%- include('partials/reservering') %>
 <%- include('partials/bewaar')%>
+<%- include('partials/footer')%>

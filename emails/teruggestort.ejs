@@ -1,13 +1,15 @@
-<div class="card p-3 mt-3">
-  <div class="card-body">
-    <div class="card-text">Hallo <%= reservering.naam %></div>
-    <div class="card-text">Het openstaande bedrag €<%=bedrag.toFixed(2)%> is automatisch teruggestort<br/>
-    </div>
-    <div class="card-text">
+<tr><td>
+<table class="card row ">
+  <tr class="card-body">
+    <td>
+    Hallo <%= reservering.naam %><br />
+    <br />
+    Het openstaande bedrag €<%=bedrag.toFixed(2)%> is automatisch teruggestort<br/>
+    <br />
     Met vriendelijke groet, <br />
     PlusLeo
-    </div>
-  
-</div>
-
-
+    </td>
+  </tr>
+</table>
+</td></tr>
+<%- include('partials/footer')%>

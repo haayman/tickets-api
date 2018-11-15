@@ -1,14 +1,18 @@
-<div class="card p-3 mt-3">
-  <div class="card-body">
-    <div class="card-text">Hallo <%= reservering.naam %></div>
-    <div class="card-text">Je ticket(s) zijn verkocht, maar het bedrag kon niet automatisch teruggestort worden.<br />
-    Als je je <a href="<%=reservering.getIBANUrl()%>">bankgegevens</a> zou willen invullen, dan maken we het geld zo spoedig mogelijk aan je over
-    </div>
-    <div class="card-text">
+<tr><td>
+<table class="card row ">
+  <tr class="card-body">
+    <td>
+    Hallo <%= reservering.naam %><br />
+    <br />
+    Je ticket(s) zijn verkocht, maar het bedrag kon niet automatisch teruggestort worden.<br />
+    Als je je <a href="<%=reservering.getIBANUrl()%>">bankgegevens</a> zou willen invullen, dan maken we het geld zo spoedig mogelijk aan je over<br />
+    <br />
     Met vriendelijke groet, <br />
     Plusleo
-    </div>
-  
-</div>
+    </td>
+  </tr>
+</table>
+</td></tr>
+<%- include('partials/footer')%>
 
 
