@@ -7,12 +7,12 @@ const log = require("../routes/log");
 const auth = require("../routes/auth");
 const payment = require("../routes/payment");
 const errorHandler = require("../middleware/error");
-const servername = require('../middleware/servername');
+// const servername = require('../middleware/servername');
 const setUser = require("../middleware/user");
 const favicon = require('serve-favicon');
 
 module.exports = function (app) {
-  app.all('*', servername);
+  // app.all('*', servername);
   app.all('*', setUser)
 
   app.use(express.json());

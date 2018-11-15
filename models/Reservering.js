@@ -365,8 +365,6 @@ module.exports = (sequelize, DataTypes) => {
     const root = globalData.get("localtunnel") ?
       globalData.get("localtunnel") :
       config.get("server.url");
-    console.log('webhook', root);
-    // return 'https://reserveren.plusleo.nl/';
     return root;
   };
 
