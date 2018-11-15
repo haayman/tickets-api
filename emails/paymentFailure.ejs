@@ -1,21 +1,23 @@
-<div class="card p-3 mt-3">
-<p>
-  Hallo <%= reservering.naam %>
-</p>
-<p>
-	De betaling voor je reservering  is nog niet (volledig) geslaagd<br />
-	Dit zou o.a. veroorzaakt kunnen zijn door een storing in het betalingsverkeer
-	op internet of als de betaling vroegtijdig is afgebroken.
-	</p>
-	<p>
-	<em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em> (je kunt niet per ongelukt 2x betalen)
-	</p>
-	<p>
-	Als je van mening bent dat je al wel betaald hebt, probeer dan om de <a href="<%= reservering.getResendUrl()%>">tickets opnieuw opgestuurd</a> te krijgen.
-	en anders kun je dit met je naam en reserveringnummer doorgeven aan <a href="mailto:info@plusleo.nl">info@plusleo.nl</a><br />
-	Wij nemen dan zo spoedig mogelijk contact met je op.
-	</p>
-</div>
+<tr><td>
+<table class="card row ">
+	<tr class="card-body">
+		<td>
+				Hallo <%= reservering.naam %><br />
+				<br />
+				De betaling voor je reservering  is nog niet (volledig) geslaagd<br />
+				Dit zou o.a. veroorzaakt kunnen zijn door een storing in het betalingsverkeer
+				op internet of als de betaling vroegtijdig is afgebroken.<br />
+				<br />
+				<em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em> (je kunt niet per ongelukt 2x betalen)<br />
+				<br />
+				Als je van mening bent dat je al wel betaald hebt, probeer dan om de <a href="<%= reservering.getResendUrl()%>">tickets opnieuw opgestuurd</a> te krijgen.
+				en anders kun je dit met je naam en reserveringnummer doorgeven aan <a href="mailto:info@plusleo.nl">info@plusleo.nl</a><br />
+				Wij nemen dan zo spoedig mogelijk contact met je op.
+			</td>
+		</tr>
+</table>
+</td></tr>
 
 <%- include('partials/reservering') %>
 <%- include('partials/payments') %>
+<%- include('partials/footer')%>

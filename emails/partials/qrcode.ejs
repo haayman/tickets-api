@@ -1,13 +1,17 @@
-<div class="card mt-3">
-    <div class="card-header">
-        QR-code
-    </div>
-    <div class="card-body">
+<tr><td>
+<table class="row card ">
+    <tr class="card-header">
+        <td>QR-code</td>
+    </tr>
+    <tr class="card-body">
+        <td>
     Neem onderstaande code mee naar de kassa. Druk deze mail af of gebruik je telefoon.<br />
         (QR-code niet zichtbaar? Laad de plaatjes in je e-mail!)<br />
         <br />
         <a class=text-center" href="<%= reservering.getTicketUrl() %>">
             <img src="<%= reservering.getQrUrl() %>"/>
         </a>
-    </div>
-</div>
+        </td>
+    </tr>
+</table>
+</td></tr>

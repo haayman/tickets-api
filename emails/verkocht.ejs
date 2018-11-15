@@ -1,8 +1,15 @@
-<div class="card p-3 mt-3">
-  <p>Hallo  <%= reservering.naam %></p>
-  <p>Je geannuleerde kaarten zijn verkocht</p>
-</div>
+<tr><td>
+<table class="card row ">
+  <tr class="card-body">
+    <td>
+      <p>Hallo  <%= reservering.naam %></p>
+      <p>Je geannuleerde kaarten zijn verkocht</p>
+    </td>
+  </tr>
+</table>
+</td></tr>
 
 <%- include('partials/reservering') %>
 <%- include('partials/payments') %>
 <%- include('partials/bewaar')%>
+<%- include('partials/footer')%>

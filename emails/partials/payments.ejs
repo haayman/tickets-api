@@ -1,41 +1,46 @@
 <% if ( reservering.payments.length ) { %>
-<div class="card mt-3">
+<tr>
+  <td>
+    <table class="row card ">
 
-  <div class="card-header">
-  Betalingen
-  </div>
-<div class="card-body">
-
-<table class="table">
-  <thead>
-    <tr>
-      <th>ticket</th>
-      <th>betaald</th>
-      <th>status</th>
-      <th>bedrag</th>
-      <th>terugstortingen</th>
-    </tr>
-  </thead>
-  <tbody>
-  <% reservering.payments.forEach( function(payment) { %>
-    <tr>
-      <td><%= payment.description %></td>
-      <td><%= payment.paidAt ? format(payment.paidAt, 'DD-MM HH:mm') : '' %></td>
-      <td><% 
-        if( payment.paymentUrl ) {%>
-        <a href="<%= payment.paymentUrl %>">Nog te betalen</a>
-        <% } else {%>
-          <%= payment.status %>
-        <% } %>
+      <tr class="card-header">
+        <td>Betalingen</td>
+      </tr>
+      <tr class="card-body">
+        <td>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ticket</th>
+                <th>betaald</th>
+                <th>status</th>
+                <th>bedrag</th>
+                <th>terugstortingen</th>
+              </tr>
+            </thead>
+            <tbody>
+            <% reservering.payments.forEach( function(payment) { %>
+              <tr>
+                <td><%= payment.description %></td>
+                <td><%= payment.paidAt ? format(payment.paidAt, 'DD-MM HH:mm') : '' %></td>
+                <td><% 
+                  if( payment.paymentUrl ) {%>
+                  <a href="<%= payment.paymentUrl %>">Nog te betalen</a>
+                  <% } else {%>
+                    <%= payment.status %>
+                  <% } %>
+                  </td>
+                  <td>€ <%= payment.amount.toFixed(2) %></td>
+                  <% if( payment.amountRefunded ) { %>
+                  <td>€ <%= payment.amountRefunded.toFixed(2) %></td>
+                  <% } %>
+              </tr>
+            <% }) %>
+            </tbody>
+          </table>
         </td>
-        <td><%= payment.amount %></td>
-        <% if( payment.amountRefunded ) { %>
-        <td><%= payment.amountRefunded %></td>
-        <% } %>
-    </tr>
-  <% }) %>
-  </tbody>
-  </table>
-  </div>
-</div>
+      </tr>
+    </table>
+  </td>
+</tr>
 <% } %>
