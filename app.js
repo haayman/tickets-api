@@ -1,3 +1,5 @@
+global.DOCUMENT_ROOT = __dirname;
+
 const express = require("express");
 const app = express();
 

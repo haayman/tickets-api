@@ -1,7 +1,5 @@
 // const setupEnv = require("./startup/env");
 
-global.DOCUMENT_ROOT = __dirname;
-
 const app = require("./app");
 const winston = require("winston");
 const config = require("config");

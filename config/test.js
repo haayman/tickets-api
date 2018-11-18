@@ -9,6 +9,9 @@ module.exports = {
     storage: path.resolve(__dirname, "..", "data", "test.sqlite"),
     logging: true
   },
-  namespace: "PlusLeoTestNamespace", // t.b.v transacties
+  namespace: "PlusLeoTestNamespace", // t.b.v transacties,
+  server: {
+    url: "https://dev.plusleo.nl"
+  }
 
 }
