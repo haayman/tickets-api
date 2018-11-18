@@ -78,6 +78,7 @@ module.exports = (sequelize, DataTypes) => {
       "";
     let sql = `select count(*) as count from Ticket where verkocht=false 
       and geannuleerd=false and 
+      deletedAt IS NULL and
       reserveringId IN (select id from Reservering where 
         uitvoeringId = :uitvoeringId 
         AND deletedAt IS NULL
