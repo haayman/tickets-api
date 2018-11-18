@@ -413,7 +413,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Reservering.associate = function (models) {
     Reservering.Uitvoering = models.Reservering.belongsTo(models.Uitvoering, {
-      onDelete: "RESTRICT",
+      onDelete: "CASCADE",
       foreignKey: {
         allowNull: false
       }

@@ -1,5 +1,6 @@
 jest.setTimeout(30000);
 const request = require("supertest");
+const clone = require('lodash/clone');
 
 let app = require("../../../app");
 const {
@@ -14,9 +15,19 @@ const createVoorstelling = require('./createVoorstelling');
 let authToken, voorstelling;
 
 beforeAll(async () => {
-  await sequelize.sync();
+  await sequelize.sync({
+    force: true
+  });
   authToken = await getAuthToken();
   voorstelling = await createVoorstelling();
+});
+
+
+afterAll(async () => {
+  await Voorstelling.destroy({
+    where: {},
+    truncate: true
+  });
 });
 
 afterEach(async () => {
@@ -24,11 +35,9 @@ afterEach(async () => {
     where: {},
     truncate: true
   });
-  await Voorstelling.destroy({
-    where: {},
-    truncate: true
-  });
+
 });
+
 
 describe("/reservering", () => {
   describe("/GET", () => {
@@ -38,6 +47,9 @@ describe("/reservering", () => {
             naam: "naam1",
             email: "naam1@plusleo.nl",
             uitvoeringId: voorstelling.uitvoeringen[0].id,
+            tickets: [{
+              prijsId: voorstelling.prijzen[0].id,
+            }]
           },
           {
             naam: "naam2",
@@ -83,7 +95,7 @@ describe("/reservering", () => {
 
         const id = reservering.id;
         const res = await request(app)
-          .get("/reservering/" + id)
+          .get("/api/reservering/" + id)
           .set("x-auth-token", authToken);
         expect(res.status).toBe(200);
         expect(res.body.id).toBe(id);
@@ -91,12 +103,62 @@ describe("/reservering", () => {
 
       it("should return 404 not found", async () => {
         const res = await request(app)
-          .get("/voorstelling/1")
+          .get("/api/reservering/1")
           .set("x-auth-token", authToken);
         expect(res.status).toBe(404);
       });
     });
   });
+
+  describe('/post', () => {
+    it("should return succes", async () => {
+      const res = await request(app)
+        .post('/api/reservering')
+        .send({
+          "naam": "Test",
+          "email": "arjen.haayman+test@gmail.com",
+          "uitvoeringId": voorstelling.uitvoeringen[0].id,
+          "tickets": [{
+            "prijs": voorstelling.prijzen[0],
+            "aantal": 2,
+          }, {
+            "prijs": voorstelling.prijzen[1],
+            "aantal": 0,
+          }, {
+            "prijs": voorstelling.prijzen[2],
+            "aantal": 0,
+          }],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBeDefined();
+      expect(res.body.openStaandBedrag).toBe(-20);
+      expect(res.body.onbetaaldeTickets.length).toBe(2);
+    });
+
+    it('should not modify prijs', async () => {
+      const newPrijs = clone(voorstelling.prijzen[0]);
+      newPrijs.prijs = 200;
+      const res = await request(app)
+        .post('/api/reservering')
+        .send({
+          "naam": "Test",
+          "email": "arjen.haayman+test@gmail.com",
+          "uitvoeringId": voorstelling.uitvoeringen[0].id,
+          "tickets": [{
+            "prijs": newPrijs,
+            "aantal": 2,
+          }, {
+            "prijs": voorstelling.prijzen[1],
+            "aantal": 0,
+          }, {
+            "prijs": voorstelling.prijzen[2],
+            "aantal": 0,
+          }],
+        });
+      expect(res.body.openStaandBedrag).toBe(-20);
+    })
+  })
 
   // describe("/POST", () => {
   //   // --------- validation errors -----
