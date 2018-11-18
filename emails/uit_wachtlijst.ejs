@@ -6,13 +6,14 @@
       <br />
       Er is een aantal plaatsen vrijgekomen, waardoor je niet langer in de wachtrij staat<br />
       <br />
-	    <em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">te betalen</a></em>
+      <% if( reservering.saldo ){ %>
+      <em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">te betalen</a></em>
+      <% } %>
     </td>
   </tr>
 </table>
 </td></tr>
 
-<%- include('partials/bewaar')%>
 <%- include('partials/reservering') %>
-<%- include('partials/payments') %>
+<%- include('partials/bewaar')%>
 <%- include('partials/footer')%>
