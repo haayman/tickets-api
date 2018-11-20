@@ -1,4 +1,6 @@
 const path = require('path');
+const winston = require('winston');
+const nodemailerMock = require('nodemailer-mock');
 
 module.exports = {
   "jwtPrivateKey": "test",
@@ -7,11 +9,24 @@ module.exports = {
   },
   database: {
     storage: path.resolve(__dirname, "..", "data", "test.sqlite"),
-    logging: true
+    logging: false
   },
   namespace: "PlusLeoTestNamespace", // t.b.v transacties,
   server: {
     url: "https://dev.plusleo.nl"
+  },
+  mail_transport: {
+    // debug: true,
+    // logger: true,
+    sendmail: false, // override default
+    path: "",
+    host: "smtp.t-mobilethuis.nl",
+    port: 465,
+    secure: true,
+    auth: {
+      user: "plusleo@t-mobilethuis.nl",
+      pass: "u9cW^nCG5RMNT6e@HZS1jE@"
+    }
   }
 
 }

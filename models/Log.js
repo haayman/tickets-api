@@ -16,15 +16,9 @@ module.exports = (sequelize, DataTypes) => {
   Log.associate = function (models) {
     Log.Reservering = models.Log.belongsTo(models.Reservering, {
       onDelete: "SET NULL",
-      foreignKey: {
-        allowNull: false
-      }
     });
     Log.User = models.Log.belongsTo(models.User), {
       onDelete: 'SET NULL',
-      foreignKey: {
-        allowNull: true
-      }
     }
   };
 

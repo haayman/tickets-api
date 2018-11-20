@@ -50,25 +50,22 @@ router.post("/", async (req, res) => {
     await reservering.createPaymentIfNeeded();
     await reservering.save();
 
-    // stuur antwoord alvast
-    res.send(reservering);
-
-    // Reservering.verwerkRefunds();
-
     const saldo = reservering.saldo;
     const strReservering = await reservering.asString();
     if (!saldo) {
       // vrijkaartjes
-      ReserveringMail.send(reservering, "ticket", strReservering);
+      await ReserveringMail.send(reservering, "ticket", strReservering);
     } else if (reservering.wachtlijst) {
-      ReserveringMail.send(
+      await ReserveringMail.send(
         reservering,
         "wachtlijst",
         "Je staat op de wachtlijst"
       );
     } else {
-      ReserveringMail.send(reservering, 'aangevraagd', 'ticket besteld')
+      await ReserveringMail.send(reservering, 'aangevraagd', 'ticket besteld')
     }
+
+    res.send(reservering);
   });
 });
 
@@ -120,16 +117,16 @@ router.put("/:id", async (req, res) => {
 
         await reservering.refund();
       }
-      ReserveringMail.send(reservering, "gewijzigd", "reservering gewijzigd");
+      const strReservering = await reservering.asString();
+      await ReserveringMail.send(reservering, "gewijzigd", `Gewijzigde reservering ${strReservering}`);
     }
-
-    // stuur antwoord alvast terug
-    res.send(reservering);
 
     await Reservering.verwerkRefunds();
     // wacht op verwerking refunds.
     // pas als terugbetaald is, dan wachtlijst verwerken
-    reservering.uitvoering.verwerkWachtlijst();
+    await reservering.uitvoering.verwerkWachtlijst();
+
+    res.send(reservering);
   });
 });
 
@@ -299,7 +296,7 @@ router.delete("/:id", async (req, res) => {
     const strReservering = await reservering.asString();
     await reservering.logMessage(`${strReservering} geannuleerd`);
     const uitvoering = reservering.uitvoering;
-    await reservering.destroy();
+    //    await reservering.destroy();
 
     await Reservering.verwerkRefunds();
     uitvoering.verwerkWachtlijst();
