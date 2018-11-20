@@ -26,13 +26,13 @@ class ReserveringMail {
       mail.setTo(params.to)
     }
 
-    mail.send(Object.assign({}, params, {
+    await mail.send(Object.assign({}, params, {
       template: templateName,
       reservering,
       format,
       nl
     }));
-    reservering.logMessage(`Mail '${subject}' verzonden`)
+    await reservering.logMessage(`Mail '${subject}' verzonden`)
   }
 
   static async render(reservering, templateName, params = {}) {
