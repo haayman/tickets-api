@@ -370,9 +370,9 @@ module.exports = (sequelize, DataTypes) => {
 
 
   Reservering.prototype.asString = async function () {
-    const tickets = this.Tickets ? this.Tickets : await this.getTickets();
-    const description = await this.sequelize.models.Ticket.description(tickets);
-    return description;
+    // const tickets = this.Tickets ? this.Tickets : await this.getTickets();
+    // const description = await this.sequelize.models.Ticket.description(tickets);
+    return `${this.aantal}x ${this.uitvoering}`;
   };
 
   Reservering.prototype.teruggeefbaar = async function () {

@@ -14,22 +14,9 @@
 			<tr>
 				<th>Deur open</th>
 				<td><%= format(reservering.uitvoering.deur_open, 'HH:mm')%></td>
-			<tr>
-				<th>Naam</th>
-				<td>
-						<%= reservering.naam %>
-				</td>
 			</tr>
 			<tr>
-				<th>E-mail</th>
-				<td>
-					<%= reservering.email%>
-				</td>
-			</tr>
-			<tr>
-				<th>
-					Tickets
-				</th>
+				<th>Tickets</th>
 				<td>
 					<% reservering.tickets.forEach( function( ticket ) { %>
 						<% if( ticket.aantal ) { %>
@@ -39,9 +26,7 @@
 				</td>
 			</tr>
 			<tr>
-				<th>
-					Locatie
-				</th>
+				<th>Locatie</th>
 				<td>
 					<%- reservering.uitvoering.voorstelling.locatie %>
 				</td>
@@ -64,13 +49,11 @@
 				</tr>
 			<% } %>
 
-			<tr><th>status (debug)</th><td> <%=reservering.status %></td></tr>
-
-			<% if( reservering.status && reservering.saldo && !reservering.wachtlijst ) { %>
+			<% if( reservering.status !== 'open' && reservering.openstaandBedrag && !reservering.wachtlijst ) { %>
 			<tr>
 				<th>Openstaand bedrag</th>
 				<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € 
-				<%= reservering.saldo %>.<br />
+				<%= reservering.openstaandBedrag %>.<br />
 				We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
 				</td>
 			</tr>
