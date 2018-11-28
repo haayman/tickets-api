@@ -65,6 +65,7 @@ router.post("/", async (req, res) => {
       await ReserveringMail.send(reservering, 'aangevraagd', 'ticket besteld')
     }
 
+    await Reservering.verwerkRefunds();
     res.send(reservering);
   });
 });
@@ -86,7 +87,7 @@ router.put("/:id", async (req, res) => {
   Reservering.sequelize.transaction(async transaction => {
     await reservering.update(req.body);
 
-    reservering.uitvoering = await Uitvoering.findById(
+    reservering.uitvoering = await Uitvoering.findByPk(
       reservering.uitvoeringId
     );
     await Promise.all(

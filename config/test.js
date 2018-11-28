@@ -1,6 +1,5 @@
 const path = require('path');
 const winston = require('winston');
-const nodemailerMock = require('nodemailer-mock');
 
 module.exports = {
   "jwtPrivateKey": "test",

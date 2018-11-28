@@ -33,7 +33,7 @@ module.exports = class {
       );
 
       // kijk of er tickets te koop zijn. Deze worden bij deze verkocht
-      await this.reservering.uitvoering.verwerkTekoop(diff);
+      await this.Ticket.verwerkTekoop(diff);
 
       while (diff--) {
         const ticket = await this.Ticket.create({
@@ -60,7 +60,7 @@ module.exports = class {
           this.tickets = this.tickets.filter(t => t.id !== ticket.id);
         } else {
           let payment = await ticket.getPayment();
-          if (payment.isPaid) {
+          if (payment.status == "paid") {
             const teruggeefbaar = await this.reservering.teruggeefbaar();
             if (teruggeefbaar) {
               await this.reservering.logMessage(`${ticketDescription} terugbetalen`);

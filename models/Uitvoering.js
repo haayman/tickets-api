@@ -129,59 +129,6 @@ module.exports = (sequelize, DataTypes) => {
     }));
   };
 
-  /**
-   * welke tickets staan te koop voor deze Uitvoering
-   * @param {number} aantal 
-   * @return {Ticket[]}
-   */
-  Uitvoering.prototype.tekoop = async function (aantal = null) {
-    const Ticket = Uitvoering.sequelize.models.Ticket;
-    const sql = `SELECT * from Ticket
-      WHERE reserveringId in (
-        SELECT id from reservering WHERE 
-          uitvoeringId=:uitvoeringId 
-          AND deletedAt IS NULL )
-      AND tekoop=true`;
-
-    const tickets = await sequelize.query(sql, {
-      model: Ticket,
-      replacements: {
-        uitvoeringId: this.id
-      },
-      type: sequelize.QueryTypes.SELECT
-    })
-    return tickets
-  }
-
-  /**
-   * Verkoop {aantal} tickets
-   * @async
-   * @param {number} aantal
-   * @returns {Promise}
-   */
-  Uitvoering.prototype.verwerkTekoop = async function (aantal) {
-    const tekoop = await this.tekoop(aantal);
-    let verkocht = {};
-
-    await Promise.all(tekoop.map(async (ticket) => {
-      const reservering = await ticket.getReservering();
-      verkocht[reservering.id] = reservering;
-
-      ticket.verkocht = true;
-      ticket.tekoop = false;
-      ticket.terugbetalen = true;
-
-      await ticket.save();
-      const strTicket = await ticket.asString();
-      await reservering.logMessage(`${strTicket} verkocht`);
-    }))
-
-    await Promise.all(
-      Object.values(verkocht).map(async r => r.refund()));
-
-    return;
-  }
-
   Uitvoering.prototype.toString = function () {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format
     return `${this.extra_text||''} ${format(this.aanvang, 'dddd D MMM HH:mm', {locale: nl})}`;

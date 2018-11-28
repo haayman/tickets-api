@@ -38,18 +38,18 @@ router.post("/bank/:id", async (req, res) => {
 
   const tickets = await payment.getTickets();
   const description = await Ticket.description(tickets);
-  reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
+  await reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
 
   const ticketDescription = await reservering.asString();
 
   if (payment.betaalstatus == "paid") {
-    ReserveringMail.send(
+    await ReserveringMail.send(
       reservering,
       "confirmationPayment",
       `ticket ${ticketDescription}`
     );
   } else {
-    ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
+    await ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
   }
   res.send("OK");
 });

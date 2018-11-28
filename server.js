@@ -14,7 +14,7 @@ app
     winston.info(`listening on port ${port}`);
     // winston.info(`webhook: ${config.get("server.url")}`);
 
-    require("./startup/env")();
+    // require("./startup/env")();
   })
   .on("error", e => {
     winston.error(e);
