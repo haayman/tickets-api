@@ -262,8 +262,10 @@ module.exports = (sequelize, DataTypes) => {
 
   (Reservering.prototype.moetInWachtrij = async function () {
     const uitvoering = await this.getUitvoering();
+
+    // tel aantal vrije plaatsen excl. deze reservering
     const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
-    return vrije_plaatsen <= 0;
+    return vrije_plaatsen < this.aantal;
   }),
   (Reservering.prototype.paymentUrl = function () {
     let url;
@@ -311,7 +313,7 @@ module.exports = (sequelize, DataTypes) => {
   Reservering.prototype.haalUitWachtrij = async function () {
     this.wachtlijst = false;
     await this.save();
-    ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst`);
+    await ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst`);
   };
 
   Reservering.prototype.logMessage = async function (message) {

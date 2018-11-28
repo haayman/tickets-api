@@ -55,7 +55,7 @@ module.exports = {
             );
             const Ticket = this.sequelize.models.Ticket;
             const paymentDescription = await Ticket.description(terugbetalen);
-            ReserveringMail.send(this, 'teruggestort', `${paymentDescription} teruggestort`, {
+            await ReserveringMail.send(this, 'teruggestort', `${paymentDescription} teruggestort`, {
               bedrag: amount
             });
             await this.logMessage(`${paymentDescription} teruggestort`);
@@ -70,9 +70,9 @@ module.exports = {
 
     if (nonRefundable.length) {
       if (!this.iban && !this.tennamevan) {
-        ReserveringMail.send(this, "ibanRequested", "Bankgegevens nodig");
+        await ReserveringMail.send(this, "ibanRequested", "Bankgegevens nodig");
       } else {
-        ReserveringMail.send(
+        await ReserveringMail.send(
           this,
           "terugbetalen_penningmeester",
           "Verzoek tot terugstorting", {
