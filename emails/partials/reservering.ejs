@@ -1,7 +1,7 @@
 <tr><td>
 <table class="row card ">
 	<tr class="card-header">
-		<td>Reservering</td>
+		<td>Bestelling</td>
 	</tr>
 
 	<tr class="card-body">
@@ -16,7 +16,7 @@
 				<td><%= format(reservering.uitvoering.deur_open, 'HH:mm')%></td>
 			</tr>
 			<tr>
-				<th>Tickets</th>
+				<th>Kaarten</th>
 				<td>
 					<% reservering.tickets.forEach( function( ticket ) { %>
 						<% if( ticket.aantal ) { %>
