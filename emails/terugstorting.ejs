@@ -4,11 +4,16 @@
     <td>
       Hallo <%= reservering.naam %><br />
       <br />
-      Je ticket(s) zijn verkocht, maar het bedrag kon niet automatisch teruggestort worden.<br />
-      Als je je <a href="<%=reservering.getIBANUrl()%>">bankgegevens</a> zou willen invullen, dan maken we het geld zo spoedig mogelijk aan je over<br />
+      We willen je geld terugstorten, maar de termijn om dit automatisch te doen is verstreken.<br />
       <br />
-      Met vriendelijke groet, <br />
+      Als je je bankgegevens invult, dan maken we het geld zo spoedig mogelijk aan je over<br />
+      <br />
+      <a class="btn btn-primary" href="<%=reservering.getIBANUrl()%>" target="_blank">
+        Vul bankgegevens in
+      </a><br />
+      <br />
       PlusLeo
+
     </td>
   </tr>
 </table>
