@@ -43,6 +43,9 @@ module.exports = (sequelize, DataTypes) => {
       wachtlijst: {
         type: DataTypes.BOOLEAN
       },
+      ingenomen: {
+        type: DataTypes.DATE
+      },
       bedrag: {
         type: DataTypes.DECIMAL(5, 2)
       },
@@ -127,7 +130,7 @@ module.exports = (sequelize, DataTypes) => {
           if (!this.tickets) {
             return null;
           }
-          return this.tickets.reduce((aantal, ticket) => aantal + ticket.aantal, 0)
+          return this.validTickets.length
         },
 
         onbetaaldeTickets() {
