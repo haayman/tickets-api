@@ -1,4 +1,5 @@
 const express = require("express");
+const auth = require('../middleware/auth');
 const {
   Log
 } = require("../models");
@@ -6,7 +7,7 @@ const parseQuery = require('./helpers/parseQuery');
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", auth(true), async (req, res) => {
   const params = parseQuery(Log, req.query)
   params.order = [
     ['id', 'desc']
