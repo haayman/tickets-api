@@ -42,7 +42,8 @@ module.exports = {
         let payment = await Payment.findById(paymentId, {
           include: [Payment.Tickets]
         });
-        if (payment.refundable) {
+        // t.b.v. tests: gebruik 'norefund' in het e-mail adres
+        if (payment.refundable && !this.email.match('norefund')) {
           const refunded = await payment.refund(amount);
           if (refunded) {
             const terugbetalen = payment.Tickets.filter(t => t.terugbetalen);
