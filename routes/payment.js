@@ -46,7 +46,7 @@ router.post("/bank/:id", async (req, res) => {
     await ReserveringMail.send(
       reservering,
       "confirmationPayment",
-      `ticket ${ticketDescription}`
+      `Kaarten voor ${ticketDescription}`
     );
   } else {
     await ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");

@@ -62,7 +62,7 @@ router.post("/", async (req, res) => {
         "Je staat op de wachtlijst"
       );
     } else {
-      await ReserveringMail.send(reservering, 'aangevraagd', 'ticket besteld')
+      await ReserveringMail.send(reservering, 'aangevraagd', 'kaarten besteld')
     }
 
     await Reservering.verwerkRefunds();
@@ -119,7 +119,7 @@ router.put("/:id", async (req, res) => {
         await reservering.refund();
       }
       const strReservering = await reservering.asString();
-      await ReserveringMail.send(reservering, "gewijzigd", `Gewijzigde reservering ${strReservering}`);
+      await ReserveringMail.send(reservering, "gewijzigd", `Gewijzigde bestelling ${strReservering}`);
     }
 
     await Reservering.verwerkRefunds();
