@@ -1,11 +1,7 @@
 "use strict";
 const auth = require("../middleware/auth");
 const express = require("express");
-const {
-  Reservering,
-  Prijs,
-  Uitvoering
-} = require("../models");
+const { Reservering, Prijs, Uitvoering } = require("../models");
 const TicketAggregate = require("../models/Ticket.Aggregate");
 const ReserveringMail = require("../components/ReserveringMail");
 const parseQuery = require("./helpers/parseReserveringQuery");
@@ -23,14 +19,16 @@ router.get("/", auth(true), async (req, res) => {
   let reserveringen = await Reservering.findAll(params);
   Reservering.removeHook("afterFind");
 
-  const json = await Promise.all(reserveringen.map(async r => r.toJSONA(req.query)));
+  const json = await Promise.all(
+    reserveringen.map(async r => r.toJSONA(req.query))
+  );
 
   res.send(json);
 });
 
 router.post("/", async (req, res) => {
   Reservering.sequelize.transaction(async transaction => {
-    /** @var {Reservering} */
+    /** @type {Reservering} */
     let reservering = await Reservering.create(req.body);
     reservering.uitvoering = await Uitvoering.findById(
       reservering.uitvoeringId
@@ -62,7 +60,7 @@ router.post("/", async (req, res) => {
         "Je staat op de wachtlijst"
       );
     } else {
-      await ReserveringMail.send(reservering, 'aangevraagd', 'kaarten besteld')
+      await ReserveringMail.send(reservering, "aangevraagd", "kaarten besteld");
     }
 
     await Reservering.verwerkRefunds();
@@ -90,17 +88,19 @@ router.put("/:id", async (req, res) => {
     reservering.uitvoering = await Uitvoering.findByPk(
       reservering.uitvoeringId
     );
-    await Promise.all(
-      req.body.tickets.map(async t => {
-        // const prijs = await Prijs.findById(t.prijs.id);
-        // const ta = new TicketAggregate(reservering, prijs);
-        const ta = reservering.tickets.find(
-          ticket => ticket.prijs.id == t.prijs.id
-        );
-        await ta.setAantal(t.aantal);
-        // reservering.tickets.push(ta);
-      })
-    );
+    if (req.body.tickets) {
+      await Promise.all(
+        req.body.tickets.map(async t => {
+          // const prijs = await Prijs.findById(t.prijs.id);
+          // const ta = new TicketAggregate(reservering, prijs);
+          const ta = reservering.tickets.find(
+            ticket => ticket.prijs.id == t.prijs.id
+          );
+          await ta.setAantal(t.aantal);
+          // reservering.tickets.push(ta);
+        })
+      );
+    }
 
     reservering.wachtlijst = await reservering.moetInWachtrij();
     await reservering.save();
@@ -113,13 +113,17 @@ router.put("/:id", async (req, res) => {
       await reservering.createPaymentIfNeeded();
     } else {
       if (saldo > 0 && reservering.teruggeefbaar()) {
-        const mixin = require('../models/Refund.mixin');
+        const mixin = require("../models/Refund.mixin");
         Object.assign(Reservering.prototype, mixin);
 
         await reservering.refund();
       }
       const strReservering = await reservering.asString();
-      await ReserveringMail.send(reservering, "gewijzigd", `Gewijzigde bestelling ${strReservering}`);
+      await ReserveringMail.send(
+        reservering,
+        "gewijzigd",
+        `Gewijzigde bestelling ${strReservering}`
+      );
     }
 
     await Reservering.verwerkRefunds();
@@ -186,7 +190,7 @@ router.post("/:id/newPayment", async (req, res) => {
 });
 
 router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
-  const mixin = require('../models/Refund.mixin');
+  const mixin = require("../models/Refund.mixin");
   Object.assign(Reservering.prototype, mixin);
 
   const params = parseQuery(Reservering, {
@@ -197,23 +201,29 @@ router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
 
   const bedrag = await reservering.nonRefundableAmount();
   if (bedrag) {
-
     const tickets = await reservering.terugtebetalenTickets();
-    await Promise.all(tickets.map(async ticket => {
-      ticket.terugbetalen = false;
-      ticket.geannuleerd = true;
-      const payment = ticket.Payment || await ticket.getPayment();
-      payment.paidBack = (payment.paidBack || 0) + ticket.prijs.prijs;
-      await payment.save()
-      await ticket.save();
-    }))
-    await reservering.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`)
+    await Promise.all(
+      tickets.map(async ticket => {
+        ticket.terugbetalen = false;
+        ticket.geannuleerd = true;
+        const payment = ticket.Payment || (await ticket.getPayment());
+        payment.paidBack = (payment.paidBack || 0) + ticket.prijs.prijs;
+        await payment.save();
+        await ticket.save();
+      })
+    );
+    await reservering.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`);
 
-    await ReserveringMail.send(reservering, 'terugbetaald', `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
-      bedrag: bedrag
-    });
+    await ReserveringMail.send(
+      reservering,
+      "terugbetaald",
+      `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`,
+      {
+        bedrag: bedrag
+      }
+    );
   }
-  res.send('OK');
+  res.send("OK");
 });
 
 router.get("/:id/mail", async (req, res) => {
@@ -225,7 +235,7 @@ router.get("/:id/mail", async (req, res) => {
   if (!reservering) return res.status(404).send("niet gevonden");
   const html = await ReserveringMail.render(
     reservering,
-    req.query.template || 'ticket',
+    req.query.template || "ticket",
     req.query
   );
   res.send(html);
@@ -245,23 +255,21 @@ router.get("/:id/qr", async (req, res) => {
   res.type("png").send(png);
 });
 
-
-
 router.get("/:id/qr_teruggave", async (req, res) => {
-  const mixin = require('../models/Refund.mixin');
+  const mixin = require("../models/Refund.mixin");
   Object.assign(Reservering.prototype, mixin);
   const params = parseQuery(Reservering, {
-    include: ['tickets', 'Payments']
-  })
+    include: ["tickets", "Payments"]
+  });
   const reservering = await Reservering.findById(req.params.id, params);
-  const getBic = require('bic-from-iban');
+  const getBic = require("bic-from-iban");
   if (!reservering) return res.status(404).send("niet gevonden");
 
   const qr = require("qr-image");
   // https://gathering.tweakers.net/forum/list_messages/1800141
   // https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/quick-response-code-guidelines-enable-data-capture-initiation
   const bedrag = await reservering.nonRefundableAmount();
-  const IBAN = reservering.iban.replace(/\s/g, '');
+  const IBAN = reservering.iban.replace(/\s/g, "");
   const BIC = getBic.getBIC(IBAN) || "TRIONL2U";
   const content = `BCD
 001
@@ -271,7 +279,7 @@ ${BIC}
 ${reservering.tennamevan}
 ${IBAN}
 EUR${bedrag.toFixed(2)}
-Terugstorting PlusLeo`
+Terugstorting PlusLeo`;
 
   const png = qr.imageSync(content, {
     type: "png",
@@ -279,21 +287,22 @@ Terugstorting PlusLeo`
     margin: 3
   });
   res.type("png").send(png);
-})
+});
 
 router.delete("/:id", async (req, res) => {
   const params = parseQuery(Reservering, {
-    include: ['tickets', 'Payments']
-  })
+    include: ["tickets", "Payments"]
+  });
   Reservering.sequelize.transaction(async transaction => {
-
     const reservering = await Reservering.findById(req.params.id, params);
     if (!reservering) {
       return res.status(404).send("niet gevonden");
     }
-    await Promise.all(reservering.tickets.map((ta) => {
-      return ta.setAantal(0);
-    }))
+    await Promise.all(
+      reservering.tickets.map(ta => {
+        return ta.setAantal(0);
+      })
+    );
     const strReservering = await reservering.asString();
     await reservering.logMessage(`${strReservering} geannuleerd`);
     const uitvoering = reservering.uitvoering;
@@ -301,8 +310,8 @@ router.delete("/:id", async (req, res) => {
 
     await Reservering.verwerkRefunds();
     uitvoering.verwerkWachtlijst();
-  })
-
+    res.send("OK");
+  });
 
   res.send(null);
 });
