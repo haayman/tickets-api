@@ -1,31 +1,82 @@
 <!DOCTYPE html>
 <html lang="nl">
-  <head>
-    <title>PlusLeo Kaarten</title>
-    <!-- Required meta tags -->
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
-    <link rel="stylesheet" type="text/css" href="/css/plusleo.css" />
-  </head>
 
-  <body>
-    <div id="app">
-      <div class="container mt-3">
-        <div class="card">
-          <div class="card-header">Bezig met laden...</div>
-          <div class="card-body">
-            Als het te lang duurt: het kan zijn dat je javascript hebt uitgezet
-            of een te oude browser gebruikt.
+<head>
+  <title>PlusLeo Kaarten</title>
+  <!-- Required meta tags -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
+  <link rel="stylesheet" type="text/css" href="/css/plusleo.css" />
+  <script>
+    function noResponse() {
+      var div = document.getElementById('noresponse');
+      if (div) {
+        div.style.display = "block"
+      }
+    }
+
+    setTimeout(noResponse, 10000)
+  </script>
+</head>
+
+<body>
+  <div id="app">
+    <div class="modal" style="display:block">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-title">
+              <h1>PlusLeo kaarten</h1>
+
+            </div>
+          </div>
+          <div class="modal-body">
+            <h3>Hoe werkt het?</h3>
+            <noscript>
+              <div class="alert alert-warning">
+                Zonder javascript werkt deze site niet<br />
+                Voor hulp neem contact op met <a href="mailto:info@plusleo.nl">info@plusleo.nl</a>
+              </div>
+            </noscript>
+
+            <h4>Makkelijk aan te passen</h4>
+            <p>Je kunt kaarten kopen, maar je zit niet aan je aankoop vast. Het is altijd mogelijk om aanpassingen te
+              doen: </p>
+            <img src="/css/images/spinner.gif" class="float-right" />
+            <ul>
+              <li>Datum aanpassen</li>
+              <li>Kaarten annuleren (zie hieronder)</li>
+              <li>Kaarten bijkopen</li>
+            </ul>
+
+            <h4>Annuleren</h4>
+            <p><strong>Tot 14 dagen voor de voorstelling</strong>:
+              <ul>
+                <li>Je kunt gratis annuleren (1 of meerdere kaarten)</li>
+                <li>Het geld wordt teruggestort</li>
+              </ul>
+            </p>
+            <p><strong>minder dan 14 dagen voor de voorstelling: </strong>
+              <ul>
+                <li>De kaarten worden voor doorverkoop aangeboden</li>
+                <li>Zodra iemand anders de kaarten koopt krijg je je geld terug</li>
+              </ul>
+            </p>
+            <div id="noresponse" style="display:none" class="alert alert-warning">
+              Het laden van de pagina duurt erg lang. <br />
+              Misschien gebruik je een te oude browser? Dan werkt deze site niet<br />
+              Voor hulp neem contact op met <a href="mailto:info@plusleo.nl">info@plusleo.nl</a>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
+  </div>
 
-    <script type="module" src="/dist/reserveren.modern.js"></script>
-    <script nomodule src="/dist/reserveren.js"></script>
-  </body>
+  <script type="module" src="/dist/reserveren.modern.js"></script>
+  <script nomodule src="/dist/reserveren.js"></script>
+</body>
+
 </html>
