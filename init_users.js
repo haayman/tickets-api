@@ -1,6 +1,9 @@
 const models = require("./models");
 (async () => {
-  await models.User.destroy({ where: {}, truncate: true });
+  await models.User.destroy({
+    where: {},
+    truncate: true
+  });
   try {
     models.User.create({
       username: "arjen",
@@ -35,13 +38,6 @@ const models = require("./models");
       username: "lexp",
       name: "Lex Prinzen",
       email: "lexp@plusleo.nl",
-      password: makePassword(20),
-      role: "speler"
-    });
-    models.User.create({
-      username: "rana",
-      name: "Rana",
-      email: "rana@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
