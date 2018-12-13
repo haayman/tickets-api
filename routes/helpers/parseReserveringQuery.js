@@ -10,7 +10,7 @@ module.exports = function (model, params) {
 
     params.include = params.include.filter((i) => i !== 'tickets').concat([
       'Uitvoering.Voorstelling.Prijzen',
-      'Tickets',
+      'Tickets.Payment,Prijs',
       'Payments'
     ]).filter(onlyUnique);
     model.addHook('afterFind', model.initTickets);

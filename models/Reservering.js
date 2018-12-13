@@ -80,6 +80,8 @@ module.exports = (sequelize, DataTypes) => {
           if (!this.payments) {
             return null;
           }
+
+          // totaal betaald
           let saldo = this.payments.reduce((saldo, payment) => {
             if (payment.isPaid) {
               return saldo + (+payment.amount - (payment.amountRefunded || 0));
@@ -135,6 +137,20 @@ module.exports = (sequelize, DataTypes) => {
 
         onbetaaldeTickets() {
           return this.validTickets.filter(t => !t.betaald);
+        },
+
+        interneVerkoop() {
+          let tekoop = this.validTickets.filter(t => t.tekoop);
+          if (this.saldo < 0 && tekoop.length) {
+            let tegoed = -this.saldo;
+            let tickets = this.onbetaaldeTickets();
+            while (tegoed) {
+              let ticket = tickets.find(t => t.prijs.prijs <= tegoed);
+              if (ticket) {
+                let verkocht = tekoop.find(t => t.prijs.prijs)
+              }
+            }
+          }
         },
 
         isPaid() {
@@ -199,9 +215,9 @@ module.exports = (sequelize, DataTypes) => {
     if (!this.tickets) {
       const voorstelling =
         this.uitvoering.voorstelling ||
-        (await this.uitvoering.getVoorstelling());
-      const prijzen = voorstelling.prijzen || (await voorstelling.getPrijzen());
-      const Tickets = this.Tickets || (await this.getTickets());
+        (this.uitvoering.voorstelling = await this.uitvoering.getVoorstelling());
+      const prijzen = voorstelling.prijzen || (voorstelling.prijzen = await voorstelling.getPrijzen());
+      const Tickets = this.Tickets || (this.Tickets = await this.getTickets());
       this.tickets = await Promise.all(
         prijzen.map(async prijs => {
           return new TicketAggregate(
@@ -212,8 +228,8 @@ module.exports = (sequelize, DataTypes) => {
         })
       );
     }
-    if (!this.payments) this.payments = await this.getPayments();
-    if (!this.logs) this.logs = await this.getLogs();
+    // if (!this.payments) this.payments = await this.getPayments();
+    // if (!this.logs) this.logs = await this.getLogs();
   };
 
   Reservering.prototype.getAttr = async function (attr) {
@@ -230,9 +246,9 @@ module.exports = (sequelize, DataTypes) => {
 
   Reservering.prototype.toJSONA = async function (req = null) {
     const json = await this.toJSON();
-    json.uitvoering = await this.getUitvoering();
+    json.uitvoering = this.uitvoering || (await this.getUitvoering());
     json.tickets = this.tickets;
-    json.payments = await this.getPayments();
+    json.payments = this.payments || (await this.getPayments());
     json.paymentUrl = this.paymentUrl();
     json.teruggeefbaar = await this.teruggeefbaar();
     if (this.Logs) {
