@@ -90,7 +90,10 @@ module.exports = {
     let retval = [];
     await Promise.all(Object.keys(payments).map(async paymentId => {
       const payment = await this.getPaymentById(+paymentId);
-      if (!payment.refundable) {
+      if (!payment.payment) {
+        await payment.initPayment();
+      }
+      if (payment.refundable === false || this.email.match('norefund')) {
         retval.push(payment)
       }
     }));
@@ -111,7 +114,7 @@ module.exports = {
   },
 
   async getPaymentById(paymentId) {
-    const payment = this.payments.find(p => p.id == paymentId);
+    const payment = this.Payments.find(p => p.id == paymentId);
     if (!payment) {
       payment = await Payment.findById(paymentId, {
         include: [{

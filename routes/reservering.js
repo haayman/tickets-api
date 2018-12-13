@@ -1,7 +1,11 @@
 "use strict";
 const auth = require("../middleware/auth");
 const express = require("express");
-const { Reservering, Prijs, Uitvoering } = require("../models");
+const {
+  Reservering,
+  Prijs,
+  Uitvoering
+} = require("../models");
 const TicketAggregate = require("../models/Ticket.Aggregate");
 const ReserveringMail = require("../components/ReserveringMail");
 const parseQuery = require("./helpers/parseReserveringQuery");
@@ -109,6 +113,7 @@ router.put("/:id", async (req, res) => {
     Reservering.removeHook("afterFind");
 
     const saldo = reservering.saldo;
+
     if (saldo < 0) {
       await reservering.createPaymentIfNeeded();
     } else {
@@ -138,7 +143,10 @@ router.put("/:id", async (req, res) => {
 router.get("/:id", async (req, res) => {
   const params = parseQuery(Reservering, req.query);
 
-  const reservering = await Reservering.findById(req.params.id, params);
+  const mixin = require("../models/Refund.mixin");
+  Object.assign(Reservering.prototype, mixin);
+
+  const reservering = await Reservering.findByPk(req.params.id, params);
   Reservering.removeHook("afterFind");
   if (!reservering) {
     return res.status(404).send("niet gevonden");
@@ -217,8 +225,7 @@ router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
     await ReserveringMail.send(
       reservering,
       "terugbetaald",
-      `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`,
-      {
+      `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
         bedrag: bedrag
       }
     );
