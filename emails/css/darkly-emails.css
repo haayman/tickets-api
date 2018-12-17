@@ -106,6 +106,7 @@ strong {
   font-weight: bolder;
 }
 
+.small,
 small {
   font-size: 80%;
 }
