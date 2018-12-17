@@ -77,12 +77,16 @@ module.exports = (sequelize, DataTypes) => {
         },
         saldo() {
           // bereken het totaal betaalde bedrag
-          if (!this.payments) {
+          if (!this.Payments) {
             return null;
           }
 
           // totaal betaald
-          let saldo = this.payments.reduce((saldo, payment) => {
+          let saldo = this.Payments.reduce((saldo, payment) => {
+            if (!payment.payment && payment.paymentId) {
+              debugger;
+              throw new Error('payment not initialized')
+            }
             if (payment.isPaid) {
               return saldo + (+payment.amount - (payment.amountRefunded || 0));
             } else {
@@ -91,9 +95,9 @@ module.exports = (sequelize, DataTypes) => {
           }, 0);
 
           // bereken kosten van alle te betalen tickets
-          saldo = this.tickets.reduce((saldo, ticket) => {
+          saldo = this.tickets.reduce((saldo, ta) => {
             return (
-              saldo - ticket.getBedrag(ticket.aantal - ticket.aantaltekoop)
+              saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop)
             );
           }, saldo);
 
@@ -159,7 +163,7 @@ module.exports = (sequelize, DataTypes) => {
             return null;
           }
 
-          for (let payment of this.payments) {
+          for (let payment of this.Payments) {
             if (!payment.isPaid) {
               return false;
             } else {
@@ -211,6 +215,11 @@ module.exports = (sequelize, DataTypes) => {
   };
 
   Reservering.prototype.initTickets = async function () {
+    if (!this.Payments) this.Payments = await this.getPayments();
+    await Promise.all(this.Payments.map(async payment => await payment.initPayment()));
+    let payments = {};
+    this.Payments.forEach((p) => payments[p.id] = p);
+
     if (!this.uitvoering) this.uitvoering = await this.getUitvoering();
     if (!this.tickets) {
       const voorstelling =
@@ -218,6 +227,14 @@ module.exports = (sequelize, DataTypes) => {
         (this.uitvoering.voorstelling = await this.uitvoering.getVoorstelling());
       const prijzen = voorstelling.prijzen || (voorstelling.prijzen = await voorstelling.getPrijzen());
       const Tickets = this.Tickets || (this.Tickets = await this.getTickets());
+
+      // zorg er voor dat initPayment() is aangeroepen
+      Tickets.forEach(t => {
+        if (t.PaymentId) {
+          t.Payment = payments[t.PaymentId];
+        }
+      })
+
       this.tickets = await Promise.all(
         prijzen.map(async prijs => {
           return new TicketAggregate(
@@ -228,7 +245,6 @@ module.exports = (sequelize, DataTypes) => {
         })
       );
     }
-    // if (!this.payments) this.payments = await this.getPayments();
     // if (!this.logs) this.logs = await this.getLogs();
   };
 
@@ -248,7 +264,7 @@ module.exports = (sequelize, DataTypes) => {
     const json = await this.toJSON();
     json.uitvoering = this.uitvoering || (await this.getUitvoering());
     json.tickets = this.tickets;
-    json.payments = this.payments || (await this.getPayments());
+    json.payments = this.Payments || (await this.getPayments());
     json.paymentUrl = this.paymentUrl();
     json.teruggeefbaar = await this.teruggeefbaar();
     if (this.Logs) {
@@ -288,8 +304,8 @@ module.exports = (sequelize, DataTypes) => {
   }),
   (Reservering.prototype.paymentUrl = function () {
     let url;
-    if (!this.payments) return null;
-    for (let payment of this.payments) {
+    if (!this.Payments) return null;
+    for (let payment of this.Payments) {
       if ((url = payment.paymentUrl)) {
         return url;
       }
@@ -301,13 +317,13 @@ module.exports = (sequelize, DataTypes) => {
     if (!this.Tickets) {
       this.Tickets = await this.getTickets();
     }
-    if (!this.payments) {
-      this.payments = await this.getPayments();
+    if (!this.Payments) {
+      this.Payments = await this.getPayments();
     }
     if (
       !this.wachtlijst &&
       this.onbetaaldeTickets.length &&
-      this.payments.filter(p => p.status == "open").length === 0
+      this.Payments.filter(p => p.status == "open").length === 0
     ) {
       const payment = Payment.build({
         reserveringId: this.id
@@ -316,7 +332,7 @@ module.exports = (sequelize, DataTypes) => {
       // await payment.save();
       // await this.addPayment(payment);
       // waarom is dit nog nodig???
-      this.payments = (this.payments || []).concat([payment]);
+      this.Payments = (this.Payments || []).concat([payment]);
     }
   };
 
@@ -376,6 +392,10 @@ module.exports = (sequelize, DataTypes) => {
   Reservering.prototype.getQrUrl = function () {
     return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`;
   };
+
+  Reservering.prototype.getMailUrl = function () {
+    return this.getRoot() + `/api/reservering/${this.id}/mail`;
+  }
 
   Reservering.prototype.getRoot = function () {
     //return globalData.get("server");

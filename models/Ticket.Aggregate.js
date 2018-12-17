@@ -18,6 +18,7 @@ module.exports = class {
       aantal: this.aantal,
       aantalBetaald: this.aantalBetaald,
       aantalTekoop: this.aantalTekoop,
+      aantalTerugbetalen: this.aantalTerugbetalen,
       bedrag: this.getBedrag
     };
   }
@@ -78,8 +79,8 @@ module.exports = class {
             await ticket.destroy();
             this.tickets = this.tickets.filter(t => t.id !== ticket.id);
           } else {
-            let payment = await ticket.getPayment();
-            if (payment.status == "paid") {
+            let payment = ticket.Payment || (ticket.Payment = await ticket.getPayment());
+            if (payment.betaalstatus == "paid") {
               const teruggeefbaar = await this.reservering.teruggeefbaar();
               if (teruggeefbaar) {
                 await this.reservering.logMessage(`${ticketDescription} terugbetalen`);
@@ -117,6 +118,14 @@ module.exports = class {
 
   get tekoop() {
     return this.validTickets.filter(t => t.tekoop);
+  }
+
+  get terugbetalen() {
+    return this.validTickets.filter(t => t.terugbetalen);
+  }
+
+  get aantalTerugbetalen() {
+    return this.terugbetalen.length;
   }
 
   get aantalTekoop() {
@@ -157,9 +166,13 @@ module.exports = class {
     const aantal = this.aantal;
     const totaal = aantal * this.prijs.prijs;
     const aantalTekoop = this.aantalTekoop;
+    const aantalTerugbetalen = this.aantalTerugbetalen;
     let retval = `${this.aantal}x ${this.prijs.asString()}: €${totaal}`;
     if (aantalTekoop) {
       retval += ` waarvan ${aantalTekoop} te koop`;
+    }
+    if (aantalTerugbetalen) {
+      retval += ` ${aantalTekoop ? 'en' : 'waarvan'} ${aantalTerugbetalen} wacht op terugbetaling`;
     }
     return retval;
   }

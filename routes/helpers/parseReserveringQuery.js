@@ -13,6 +13,7 @@ module.exports = function (model, params) {
       'Tickets.Payment,Prijs',
       'Payments'
     ]).filter(onlyUnique);
+    params.separate = true;
     model.addHook('afterFind', model.initTickets);
   }
   return _parseQuery(model, params);
