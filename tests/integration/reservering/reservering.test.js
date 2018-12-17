@@ -10,6 +10,11 @@ process.env.DEBUG = 'axios';
 const nodemailerMock = require('nodemailer-mock');
 jest.setMock('nodemailer', nodemailerMock);
 
+// disable test
+function _it(description) {
+  // console.log('skipped ', description);
+}
+
 const {
   createReservering,
   updateReservering
@@ -36,13 +41,14 @@ beforeAll(async () => {
   // console.log("voorstelling created");
 });
 
-afterAll(async () => {
+afterAll(async (done) => {
   // console.log("delete voorstelling");
   await Voorstelling.destroy({
     where: {},
     truncate: true
   });
   jest.resetAllMocks();
+  done();
 });
 
 afterEach(async () => {
@@ -56,77 +62,79 @@ afterEach(async () => {
 });
 
 describe("/reservering", () => {
-  // describe("/GET", () => {
-  //   it("should return alle reserveringen", async () => {
-  //     try {
-  //       await Reservering.bulkCreate(
-  //         [{
-  //             naam: "naam1",
-  //             email: "naam1@plusleo.nl",
-  //             uitvoeringId: voorstelling.uitvoeringen[0].id,
-  //             tickets: [{
-  //               prijsId: voorstelling.prijzen[0].id
-  //             }]
-  //           },
-  //           {
-  //             naam: "naam2",
-  //             email: "naam@plusleo.nl",
-  //             uitvoeringId: voorstelling.uitvoeringen[0].id,
-  //             tickets: [{
-  //               prijsId: voorstelling.prijzen[1].id
-  //             }]
-  //           }
-  //         ], {
-  //           include: [{
-  //               association: Reservering.Tickets
-  //             },
-  //             {
-  //               association: Voorstelling.Uitvoeringen
-  //             }
-  //           ]
-  //         }
-  //       );
-  //     } catch (ex) {
-  //       console.log(ex);
-  //     }
-  //     const res = await request(app)
-  //       .get("/api/reservering")
-  //       .set("x-auth-token", authToken);
-  //     expect(res.status).toBe(200);
-  //     expect(res.body.length).toBe(2);
-  //     expect(res.body.some(u => u.naam === "naam1")).toBeTruthy();
-  //     expect(res.body.some(u => u.naam === "naam2")).toBeTruthy();
-  //   });
+  describe("/GET", () => {
+    it("should return alle reserveringen", async () => {
+      try {
+        await Reservering.bulkCreate(
+          [{
+              naam: "naam1",
+              email: "naam1@plusleo.nl",
+              uitvoeringId: voorstelling.uitvoeringen[0].id,
+              tickets: [{
+                prijsId: voorstelling.prijzen[0].id
+              }]
+            },
+            {
+              naam: "naam2",
+              email: "naam@plusleo.nl",
+              uitvoeringId: voorstelling.uitvoeringen[0].id,
+              tickets: [{
+                prijsId: voorstelling.prijzen[1].id
+              }]
+            }
+          ], {
+            include: [{
+                association: Reservering.Tickets
+              },
+              {
+                association: Voorstelling.Uitvoeringen
+              }
+            ]
+          }
+        );
+      } catch (ex) {
+        console.log(ex);
+        throw (ex);
+      }
+      const res = await request(app)
+        .get("/api/reservering")
+        .set("x-auth-token", authToken);
+      expect(res.status).toBe(200);
+      expect(res.body.length).toBe(2);
+      expect(res.body.some(u => u.naam === "naam1")).toBeTruthy();
+      expect(res.body.some(u => u.naam === "naam2")).toBeTruthy();
+    });
 
-  //   describe("/GET/id", () => {
-  //     it("should return specific reservering", async () => {
-  //       let reservering;
-  //       try {
-  //         reservering = await Reservering.create({
-  //           naam: "naam3",
-  //           email: "naam3@plusleo.nl",
-  //           uitvoeringId: voorstelling.uitvoeringen[0].id
-  //         });
-  //       } catch (ex) {
-  //         console.log(ex);
-  //       }
+    describe("/GET/id", () => {
+      it("should return specific reservering", async () => {
+        let reservering;
+        try {
+          reservering = await Reservering.create({
+            naam: "naam3",
+            email: "naam3@plusleo.nl",
+            uitvoeringId: voorstelling.uitvoeringen[0].id
+          });
+        } catch (ex) {
+          console.log(ex);
+          throw (ex)
+        }
 
-  //       const id = reservering.id;
-  //       const res = await request(app)
-  //         .get("/api/reservering/" + id)
-  //         .set("x-auth-token", authToken);
-  //       expect(res.status).toBe(200);
-  //       expect(res.body.id).toBe(id);
-  //     });
+        const id = reservering.id;
+        const res = await request(app)
+          .get("/api/reservering/" + id)
+          .set("x-auth-token", authToken);
+        expect(res.status).toBe(200);
+        expect(res.body.id).toBe(id);
+      });
 
-  //     it("should return 404 not found", async () => {
-  //       const res = await request(app)
-  //         .get("/api/reservering/1")
-  //         .set("x-auth-token", authToken);
-  //       expect(res.status).toBe(404);
-  //     });
-  //   });
-  // });
+      it("should return 404 not found", async () => {
+        const res = await request(app)
+          .get("/api/reservering/1")
+          .set("x-auth-token", authToken);
+        expect(res.status).toBe(404);
+      });
+    });
+  });
 
   describe("/post", () => {
     it("succesvolle reservering", async () => {
@@ -150,8 +158,9 @@ describe("/reservering", () => {
         expect(sentMail[1].subject).toMatch(/ticket 2x/);
 
       } catch (ex) {
-        debugger;
+        //debugger;
         console.log(ex);
+        throw (ex);
       }
     });
 
@@ -213,8 +222,9 @@ describe("/reservering", () => {
         expect(sentMail.length).toBe(1);
         expect(sentMail[0].subject).toMatch(/wachtlijst/);
       } catch (ex) {
-        debugger;
+        //debugger;
         console.log(ex);
+        throw (ex);
       }
     });
 
@@ -273,8 +283,9 @@ describe("/reservering", () => {
         expect(sentMail[2].html).toMatch(/alsnog te betalen/);
 
       } catch (ex) {
-        debugger;
+        //debugger;
         console.log(ex);
+        throw (ex);
       }
     });
 
@@ -364,21 +375,18 @@ describe("/reservering", () => {
         expect(sentMail.find(m => m.subject.match(/1x/))).toBeTruthy();
 
       } catch (ex) {
-        debugger;
+        //debugger;
         console.log(ex);
+        throw (ex);
+
       }
     });
 
 
   });
+  // ===============================================================================================
 
   it("should completely refund if set to 0", async () => {
-    /* 
-    test wachtlijst
-    1) reserveer 2 volwassen kaarten
-    2) wijzig 1 kaart van volwassen naar kind
-      - € 2.50 refund
-    */
     try {
       const uitvoeringId = voorstelling.uitvoeringen[0].id
 
@@ -407,7 +415,6 @@ describe("/reservering", () => {
           }]
         });
 
-      debugger;
       let sentMail = nodemailerMock.mock.sentMail();
       expect(res.body.aantal).toBe(0);
       expect(res.body.onbetaaldeTickets.length).toBe(0);
@@ -417,16 +424,53 @@ describe("/reservering", () => {
 
 
     } catch (ex) {
-      debugger;
+      //debugger;
       console.log(ex);
+      throw (ex);
     }
   });
 
   // ===============================================================================================
 
+  it("should completely refund if deleted", async () => {
+    try {
+      const uitvoeringId = voorstelling.uitvoeringen[0].id
+
+      let res = await createReservering(request(app), {
+        naam: "noshow",
+        email: "noshow@mail.example",
+        uitvoeringId: uitvoeringId,
+        tickets: [{
+          prijs: voorstelling.prijzen[0],
+          aantal: 2
+        }]
+      });
+
+      const reserveringId1 = res.reservering.body.id;
+
+      nodemailerMock.mock.reset();
+
+      debugger;
+      res = await request(app).del("/api/reservering/" + reserveringId1)
+
+      debugger;
+      let sentMail = nodemailerMock.mock.sentMail();
+      expect(sentMail.find(m => m.subject.match(/Gewijzigde reservering/))).toBeTruthy();
+      expect(sentMail.find(m => m.subject.match(/€20.00 teruggestort/))).toBeTruthy();
+
+
+    } catch (ex) {
+      //debugger;
+      console.log(ex);
+      throw (ex);
+    }
+  });
+
+
+  // ===============================================================================================
+
   it("should partly refund", async () => {
     /* 
-    test wachtlijst
     1) reserveer 2 volwassen kaarten
     2) wijzig 1 kaart van volwassen naar kind
       - € 2.50 refund
@@ -478,6 +522,7 @@ describe("/reservering", () => {
     } catch (ex) {
       debugger;
       console.log(ex);
+      throw (ex);
     }
   });
 
