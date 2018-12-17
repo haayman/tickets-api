@@ -1,4 +1,4 @@
-<% if ( reservering.payments.length ) { %>
+<% if ( reservering.Payments.length ) { %>
 <tr>
   <td>
     <table class="row card ">
@@ -19,7 +19,7 @@
               </tr>
             </thead>
             <tbody>
-            <% reservering.payments.forEach( function(payment) { %>
+            <% reservering.Payments.forEach( function(payment) { %>
               <tr>
                 <td><%= payment.description %></td>
                 <td><%= payment.paidAt ? format(payment.paidAt, 'DD-MM HH:mm') : '' %></td>

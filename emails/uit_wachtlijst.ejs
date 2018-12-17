@@ -1,3 +1,4 @@
+<%- include('partials/header')%>
 <tr><td>
 <table class="card row ">
   <tr class="card-body">
@@ -6,7 +7,7 @@
       <br />
       Er is een aantal plaatsen vrijgekomen, waardoor je niet langer in de wachtrij staat<br />
       <br />
-      <% if( reservering.saldo ){ %>
+      <% if( reservering.saldo < 0 ){ %>
       <em>We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">te betalen</a></em>
       <% } %>
     </td>
@@ -15,5 +16,8 @@
 </td></tr>
 
 <%- include('partials/reservering') %>
+<% if( reservering.saldo >= 0 ) {%>
+<%- include('partials/qrcode')%>
+<%}%>
 <%- include('partials/bewaar')%>
 <%- include('partials/footer')%>
