@@ -69,6 +69,13 @@ const models = require("./models");
       password: makePassword(20),
       role: "speler"
     });
+    models.User.create({
+      username: "san",
+      name: "San",
+      email: "san@plusleo.nl",
+      password: makePassword(20),
+      role: "speler"
+    });
   } catch (e) {
     console.log(e);
   }

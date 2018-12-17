@@ -9,10 +9,10 @@ const {
     Voorstelling.create({
       title: "Kamers",
       description: "We doen iets met kamers",
-      url: "https://plusleo.nl/producties/kamers/",
+      url: "https://plusleo.nl/producties/verframed/",
       locatie: "nog niet bekend",
-      poster: "https://plusleo.nl/producties/kamers/poster.png",
-      thumbnail: "https://plusleo.nl/producties/kamers/thumb.png",
+      poster: "https://plusleo.nl/producties/verframed/poster.png",
+      thumbnail: "https://plusleo.nl/producties/verframed/thumb.png",
       prijzen: [{
           description: "Volwassene",
           prijs: 10
