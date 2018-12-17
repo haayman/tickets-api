@@ -68,7 +68,8 @@ router.post("/", async (req, res) => {
     }
 
     await Reservering.verwerkRefunds();
-    res.send(reservering);
+    const json = await reservering.toJSONA()
+    res.send(json);
   });
 });
 
@@ -81,7 +82,7 @@ router.put("/:id", async (req, res) => {
   const params = parseQuery(Reservering, {
     include: ["tickets", "Payments"]
   });
-  const reservering = await Reservering.findById(id, params);
+  let reservering = await Reservering.findById(id, params);
   if (!reservering) {
     return res.status(404).send(`not found: ${id}`);
   }
@@ -109,8 +110,9 @@ router.put("/:id", async (req, res) => {
     reservering.wachtlijst = await reservering.moetInWachtrij();
     await reservering.save();
 
-    await reservering.reload(params);
-    Reservering.removeHook("afterFind");
+    // reservering = await reservering.reload(params);
+    reservering = await Reservering.findByPk(reservering.id, params);
+    // Reservering.removeHook("afterFind");
 
     const saldo = reservering.saldo;
 
