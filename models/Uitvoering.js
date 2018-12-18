@@ -135,6 +135,18 @@ module.exports = (sequelize, DataTypes) => {
 
   }
 
+  Uitvoering.prototype.status = async function () {
+    const gereserveerd = await this.getGereserveerd();
+    const wachtlijst = await this.getWachtlijst();
+    const vrije_plaatsen = this.aantal_plaatsen - gereserveerd;
+
+    if (vrije_plaatsen) {
+      return `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen>1?'en':''}</span>`
+    } else {
+      return `<b>Uitverkocht</b> <span>wachtlijst: ${wachtlijst||0}</span>`
+    }
+  }
+
   Uitvoering.associate = function (models) {
     models.Uitvoering.Voorstelling = models.Uitvoering.belongsTo(
       models.Voorstelling, {
