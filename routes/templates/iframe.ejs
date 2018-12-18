@@ -53,6 +53,7 @@
           <thead>
             <tr>
               <th>datum</th>
+              <th></th>
               <th>aanvang</th>
               <th>ontvangst</th>
               <th></th>
@@ -65,6 +66,9 @@
                 <a href="/reserveren/?uitvoeringId=<%=uitvoering.id%>" target="_top">
                   <%=format(uitvoering.aanvang, "dddd D MMMM YYYY", {locale:nl})%>
                 </a>
+              </td>
+              <td>
+                <%=uitvoering.extra_text%>
               </td>
               <td>
                 <a href="/reserveren/?uitvoeringId=<%=uitvoering.id%>" target="_top">
