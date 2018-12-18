@@ -14,7 +14,7 @@ async function createReservering(request, reservering) {
   expect(reserveringResult.body.id).toBeDefined();
 
   const id = reserveringResult.body.id;
-  const payments = reserveringResult.body.Payments;
+  const payments = reserveringResult.body.payments;
   let paymentResult = null;
   if (payments.length) {
     paymentResult = await request.post("/api/payment/bank/" + id).send({
