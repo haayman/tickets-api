@@ -99,8 +99,8 @@ module.exports = (sequelize, DataTypes) => {
     );
   };
 
-  User.prototype.tokenExpired = function (token) {
-    return differenceInMinutes(new Date(), token.timestamp) >= 15;
+  User.prototype.tokenExpired = function (timestamp) {
+    return differenceInMinutes(new Date(), new Date(timestamp)) >= 60;
   }
 
   User.prototype.getEditLink = function () {
