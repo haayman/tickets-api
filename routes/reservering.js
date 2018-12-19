@@ -47,6 +47,15 @@ router.post("/", async (req, res) => {
       })
     );
 
+    // kassa-betaling 
+    if (res.locals.user && req.body.betaald === true) {
+      reservering.Tickets = await reservering.getTickets();
+      await Promise.all(reservering.onbetaaldeTickets.map(async (ticket) => {
+        ticket.betaald = true;
+        await ticket.save();
+      }));
+    }
+
     reservering.wachtlijst = await reservering.moetInWachtrij();
 
     await reservering.createPaymentIfNeeded();
