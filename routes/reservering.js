@@ -172,7 +172,7 @@ router.get("/:id/resend", async (req, res) => {
       ReserveringMail.send(
         reservering,
         "ticket",
-        `ticket ${strReservering}`
+        `Kaarten voor ${strReservering}`
       );
     } else {
       ReserveringMail.send(reservering, "paymentFailure", "Betalingsherinnering");
