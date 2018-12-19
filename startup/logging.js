@@ -92,7 +92,6 @@ module.exports = function () {
   });
 
   process.on("unhandledRejection", ex => {
-    debugger;
     winston.error(ex);
     // process.exit(1);
   });
