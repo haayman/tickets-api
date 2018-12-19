@@ -7,6 +7,7 @@ const log = require("../routes/log");
 const auth = require("../routes/auth");
 const payment = require("../routes/payment");
 const iframe = require('../routes/iframe');
+const mail = require('../routes/mail');
 const errorHandler = require("../middleware/error");
 // const servername = require('../middleware/servername');
 const setUser = require("../middleware/user");
@@ -33,6 +34,7 @@ module.exports = function (app) {
   app.use("/api/reservering", reservering);
   app.use("/api/log", log);
   app.use("/api/payment", payment);
+  app.use("/api/mail", mail);
 
   app.use("/iframe*", iframe);
 
