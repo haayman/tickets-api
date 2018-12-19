@@ -166,15 +166,16 @@ router.get("/:id/resend", async (req, res) => {
   if (!reservering) {
     return res.status(404).send("niet gevonden");
   } else {
-    const isPaid = await reservering.isPaid;
+    const isPaid = await reservering.status === "paid";
     if (isPaid) {
+      const strReservering = await reservering.asString();
       ReserveringMail.send(
         reservering,
-        "confirmationPayment",
-        `ticket ${reservering}`
+        "ticket",
+        `ticket ${strReservering}`
       );
     } else {
-      ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
+      ReserveringMail.send(reservering, "paymentFailure", "Betalingsherinnering");
     }
     res.send("OK");
   }
