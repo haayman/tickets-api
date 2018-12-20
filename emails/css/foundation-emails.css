@@ -1546,3 +1546,11 @@ body.outlook p {
     min-width: 0;
   }
 }
+
+@media print {
+
+  .no-print,
+  .no-print {
+    display: none !important;
+  }
+}
