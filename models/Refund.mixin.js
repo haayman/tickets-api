@@ -60,6 +60,14 @@ module.exports = {
               bedrag: amount
             });
             await this.logMessage(`${paymentDescription} teruggestort`);
+
+
+            // als er geen tickets meer over zijn, reservering verwijderen
+            this.Tickets = await this.getTickets();
+            if (this.validTickets.length === 0) {
+              await this.destroy();
+            }
+
           }
         } else {
           nonRefundable.push({
