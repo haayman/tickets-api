@@ -78,15 +78,14 @@ module.exports = function () {
         colorize: true,
         level: "info"
       }),
-      new winston.transports.File({
-        filename: "error.log",
-        level: "error"
-      })
+      // new winston.transports.File({
+      //   filename: "error.log",
+      //   level: "error"
+      // })
     ]
   });
 
   process.on("uncaughtException", ex => {
-    debugger;
     winston.error(ex);
     // process.exit(1);
   });
