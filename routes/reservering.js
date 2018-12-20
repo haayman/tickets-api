@@ -96,6 +96,11 @@ router.put("/:id", async (req, res) => {
     return res.status(404).send(`not found: ${id}`);
   }
 
+  // geen wijzigingen meer toestaan nadat de reservering is ingenomen
+  if (reservering.ingenomen) {
+    return res.status('405').send('reservering is al ingenomen');
+  }
+
   Reservering.sequelize.transaction(async transaction => {
     await reservering.update(req.body);
 
