@@ -325,14 +325,18 @@ router.delete("/:id", async (req, res) => {
     const strReservering = await reservering.asString();
     await reservering.logMessage(`${strReservering} geannuleerd`);
     const uitvoering = reservering.uitvoering;
-    //    await reservering.destroy();
 
     await Reservering.verwerkRefunds();
     uitvoering.verwerkWachtlijst();
+
+    reservering.Tickets = await reservering.getTickets();
+    if (reservering.validTickets.length === 0) {
+      await reservering.destroy();
+    }
+
     res.send("OK");
   });
 
-  res.send(null);
 });
 
 module.exports = router;

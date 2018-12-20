@@ -416,6 +416,9 @@ module.exports = (sequelize, DataTypes) => {
     return `${this.aantal}x ${this.uitvoering}`;
   };
 
+  /**
+   * Bepaal of de uitvoering binnen de teruggave_termijn valt
+   */
   Reservering.prototype.teruggeefbaar = async function () {
     const uitvoering = await this.getUitvoering();
     const today = new Date();
@@ -449,8 +452,6 @@ module.exports = (sequelize, DataTypes) => {
       reserveringen.map(async reservering => reservering.refund())
     );
   };
-
-
 
   Reservering.associate = function (models) {
     Reservering.Uitvoering = models.Reservering.belongsTo(models.Uitvoering, {
