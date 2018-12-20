@@ -39,7 +39,7 @@ module.exports = {
     await Promise.all(
       Object.keys(payments).map(async paymentId => {
         const amount = payments[paymentId];
-        let payment = await Payment.findById(paymentId, {
+        let payment = await Payment.findByPk(paymentId, {
           include: [Payment.Tickets]
         });
         // t.b.v. tests: gebruik 'norefund' in het e-mail adres
@@ -124,7 +124,7 @@ module.exports = {
   async getPaymentById(paymentId) {
     const payment = this.Payments.find(p => p.id == paymentId);
     if (!payment) {
-      payment = await Payment.findById(paymentId, {
+      payment = await Payment.findByPk(paymentId, {
         include: [{
           association: [Payment.Tickets]
         }]
