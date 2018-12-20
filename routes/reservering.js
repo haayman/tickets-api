@@ -34,13 +34,13 @@ router.post("/", async (req, res) => {
   Reservering.sequelize.transaction(async transaction => {
     /** @type {Reservering} */
     let reservering = await Reservering.create(req.body);
-    reservering.uitvoering = await Uitvoering.findById(
+    reservering.uitvoering = await Uitvoering.findByPk(
       reservering.uitvoeringId
     );
     reservering.tickets = [];
     await Promise.all(
       req.body.tickets.map(async t => {
-        const prijs = await Prijs.findById(t.prijs.id);
+        const prijs = await Prijs.findByPk(t.prijs.id);
         const ta = new TicketAggregate(reservering, prijs);
         await ta.setAantal(t.aantal);
         reservering.tickets.push(ta);
@@ -91,7 +91,7 @@ router.put("/:id", async (req, res) => {
   const params = parseQuery(Reservering, {
     include: ["tickets", "Payments"]
   });
-  let reservering = await Reservering.findById(id, params);
+  let reservering = await Reservering.findByPk(id, params);
   if (!reservering) {
     return res.status(404).send(`not found: ${id}`);
   }
@@ -110,7 +110,7 @@ router.put("/:id", async (req, res) => {
     if (req.body.tickets) {
       await Promise.all(
         req.body.tickets.map(async t => {
-          // const prijs = await Prijs.findById(t.prijs.id);
+          // const prijs = await Prijs.findByPk(t.prijs.id);
           // const ta = new TicketAggregate(reservering, prijs);
           const ta = reservering.tickets.find(
             ticket => ticket.prijs.id == t.prijs.id
@@ -173,7 +173,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.get("/:id/resend", async (req, res) => {
-  const reservering = await Reservering.findById(
+  const reservering = await Reservering.findByPk(
     req.params.id,
     parseQuery(Reservering, {})
   );
@@ -266,7 +266,7 @@ router.get("/:id/mail", async (req, res) => {
 });
 
 router.get("/:id/qr", async (req, res) => {
-  const reservering = await Reservering.findById(req.params.id);
+  const reservering = await Reservering.findByPk(req.params.id);
   if (!reservering) return res.status(404).send("niet gevonden");
 
   const qr = require("qr-image");
@@ -285,7 +285,7 @@ router.get("/:id/qr_teruggave", async (req, res) => {
   const params = parseQuery(Reservering, {
     include: ["tickets", "Payments"]
   });
-  const reservering = await Reservering.findById(req.params.id, params);
+  const reservering = await Reservering.findByPk(req.params.id, params);
   const getBic = require("bic-from-iban");
   if (!reservering) return res.status(404).send("niet gevonden");
 
@@ -318,7 +318,7 @@ router.delete("/:id", async (req, res) => {
     include: ["tickets", "Payments"]
   });
   Reservering.sequelize.transaction(async transaction => {
-    const reservering = await Reservering.findById(req.params.id, params);
+    const reservering = await Reservering.findByPk(req.params.id, params);
     if (!reservering) {
       return res.status(404).send("niet gevonden");
     }

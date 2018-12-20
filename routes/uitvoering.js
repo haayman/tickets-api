@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const params = parseQuery(Uitvoering, req.query)
-  const uitvoering = await Uitvoering.findById(req.params.id, params);
+  const uitvoering = await Uitvoering.findByPk(req.params.id, params);
   if (!uitvoering) {
     return res.status(404).send("niet gevonden");
   }
