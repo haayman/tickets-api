@@ -167,7 +167,7 @@ module.exports = class {
     const totaal = aantal * this.prijs.prijs;
     const aantalTekoop = this.aantalTekoop;
     const aantalTerugbetalen = this.aantalTerugbetalen;
-    let retval = `${this.aantal}x ${this.prijs.asString()}: €${totaal}`;
+    let retval = `${this.aantal}x ${this.prijs.asString()}: €${totaal.toFixed(2)}`;
     if (aantalTekoop) {
       retval += ` waarvan ${aantalTekoop} te koop`;
     }
