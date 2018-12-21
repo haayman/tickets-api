@@ -11,7 +11,8 @@ module.exports = {
         collate: "utf8_general_ci"
       },
       timestamps: true,
-      freezeTableName: true
+	freezeTableName: true,
+	logging: false
     },
   },
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
