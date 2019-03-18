@@ -170,7 +170,7 @@ module.exports = (sequelize, DataTypes) => {
 
     this.paymentId = this.payment.id;
     this.description = description;
-    reservering.setStatus(this.payment.status);
+    await reservering.setStatus(this.payment.status);
     await reservering.save();
     await this.save(); // get id
 
@@ -211,7 +211,7 @@ module.exports = (sequelize, DataTypes) => {
       }
     });
     Payment.Tickets = models.Payment.hasMany(models.Ticket, {
-      onDelete: 'cascade'
+      onDelete: 'CASCADE'
     });
   };
 

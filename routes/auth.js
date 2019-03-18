@@ -35,9 +35,9 @@ router.get("/CheckLoggedIn", async (req, res) => {
   let token = req.header("x-auth-token");
   if (token) {
     try {
-      user = jwt.verify(token, config.get("jwtPrivateKey"));
-      user = await User.findById(user.id);
-      if (user.tokenExpired(token)) {
+      const data = jwt.verify(token, config.get("jwtPrivateKey"));
+      user = await User.findByPk(data.id);
+      if (user.tokenExpired(data.timestamp)) {
         user = token = null;
         error = "token expired";
       } else {

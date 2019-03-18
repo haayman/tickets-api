@@ -19,7 +19,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   let params = parseQuery(Voorstelling, req.query);
 
-  const voorstelling = await Voorstelling.findById(req.params.id, params);
+  const voorstelling = await Voorstelling.findByPk(req.params.id, params);
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   } else {
@@ -52,7 +52,7 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
     return res.status(400).send("no id");
   }
 
-  let voorstelling = await Voorstelling.findById(id, {
+  let voorstelling = await Voorstelling.findByPk(id, {
     include: [Voorstelling.Uitvoeringen, Voorstelling.Prijzen]
   });
   if (!voorstelling) {

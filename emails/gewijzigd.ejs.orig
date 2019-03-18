@@ -1,0 +1,15 @@
+<table class="container">
+  <tr class="row">
+    <th>
+  <div class="card p-3 mt-3">
+    <p>Hallo <%= reservering.naam %></p>
+    <p>Je reservering is gewijzigd</p>
+  </div>
+  </td></tr>
+
+  <%- include('partials/voorstelling') %>
+  <%- include('partials/qrcode')%>
+  <%- include('partials/bewaar')%>
+  <%- include('partials/reservering')%>
+  <%- include('partials/payments')%>
+</table>

@@ -1,20 +1,25 @@
-<div class="card mt-3">
-  <div class="card-header">
-    Ticket besteld
-  </div>
-  <div class="card-body">
-    <p>
-      Hallo <%= reservering.naam %>
-    </p>
-    <p>
-      Bedankt voor je bestelling. Zodra de betaling is afgerond krijg je je tickets toegestuurd.
-    </p>
-    <p>
-    <em>Als je er iets fout is gegaan bij de betaling, 
-      verzoeken we je om <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em> 
-      (je kunt niet per ongeluk 2x betalen)
-    </p>
-  </div>
-</div>
-
+<%- include('partials/header')%>
+<tr><td>
+<table class="row card ">
+  <tr class="card-header">
+    <td>Kaarten besteld</td>
+  </tr>
+  <tr class="card-body">
+    <td>
+      <p>
+        Hallo <%= reservering.naam %>
+      </p>
+      <p>
+        Bedankt voor je bestelling. Zodra de betaling is afgerond krijg je je kaarten toegestuurd.
+      </p>
+      <p>
+      <em>Als je er iets fout is gegaan bij de betaling, 
+        verzoeken we je om <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em> 
+        (je kunt niet per ongeluk 2x betalen)
+      </p>
+    </td>
+  </tr>
+</table>
+</td></tr>
 <%- include('partials/reservering') %>
+<%- include('partials/footer')%>

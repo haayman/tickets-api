@@ -1,10 +1,16 @@
-<div class="card p-3 mt-3">
+<%- include('partials/header')%>
+<tr><td>
+<table class="card row ">
+  <tr class="card-body"><td>
   <p>Hallo <%= reservering.naam %><br /><br />
   We hebben je betaling ontvangen</p>
-</div>
+  </td></tr>
+</table>
+</td></tr>
+
 <%- include('partials/voorstelling') %>
+<%- include('partials/reservering') %>
 <%- include('partials/qrcode')%>
 <%- include('partials/bewaar')%>
-<%- include('partials/reservering') %>
-<%- include('partials/payments') %>
+<%- include('partials/footer')%>
 

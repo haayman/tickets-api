@@ -1,14 +1,22 @@
-<div class="card p-3 mt-3">
-  <div class="card-body">
-    <div class="card-text">Hallo <%= reservering.naam %></div>
-    <div class="card-text">Je ticket(s) zijn verkocht, maar het bedrag kon niet automatisch teruggestort worden.<br />
-    Als je je <a href="<%=reservering.getIBANUrl()%>">bankgegevens</a> zou willen invullen, dan maken we het geld zo spoedig mogelijk aan je over
-    </div>
-    <div class="card-text">
-    Met vriendelijke groet, <br />
-    Penningmeester Plusleo
-    </div>
-  
-</div>
+<%- include('partials/header')%>
+<tr><td>
+<table class="card row ">
+  <tr class="card-body">
+    <td>
+      Hallo <%= reservering.naam %><br />
+      <br />
+      We willen je geld terugstorten, maar de termijn om dit automatisch te doen is verstreken.<br />
+      <br />
+      Als je je bankgegevens invult, dan maken we het geld zo spoedig mogelijk aan je over<br />
+      <br />
+      <a class="btn btn-primary" href="<%=reservering.getIBANUrl()%>" target="_blank">
+        Vul bankgegevens in
+      </a><br />
+      <br />
+      PlusLeo
 
-
+    </td>
+  </tr>
+</table>
+</td></tr>
+<%- include('partials/footer')%>

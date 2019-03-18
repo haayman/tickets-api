@@ -7,7 +7,4 @@ module.exports = {
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
   },
-  server: {
-    url: "https://dev.plusleo.nl"
-  },
 };

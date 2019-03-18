@@ -2,32 +2,57 @@
 <html lang="nl">
 
 <head>
-	<title>PlusLeo Tickets</title>
-	<!-- Required meta tags -->
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-	<link rel="stylesheet" type="text/css" href="/css/darkly.css" />
-	<link rel="stylesheet" type="text/css" href="/css/plusleo.css" />
+  <title>PlusLeo Kaarten</title>
+  <!-- Required meta tags -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
+  <link rel="stylesheet" type="text/css" href="/css/plusleo.css" />
+  <script>
+    function noResponse() {
+      var div = document.getElementById('noresponse');
+      if (div) {
+        div.style.display = "block"
+      }
+    }
+
+    setTimeout(noResponse, 10000)
+    setTimeout(function() {
+      var div = document.getElementById('spinner');
+      if (div) {
+        div.style.display = "block"
+      }
+  }, 2000)
+  </script>
 </head>
 
 <body>
-	<div id="app">
-		<div class="container mt-3">
-			<div class="card">
-				<div class="card-header">
-					Bezig met laden...
-				</div>
-				<div class="card-body">
-					Als het te lang duurt: het kan zijn dat je javascript hebt uitgezet
-					of een te oude browser gebruikt.
-				</div>
-			</div>
-		</div>
-	</div>
+  <div id="app">
+    <div class="modal" style="display:block">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="modal-title">
+              <h1>PlusLeo kaarten</h1>
 
-	<script type="module" src="/dist/reserveren.modern.js"></script>
-	<script nomodule src="/dist/reserveren.js"></script>
+            </div>
+          </div>
+          <div class="modal-body">
+            <img id="spinner" src="/css/images/spinner.gif" style="margin:auto; display:none" />
+            <div id="noresponse" style="display:none" class="alert alert-warning">
+              Het laden van de pagina duurt erg lang. <br />
+              Misschien gebruik je een te oude browser? Dan werkt deze site niet<br />
+              Voor hulp neem contact op met <a href="mailto:info@plusleo.nl">info@plusleo.nl</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
 
+  <script type="module" src="/dist/reserveren.modern.js"></script>
+  <script nomodule src="/dist/reserveren.js"></script>
 </body>
 
 </html>

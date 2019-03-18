@@ -1,0 +1,28 @@
+<%= include('partials/head') %>
+<%= include('partials/header')%>
+
+<p>
+  Hallo
+  <%= reservering.naam %>
+</p>
+<p>
+  De reservering <%= reservering %> is gewijzigd<br />
+</p>
+
+<%- include('partials/reserving', {reservering:reservering}) %>
+<%- include('partials/payments', {reservering:reservering} %>
+
+
+<h2>Bewaar deze e-mail</h2>
+<p>
+  Als je de reservering nog wilt aanpassen of annuleren, dan kun je dat doen met 
+  <a href="<%= reservering.editLink %">deze link</a> 
+  </p> 
+  
+  <p>
+    We zien je bij de voorstelling<br />
+    <br />
+    PlusLeo
+</p>
+
+<%= include('partials/footer')%>

@@ -1,3 +1,5 @@
+global.DOCUMENT_ROOT = __dirname;
+
 const express = require("express");
 const app = express();
 
@@ -8,5 +10,8 @@ require("./startup/config")(app);
 require("./startup/logging")();
 // require("./startup/database")();
 require("./startup/routes")(app);
+
+require("./startup/env")();
+
 
 module.exports = app;

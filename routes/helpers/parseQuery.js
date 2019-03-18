@@ -7,7 +7,9 @@ function getIncludes(model, params, includes = []) {
         association: association
       };
       if (levels.length > 1) {
-        newInclude.include = getIncludes(association.target, [levels.slice(1).join('.')]);
+        const nextLevel = levels[1];
+        const subIncludes = nextLevel.split(',').map((subInclude) => [subInclude].concat(levels.slice(2)).join('.'))
+        newInclude.include = getIncludes(association.target, subIncludes);
       }
       includes.push(newInclude);
     } else {

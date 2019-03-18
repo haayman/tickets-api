@@ -76,15 +76,18 @@ module.exports = (sequelize, DataTypes) => {
     const reserveringClause = reservering_id ?
       " and id != :reservering_id" :
       "";
-    let sql = `select count(*) as count from Ticket where verkocht=false 
-      and geannuleerd=false and 
+      let sql = `select count(*) as count from Ticket where verkocht=:verkocht 
+      and geannuleerd=:geannuleerd and 
+      deletedAt IS NULL and
       reserveringId IN (select id from Reservering where 
         uitvoeringId = :uitvoeringId 
         AND deletedAt IS NULL
         AND wachtlijst = :wachtlijst ${reserveringClause})`;
 
     const [result] = await sequelize.query(sql, {
-      replacements: {
+	replacements: {
+	    verkocht: false,
+	    geannuleerd: false,
         uitvoeringId: this.id,
         wachtlijst: wachtlijst,
         reservering_id: reservering_id
@@ -128,63 +131,22 @@ module.exports = (sequelize, DataTypes) => {
     }));
   };
 
-  /**
-   * welke tickets staan te koop voor deze Uitvoering
-   * @param {number} aantal 
-   * @return {Ticket[]}
-   */
-  Uitvoering.prototype.tekoop = async function (aantal = null) {
-    const Ticket = Uitvoering.sequelize.models.Ticket;
-    const sql = `SELECT * from Ticket
-      WHERE reserveringId in (
-        SELECT id from reservering WHERE 
-          uitvoeringId=:uitvoeringId 
-          AND deletedAt IS NULL )
-      AND tekoop=true`;
-
-    const tickets = await sequelize.query(sql, {
-      model: Ticket,
-      replacements: {
-        uitvoeringId: this.id
-      },
-      type: sequelize.QueryTypes.SELECT
-    })
-    return tickets
-  }
-
-  /**
-   * Verkoop {aantal} tickets
-   * @async
-   * @param {number} aantal
-   * @returns {Promise}
-   */
-  Uitvoering.prototype.verwerkTekoop = async function (aantal) {
-    const tekoop = await this.tekoop(aantal);
-    let verkocht = {};
-
-    await Promise.all(tekoop.map(async (ticket) => {
-      const reservering = await ticket.getReservering();
-      verkocht[reservering.id] = reservering;
-
-      ticket.verkocht = true;
-      ticket.tekoop = false;
-      ticket.terugbetalen = true;
-
-      await ticket.save();
-      const strTicket = await ticket.asString();
-      await reservering.logMessage(`${strTicket} verkocht`);
-    }))
-
-    await Promise.all(
-      Object.values(verkocht).map(async r => r.refund()));
-
-    return;
-  }
-
   Uitvoering.prototype.toString = function () {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format
-    return `${this.extra_text||''} ${format(this.aanvang, 'dddd d MMM HH:mm', {locale: nl})}`;
+    return `${this.extra_text||''} ${format(this.aanvang, 'dddd D MMM HH:mm', {locale: nl})}`;
 
+  }
+
+  Uitvoering.prototype.status = async function () {
+    const gereserveerd = await this.getGereserveerd();
+    const wachtlijst = await this.getWachtlijst();
+    const vrije_plaatsen = this.aantal_plaatsen - gereserveerd;
+
+    if (vrije_plaatsen) {
+      return `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen>1?'en':''}</span>`
+    } else {
+      return `<b>Uitverkocht</b> <span>wachtlijst: ${wachtlijst||0}</span>`
+    }
   }
 
   Uitvoering.associate = function (models) {
