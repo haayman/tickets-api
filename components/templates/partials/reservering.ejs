@@ -1,0 +1,84 @@
+<!--uw gegevens-->
+<h2>Reservering</h2>
+
+<table>
+	<tr>
+		<th>Naam</th>
+		<td>
+				<%= reservering.naam %>
+		</td>
+	</tr>
+	<tr>
+		<th>E-mail</th>
+		<td>
+			<%= reservering.email%>
+		</td>
+	</tr>
+	<tr>
+		<th>Uitvoering</th>
+		<td><%= reservering.uitvoering %></td>
+	</tr>
+	<tr>
+		<th>
+			Tickets
+		</th>
+		<td>
+			<% reservering.tickets.forEach(ticket) { %>
+				<% if( ticket.aantal ) {%>
+					<%= ticket %><br />
+				<% }
+			 } %>
+		</td>
+	</tr>
+	<tr>
+		<th>
+			Locatie
+		</th>
+		<td>
+			<%= reservering.uitvoering.voorstelling.locatie %>
+		</td>
+	</tr>
+	if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
+		<tr>
+			<th>
+				Opmerking over de voorstelling
+			</th>
+			<td>
+				<%= reservering.voorstelling.opmerkingen %>
+			</td>
+		</tr>
+	<% } 
+
+	if( reservering.wachtlijst ) { %>
+		<tr>
+			<th>Wachtlijst</th>
+			<td><b>Je staat op de wachtlijst</b></td>
+		</tr>
+	<% } 
+
+
+	if( reservering.saldo && !reservering.wachtlijst ) { %>
+	<tr>
+		<th>Openstaand bedrag</th>
+		<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € <?php echo (- reservering.getSaldo())?>.<br />
+		We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
+		</td>
+	</tr>
+	<% }
+
+	if( reservering.opmerking_gebruiker ) { %>
+	<tr>
+		<th>Jouw opmerking</th>
+		<td><%= reservering.opmerking_gebruiker ) %></td>
+	</tr>
+	<% }
+
+	if( reservering.opmerking ) { ?>
+	<tr>
+		<th>Opmerking PlusLeo</th>
+		<td><%= reservering.opmerking %></td>
+	</tr>
+	<% } %>
+
+</table>
+

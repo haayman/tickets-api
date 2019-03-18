@@ -39,10 +39,11 @@ module.exports = {
     await Promise.all(
       Object.keys(payments).map(async paymentId => {
         const amount = payments[paymentId];
-        let payment = await Payment.findById(paymentId, {
+        let payment = await Payment.findByPk(paymentId, {
           include: [Payment.Tickets]
         });
-        if (payment.refundable) {
+        // t.b.v. tests: gebruik 'norefund' in het e-mail adres
+        if (payment.refundable && !this.email.match('norefund')) {
           const refunded = await payment.refund(amount);
           if (refunded) {
             const terugbetalen = payment.Tickets.filter(t => t.terugbetalen);
@@ -55,10 +56,18 @@ module.exports = {
             );
             const Ticket = this.sequelize.models.Ticket;
             const paymentDescription = await Ticket.description(terugbetalen);
-            ReserveringMail.send(this, 'teruggestort', `${paymentDescription} teruggestort`, {
+            await ReserveringMail.send(this, 'teruggestort', `${paymentDescription} teruggestort`, {
               bedrag: amount
             });
             await this.logMessage(`${paymentDescription} teruggestort`);
+
+
+            // als er geen tickets meer over zijn, reservering verwijderen
+            this.Tickets = await this.getTickets();
+            if (this.validTickets.length === 0) {
+              await this.destroy();
+            }
+
           }
         } else {
           nonRefundable.push({
@@ -70,9 +79,9 @@ module.exports = {
 
     if (nonRefundable.length) {
       if (!this.iban && !this.tennamevan) {
-        ReserveringMail.send(this, "ibanRequested", "Bankgegevens nodig");
+        await ReserveringMail.send(this, "ibanRequested", "Bankgegevens nodig");
       } else {
-        ReserveringMail.send(
+        await ReserveringMail.send(
           this,
           "terugbetalen_penningmeester",
           "Verzoek tot terugstorting", {
@@ -89,7 +98,10 @@ module.exports = {
     let retval = [];
     await Promise.all(Object.keys(payments).map(async paymentId => {
       const payment = await this.getPaymentById(+paymentId);
-      if (!payment.refundable) {
+      if (!payment.payment) {
+        await payment.initPayment();
+      }
+      if (payment.refundable === false || this.email.match('norefund')) {
         retval.push(payment)
       }
     }));
@@ -110,9 +122,9 @@ module.exports = {
   },
 
   async getPaymentById(paymentId) {
-    const payment = this.payments.find(p => p.id == paymentId);
+    const payment = this.Payments.find(p => p.id == paymentId);
     if (!payment) {
-      payment = await Payment.findById(paymentId, {
+      payment = await Payment.findByPk(paymentId, {
         include: [{
           association: [Payment.Tickets]
         }]

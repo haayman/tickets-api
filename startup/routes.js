@@ -6,13 +6,18 @@ const uitvoering = require("../routes/uitvoering");
 const log = require("../routes/log");
 const auth = require("../routes/auth");
 const payment = require("../routes/payment");
+const iframe = require('../routes/iframe');
+const mail = require('../routes/mail');
 const errorHandler = require("../middleware/error");
-const servername = require('../middleware/servername');
+// const servername = require('../middleware/servername');
 const setUser = require("../middleware/user");
 const favicon = require('serve-favicon');
 
 module.exports = function (app) {
-  app.all('*', servername);
+
+  app.set('view engine', 'ejs');
+
+  // app.all('*', servername);
   app.all('*', setUser)
 
   app.use(express.json());
@@ -29,6 +34,9 @@ module.exports = function (app) {
   app.use("/api/reservering", reservering);
   app.use("/api/log", log);
   app.use("/api/payment", payment);
+  app.use("/api/mail", mail);
+
+  app.use("/iframe*", iframe);
 
   // static
   app.use("/dist", express.static(global.DOCUMENT_ROOT + "/dist"));
@@ -36,6 +44,7 @@ module.exports = function (app) {
   app.use("/css", express.static(global.DOCUMENT_ROOT + "/../src/styles"));
 
   app.use(favicon(global.DOCUMENT_ROOT + "/public/favicon.ico"))
+
 
   // alle andere naar homepage
   app.use("/*", express.static(global.DOCUMENT_ROOT + "/public"));

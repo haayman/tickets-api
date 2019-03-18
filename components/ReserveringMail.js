@@ -9,7 +9,7 @@ class ReserveringMail {
       Reservering
     } = reservering.sequelize.models;
 
-    await reservering.reload(parseQuery(Reservering, {
+    const r = await Reservering.findByPk(reservering.id, parseQuery(Reservering, {
       include: [
         'tickets',
         'Payments'
@@ -19,20 +19,20 @@ class ReserveringMail {
     const mail = new Mailer();
     mail
       .setTemplate("index")
-      .setTo(reservering.email, reservering.naam)
+      .setTo(r.email, r.naam)
       .setSubject(subject);
 
     if (params.to) {
       mail.setTo(params.to)
     }
 
-    mail.send(Object.assign({}, params, {
+    await mail.send(Object.assign({}, params, {
       template: templateName,
-      reservering,
+      reservering: r,
       format,
       nl
     }));
-    reservering.logMessage(`Mail '${subject}' verzonden`)
+    await r.logMessage(`Mail '${subject}' verzonden`)
   }
 
   static async render(reservering, templateName, params = {}) {

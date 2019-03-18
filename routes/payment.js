@@ -11,45 +11,42 @@ const {
 } = require("../models");
 const winston = require("winston");
 const ReserveringMail = require("../components/ReserveringMail");
+const parseQuery = require('./helpers/parseReserveringQuery');
 
 const router = express.Router();
 
 router.post("/bank/:id", async (req, res) => {
   winston.info(req.body);
   const mollie_payment = await mollie.payments.get(req.body.id);
-  const reservering = await Reservering.findById(req.params.id, {
-    include: [{
-      association: Reservering.Payments
-    }]
+  const params = parseQuery(Reservering, {
+    include: ['tickets', 'Payments']
   });
-  const payment = reservering.payments.find((p) => p.paymentId == mollie_payment.id);
+
+  let reservering = await Reservering.findByPk(req.params.id, params);
+  const payment = reservering.Payments.find((p) => p.paymentId == mollie_payment.id);
   if (payment.betaalstatus == mollie_payment.status) {
     // dubbele melding
     return res.send('OK');
   }
   await payment.setStatus();
 
-  await reservering.reload({
-    include: [{
-      all: true,
-      nested: true
-    }]
-  });
+  // await reservering.reload(params);
+  reservering = await Reservering.findByPk(reservering.id, params);
 
   const tickets = await payment.getTickets();
   const description = await Ticket.description(tickets);
-  reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
+  await reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
 
   const ticketDescription = await reservering.asString();
 
   if (payment.betaalstatus == "paid") {
-    ReserveringMail.send(
+    await ReserveringMail.send(
       reservering,
       "confirmationPayment",
-      `ticket ${ticketDescription}`
+      `Kaarten voor ${ticketDescription}`
     );
   } else {
-    ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
+    await ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
   }
   res.send("OK");
 });

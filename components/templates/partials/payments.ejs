@@ -1,0 +1,28 @@
+<h2>Betalingen</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>tijdstip</th>
+      <th>betaald</th>
+      <th>status</th>
+      <% if( reservering.hasRefunds ) { %>
+      <th>terugstortingen</th>
+      <% } %>
+    </tr>
+  </thead>
+  <tbody>
+  <% reservering.payments.forEach( function(payment) { %>
+    <tr>
+      <td><%= payment.createdAt %></td>
+      <td><%= payment.paidDateTime %></td>
+      <td><% url = payment.getPaymentUrl(); 
+        if( url ) {%>
+        <a href="<%= url %>">Nog te betalen</a>
+        <% } else {%>
+          <%= payment.status %>
+        <% } %>
+        </td>
+        <td><%= payment.amount %>
+    </tr>
+  <% }) %>

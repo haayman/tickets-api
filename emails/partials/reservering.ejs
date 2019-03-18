@@ -1,99 +1,87 @@
-<!--uw gegevens-->
-<div class="card mt-3">
-<div class="card-header">
-	Reservering
-</div>
+<tr><td>
+<table class="row card ">
+	<tr class="card-header">
+		<td>Bestelling</td>
+	</tr>
 
-<div class="card-body">
-<table class="table">
-	<tr>
-		<th>Naam</th>
+	<tr class="card-body">
 		<td>
-				<%= reservering.naam %>
-		</td>
-	</tr>
-	<tr>
-		<th>E-mail</th>
-		<td>
-			<%= reservering.email%>
-		</td>
-	</tr>
-	<tr>
-		<th>Uitvoering</th>
-		<td><%= reservering.uitvoering %></td>
-	</tr>
-	<tr>
-		<th>
-			Tickets
-		</th>
-		<td>
-			<% reservering.tickets.forEach( function( ticket ) { %>
-				<% if( ticket.aantal ) { %>
-					<%= ticket.asString() %><br />
-				<% } %>
-			 <% }) %>
-		</td>
-	</tr>
-	<tr>
-		<th>
-			Locatie
-		</th>
-		<td>
-			<%- reservering.uitvoering.voorstelling.locatie %>
-		</td>
-	</tr>
-	<% if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
-		<tr>
-			<th>
-				Opmerking over de voorstelling
-			</th>
-			<td>
-				<%= reservering.uitvoering.voorstelling.opmerkingen %>
-			</td>
-		</tr>
-	<% } %>
+		<table class="table">
+			<tr>
+				<th>Uitvoering</th>
+				<td><%= reservering.uitvoering %></td>
+			</tr>
+			<tr>
+				<th>Deur open</th>
+				<td><%= format(reservering.uitvoering.deur_open, 'HH:mm')%></td>
+			</tr>
+			<tr>
+				<th>Kaarten</th>
+				<td>
+					<% reservering.tickets.forEach( function( ticket ) { %>
+						<% if( ticket.aantal ) { %>
+							<%= ticket.asString() %><br />
+						<% } %>
+					<% }) %>
+				</td>
+			</tr>
+			<tr>
+				<th>Locatie</th>
+				<td>
+					<%- reservering.uitvoering.voorstelling.locatie %>
+				</td>
+			</tr>
+			<% if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
+				<tr>
+					<th>
+						Opmerking over de voorstelling
+					</th>
+					<td>
+						<%= reservering.uitvoering.voorstelling.opmerkingen %>
+					</td>
+				</tr>
+			<% } %>
 
-	<% if( reservering.wachtlijst ) { %>
-		<tr>
-			<th>Wachtlijst</th>
-			<td><b>Je staat op de wachtlijst</b></td>
-		</tr>
-	<% } %>
+			<% if( reservering.wachtlijst ) { %>
+				<tr>
+					<th>Wachtlijst</th>
+					<td><b>Je staat op de wachtlijst</b></td>
+				</tr>
+			<% } %>
 
+			<% if( reservering.status !== 'open' && reservering.openstaandBedrag && !reservering.wachtlijst ) { %>
+			<tr>
+				<th>Openstaand bedrag</th>
+				<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € 
+				<%= reservering.openstaandBedrag %>.<br />
+				We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
+				</td>
+			</tr>
+			<% } %>
 
-	<% if( reservering.saldo && !reservering.wachtlijst ) { %>
-	<tr>
-		<th>Openstaand bedrag</th>
-		<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € 
-		<%= reservering.openstaand %>.<br />
-		We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
-		</td>
-	</tr>
-	<% } %>
+			<% if( reservering.opmerking_gebruiker ) { %>
+			<tr>
+				<th>Jouw opmerking</th>
+				<td><%= reservering.opmerking_gebruiker %></td>
+			</tr>
+			<% } %>
 
-	<% if( reservering.opmerking_gebruiker ) { %>
-	<tr>
-		<th>Jouw opmerking</th>
-		<td><%= reservering.opmerking_gebruiker %></td>
-	</tr>
-	<% } %>
+			<% if( reservering.opmerking ) { %>
+			<tr>
+				<th>Reactie PlusLeo</th>
+				<td><%= reservering.opmerking %></td>
+			</tr>
+			<% } %>
 
-	<% if( reservering.opmerking ) { %>
-	<tr>
-		<th>Reactie PlusLeo</th>
-		<td><%= reservering.opmerking %></td>
-	</tr>
-	<% } %>
+			<tr class="no-print">
+				<th></th>
+				<td>
+					<a class="btn btn-primary" href="<%=reservering.getTicketUrl()%>" target="_blank">Volg je bestelling</a>
+				</td>
+			</tr>
 
-	<tr>
-		<th>
-			Meer informatie
-		</th>
-		<td>
-			<a href="<%=reservering.uitvoering.voorstelling.url%>" target="_blank">Meer informatie</a>
-		</td>
-	</tr>
-
+		</table>
+	</td>
+</tr>
 </table>
-</div>
-</div>
+</td></tr>

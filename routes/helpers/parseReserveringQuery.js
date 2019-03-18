@@ -10,9 +10,10 @@ module.exports = function (model, params) {
 
     params.include = params.include.filter((i) => i !== 'tickets').concat([
       'Uitvoering.Voorstelling.Prijzen',
-      'Tickets',
+      'Tickets.Payment,Prijs',
       'Payments'
     ]).filter(onlyUnique);
+    params.separate = true;
     model.addHook('afterFind', model.initTickets);
   }
   return _parseQuery(model, params);

@@ -131,6 +131,58 @@ module.exports = (sequelize, DataTypes) => {
     return tickets.reduce((totaal, t) => totaal + t.prijs.prijs, 0);
   };
 
+
+  /**
+   * welke tickets staan te koop voor deze Uitvoering
+   * @param {number} aantal 
+   * @return {Ticket[]}
+   */
+  Ticket.tekoop = async function (aantal) {
+    const sql = `SELECT * from Ticket
+      WHERE reserveringId in (SELECT id from reservering WHERE deletedAt IS NULL)
+      AND tekoop=:tekoop
+      ORDER BY updatedAt
+      LIMIT ${aantal}`;
+
+    const tickets = await sequelize.query(sql, {
+      model: Ticket,
+	type: sequelize.QueryTypes.SELECT,
+	replacements: {
+	    tekoop: true
+	}
+    })
+    return tickets
+  }
+
+  /**
+   * Verkoop {aantal} tickets
+   * @async
+   * @param {number} aantal
+   */
+
+  Ticket.verwerkTekoop = async function (aantal) {
+    const tekoop = await Ticket.tekoop(aantal);
+    let verkocht = {};
+
+    await Promise.all(tekoop.map(async (ticket) => {
+      const reservering = await ticket.getReservering();
+      verkocht[reservering.id] = reservering;
+
+      ticket.verkocht = true;
+      ticket.tekoop = false;
+      ticket.terugbetalen = true;
+
+      await ticket.save();
+      const strTicket = await ticket.asString();
+      await reservering.logMessage(`${strTicket} verkocht`);
+    }))
+
+    await Promise.all(
+      Object.values(verkocht).map(async r => r.refund()));
+
+    return;
+  }
+
   Ticket.associate = function (models) {
     Ticket.Payment = Ticket.belongsTo(models.Payment);
     Ticket.Prijs = Ticket.belongsTo(models.Prijs, {

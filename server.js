@@ -1,7 +1,5 @@
 // const setupEnv = require("./startup/env");
 
-global.DOCUMENT_ROOT = __dirname;
-
 const app = require("./app");
 const winston = require("winston");
 const config = require("config");
@@ -16,7 +14,7 @@ app
     winston.info(`listening on port ${port}`);
     // winston.info(`webhook: ${config.get("server.url")}`);
 
-    require("./startup/env")();
+    // require("./startup/env")();
   })
   .on("error", e => {
     winston.error(e);

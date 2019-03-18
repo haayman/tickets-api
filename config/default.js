@@ -4,19 +4,21 @@ module.exports = {
   name: "PlusLeo tickets",
   database: {
     dialect: "sqlite",
-    storage: path.resolve(__dirname, "..", "data", "tickets.sqlite"),
+      storage: path.resolve(__dirname, "..","..", "data", "tickets.sqlite"),
     define: {
       charset: "utf8",
       dialectOptions: {
         collate: "utf8_general_ci"
       },
       timestamps: true,
-      freezeTableName: true
+	freezeTableName: true,
+	logging: false
     },
   },
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
-  server: {
+    server: {
+	url: "https://kaarten.plusleo.nl",
     port: 3000
   },
   mail_transport: {

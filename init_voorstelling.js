@@ -9,10 +9,11 @@ const {
     Voorstelling.create({
       title: "Kamers",
       description: "We doen iets met kamers",
-      url: "https://plusleo.nl/producties/kamers/",
-      locatie: "nog niet bekend",
-      poster: "https://plusleo.nl/producties/kamers/poster.png",
-      thumbnail: "https://plusleo.nl/producties/kamers/thumb.png",
+      url: "https://plusleo.nl/producties/verframed/",
+      locatie: "<a href='https://goo.gl/maps/5h7Xsbyrbx62' target='_blank'>Voormalig Kantongerecht<br />Brink 11 / 12<br/>Deventer</a>",
+      opmerkingen: "hou er rekening mee dat het koud kan zijn",
+      poster: "https://plusleo.nl/producties/verframed/poster.png",
+      thumbnail: "https://plusleo.nl/producties/verframed/thumb.png",
       prijzen: [{
           description: "Volwassene",
           prijs: 10

@@ -39,7 +39,7 @@ router.put("/:id", async (req, res) => {
     return res.status(400).send("no id");
   }
 
-  const user = await User.findById(id);
+  const user = await User.findByPk(id);
   if (!user) {
     return res.status(404).send(`not found: ${id}`);
   }
@@ -62,7 +62,7 @@ router.put("/:id", async (req, res) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findByPk(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
@@ -79,7 +79,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findByPk(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }

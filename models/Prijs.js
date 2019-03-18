@@ -22,7 +22,8 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Prijs.prototype.asString = function () {
-    return `${this.description} (à € ${this.prijs.toFixed(2)})`;
+    //    return `${this.description} (à € ${this.prijs.toFixed(2)})`;
+    return `${this.description}`;
   };
 
   Prijs.associate = function (models) {

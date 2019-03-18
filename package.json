@@ -1,0 +1,56 @@
+{
+  "name": "plusleo-reserveren-server",
+  "version": "1.0.0",
+  "description": "PlusLeo Reserveringen Serverside",
+  "author": "Arjen Haayman",
+  "private": true,
+  "scripts": {
+    "server": "nodemon server",
+    "unit_server": "jest --watchAll tests/"
+  },
+  "dependencies": {
+    "@mollie/api-client": "^2.1.0",
+    "async-ejs": "^0.1.6",
+    "axios": "^0.18.0",
+    "config": "^2.0.2",
+    "connect-history-api-fallback": "^1.5.0",
+    "continuation-local-storage": "^3.2.1",
+    "date-fns": "^1.29.0",
+    "ejs": "^2.6.1",
+    "email-templates": "^5.0.1",
+    "express": "^4.16.4",
+    "express-async-errors": "^3.1.1",
+    "helmet": "^3.15.0",
+    "iban": "0.0.11",
+    "jsonwebtoken": "^8.4.0",
+    "localtunnel": "^1.9.1",
+    "lodash": "^4.17.11",
+    "morgan": "^1.9.1",
+    "ngrok": "^3.1.0",
+    "nodemailer": "^4.6.8",
+    "password-hash-and-salt": "^0.1.4",
+    "qr-image": "^3.2.0",
+    "sequelize": "^4.41.0",
+    "sequelize-embed": "^2.1.1",
+    "serve-favicon": "^2.5.0",
+    "sqlite3": "^4.0.6",
+    "stack-trace": "0.0.10",
+    "swig-email-templates": "^5.0.1",
+    "webpack-babel-multi-target-plugin": "^2.0.1",
+    "winston": "^3.1.0",
+    "winston-mongodb": "^4.0.3",
+    "zxcvbn": "^4.4.2"
+  },
+  "devDependencies": {
+    "axios-debug-log": "^0.4.0",
+    "cross-env": "^5.2.0",
+    "jest": "^23.6.0",
+    "jest-serializer-vue": "^2.0.2",
+    "nock": "^10.0.2",
+    "nodemailer-mock": "^1.3.14",
+    "supertest": "^3.3.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

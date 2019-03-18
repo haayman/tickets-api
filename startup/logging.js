@@ -2,10 +2,9 @@
 
 const winston = require("winston"); // logging
 const config = require("config");
-require("winston-mongodb");
 require("express-async-errors");
 
-module.exports = function() {
+module.exports = function () {
   // const logger = winston.createLogger({
   //   level: "info",
   //   debug: true,
@@ -46,7 +45,7 @@ module.exports = function() {
     } else if (value instanceof Error) {
       var error = {};
 
-      Object.getOwnPropertyNames(value).forEach(function(key) {
+      Object.getOwnPropertyNames(value).forEach(function (key) {
         error[key] = value[key];
       });
 
@@ -58,14 +57,18 @@ module.exports = function() {
 
   const logger = winston.createLogger({
     format: winston.format.combine(
-      winston.format.json({ replacer: replaceErrors })
+      winston.format.json({
+        replacer: replaceErrors
+      })
     ),
     transports: [new winston.transports.Console()]
   });
 
   winston.configure({
     format: winston.format.combine(
-      winston.format.json({ replacer: replaceErrors })
+      winston.format.json({
+        replacer: replaceErrors
+      })
     ),
     transports: [
       new winston.transports.Console({
@@ -74,7 +77,10 @@ module.exports = function() {
         colorize: true,
         level: "info"
       }),
-      new winston.transports.File({ filename: "error.log", level: "error" })
+      // new winston.transports.File({
+      //   filename: "error.log",
+      //   level: "error"
+      // })
     ]
   });
 

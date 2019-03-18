@@ -15,6 +15,9 @@ const port =
         return `http://devcom:${port}`
       })
     },
+    email: {
+      alwaysTo: "arjen.haayman@gmail.com",
+    },
     mail_transport: {
       // debug: true,
       // logger: true,
