@@ -135,21 +135,28 @@ module.exports = (sequelize, DataTypes) => {
   /**
    * welke tickets staan te koop voor deze Uitvoering
    * @param {number} aantal 
+   * @param {number} uitvoeringId
    * @return {Ticket[]}
    */
-  Ticket.tekoop = async function (aantal) {
+  Ticket.tekoop = async function (aantal, uitvoeringId = null) {
+    const uitvoeringFilter = uitvoeringId !== null ? 'AND uitvoeringId=:uitvoering' : '';
     const sql = `SELECT * from Ticket
-      WHERE reserveringId in (SELECT id from reservering WHERE deletedAt IS NULL)
+      WHERE reserveringId in (
+        SELECT id from reservering WHERE 
+          deletedAt IS NULL
+          ${uitvoeringFilter}
+        )
       AND tekoop=:tekoop
       ORDER BY updatedAt
       LIMIT ${aantal}`;
 
     const tickets = await sequelize.query(sql, {
       model: Ticket,
-	type: sequelize.QueryTypes.SELECT,
-	replacements: {
-	    tekoop: true
-	}
+      type: sequelize.QueryTypes.SELECT,
+      replacements: {
+        tekoop: true,
+        uitvoering: uitvoeringId
+      }
     })
     return tickets
   }
@@ -160,8 +167,8 @@ module.exports = (sequelize, DataTypes) => {
    * @param {number} aantal
    */
 
-  Ticket.verwerkTekoop = async function (aantal) {
-    const tekoop = await Ticket.tekoop(aantal);
+  Ticket.verwerkTekoop = async function (aantal, uitvoeringId = null) {
+    const tekoop = await Ticket.tekoop(aantal, uitvoeringId);
     let verkocht = {};
 
     await Promise.all(tekoop.map(async (ticket) => {
@@ -180,7 +187,7 @@ module.exports = (sequelize, DataTypes) => {
     await Promise.all(
       Object.values(verkocht).map(async r => r.refund()));
 
-    return;
+    return tekoop.length;
   }
 
   Ticket.associate = function (models) {

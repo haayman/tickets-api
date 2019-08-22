@@ -8,8 +8,8 @@ const router = express.Router();
 
 router.get("/", async (req, res) => {
   const params = parseQuery(Uitvoering, req.query)
-  let uitvoeringen = await Uitvoering.findAll(params);
-  const json = await Promise.all(uitvoeringen.map(async v => v.toJSONA()));
+    let uitvoeringen = await Uitvoering.findAll(params);
+  const json = await Promise.all(uitvoeringen.sort((a,b)=>a.aanvang-b.aanvang).map(async v => v.toJSONA()));
   res.send(json);
 });
 

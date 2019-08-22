@@ -71,8 +71,9 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       getterMethods: {
         bedrag() {
-          return this.tickets ?
-            this.tickets.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
+          // this.ticketAggregates: ticketAggregates
+          return this.ticketAggregates ?
+            this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
             null;
         },
         saldo() {
@@ -95,7 +96,7 @@ module.exports = (sequelize, DataTypes) => {
           }, 0);
 
           // bereken kosten van alle te betalen tickets
-          saldo = this.tickets.reduce((saldo, ta) => {
+          saldo = this.ticketAggregates.reduce((saldo, ta) => {
             return (
               saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop)
             );
@@ -107,6 +108,9 @@ module.exports = (sequelize, DataTypes) => {
           return -this.saldo;
         },
 
+        /**
+         * @returns {Ticket[]}
+         */
         validTickets() {
           return this.Tickets ?
             this.Tickets.filter(t => !(t.geannuleerd || t.verkocht)) : [];
@@ -133,9 +137,9 @@ module.exports = (sequelize, DataTypes) => {
          * aantal gereserveerde plaatsen
          */
         aantal() {
-          if (!this.tickets) {
-            return null;
-          }
+          // if (!this.tickets) {
+          //   return null;
+          // }
           return this.validTickets.length
         },
 
@@ -221,7 +225,7 @@ module.exports = (sequelize, DataTypes) => {
     this.Payments.forEach((p) => payments[p.id] = p);
 
     if (!this.uitvoering) this.uitvoering = await this.getUitvoering();
-    if (!this.tickets) {
+    if (!this.ticketAggregates) {
       const voorstelling =
         this.uitvoering.voorstelling ||
         (this.uitvoering.voorstelling = await this.uitvoering.getVoorstelling());
@@ -235,7 +239,7 @@ module.exports = (sequelize, DataTypes) => {
         }
       })
 
-      this.tickets = await Promise.all(
+      this.ticketAggregates = await Promise.all(
         prijzen.map(async prijs => {
           return new TicketAggregate(
             this,
@@ -263,7 +267,7 @@ module.exports = (sequelize, DataTypes) => {
   Reservering.prototype.toJSONA = async function (req = null) {
     const json = await this.toJSON();
     json.uitvoering = this.uitvoering || (await this.getUitvoering());
-    json.tickets = this.tickets;
+    json.tickets = this.ticketAggregates;
     json.payments = this.Payments || (await this.getPayments());
     json.paymentUrl = this.paymentUrl();
     json.teruggeefbaar = await this.teruggeefbaar();
@@ -302,16 +306,16 @@ module.exports = (sequelize, DataTypes) => {
     const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
     return vrije_plaatsen < this.aantal;
   }),
-  (Reservering.prototype.paymentUrl = function () {
-    let url;
-    if (!this.Payments) return null;
-    for (let payment of this.Payments) {
-      if ((url = payment.paymentUrl)) {
-        return url;
+    (Reservering.prototype.paymentUrl = function () {
+      let url;
+      if (!this.Payments) return null;
+      for (let payment of this.Payments) {
+        if ((url = payment.paymentUrl)) {
+          return url;
+        }
       }
-    }
-    return null;
-  });
+      return null;
+    });
 
   Reservering.prototype.createPaymentIfNeeded = async function () {
     if (!this.Tickets) {

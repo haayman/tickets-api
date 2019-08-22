@@ -7,6 +7,7 @@ const format = require('date-fns/format');
 const nl = require('date-fns/locale/nl')
 const aejs = require('async-ejs');
 const path = require('path');
+const process = require('process');
 
 const router = express.Router();
 
@@ -28,7 +29,8 @@ router.get("/", async (req, res) => {
   aejs.renderFile(__dirname + '/templates/iframe.ejs', {
     voorstelling,
     format,
-    nl
+    nl,
+    env: process.env
   }, (error, result) => {
     res.send(result);
   });
