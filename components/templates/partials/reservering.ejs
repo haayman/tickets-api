@@ -5,7 +5,7 @@
 	<tr>
 		<th>Naam</th>
 		<td>
-				<%= reservering.naam %>
+			<%= reservering.naam %>
 		</td>
 	</tr>
 	<tr>
@@ -23,10 +23,10 @@
 			Tickets
 		</th>
 		<td>
-			<% reservering.tickets.forEach(ticket) { %>
-				<% if( ticket.aantal ) {%>
-					<%= ticket %><br />
-				<% }
+			<% reservering.ticketAggregates.forEach(ticket) { %>
+			<% if( ticket.aantal ) {%>
+			<%= ticket %><br />
+			<% }
 			 } %>
 		</td>
 	</tr>
@@ -39,29 +39,30 @@
 		</td>
 	</tr>
 	if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
-		<tr>
-			<th>
-				Opmerking over de voorstelling
-			</th>
-			<td>
-				<%= reservering.voorstelling.opmerkingen %>
-			</td>
-		</tr>
+	<tr>
+		<th>
+			Opmerking over de voorstelling
+		</th>
+		<td>
+			<%= reservering.voorstelling.opmerkingen %>
+		</td>
+	</tr>
 	<% } 
 
 	if( reservering.wachtlijst ) { %>
-		<tr>
-			<th>Wachtlijst</th>
-			<td><b>Je staat op de wachtlijst</b></td>
-		</tr>
+	<tr>
+		<th>Wachtlijst</th>
+		<td><b>Je staat op de wachtlijst</b></td>
+	</tr>
 	<% } 
 
 
 	if( reservering.saldo && !reservering.wachtlijst ) { %>
 	<tr>
 		<th>Openstaand bedrag</th>
-		<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € <?php echo (- reservering.getSaldo())?>.<br />
-		We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
+		<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: €
+				<?php echo (- reservering.getSaldo())?>.<br />
+				We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
 		</td>
 	</tr>
 	<% }
@@ -81,4 +82,3 @@
 	<% } %>
 
 </table>
-
