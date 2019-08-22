@@ -48,49 +48,65 @@ module.exports = (sequelize, DataTypes) => {
     let obj = this.toJSON();
     obj.gereserveerd = await this.getGereserveerd();
     obj.wachtlijst = await this.getWachtlijst();
-    obj.vrije_plaatsen = obj.aantal_plaatsen - obj.gereserveerd;
+    obj.tekoop = await this.getTekoop();
+      obj.vrije_plaatsen = Math.max(obj.aantal_plaatsen - obj.gereserveerd,0);
 
     return obj;
   };
 
   Uitvoering.prototype.getVrijePlaatsen = async function (reservering_id = 0) {
     const gereserveerd = await this.getGereserveerd(reservering_id);
-    return this.aantal_plaatsen - gereserveerd;
+    const tekoop = await this.getTekoop();
+    return this.aantal_plaatsen - gereserveerd + tekoop;
   };
 
   Uitvoering.prototype.getGereserveerd = async function (reservering_id = 0) {
-    const gereserveerd = await this.countTickets(false, reservering_id);
+    const gereserveerd = await this.countTickets({
+      wachtlijst: false,
+      reservering_id: reservering_id
+    });
     return gereserveerd;
   };
 
   Uitvoering.prototype.getWachtlijst = async function (reservering_id = 0) {
-    const wachtlijst = await this.countTickets(true, reservering_id);
+    const wachtlijst = await this.countTickets({
+      wachtlijst: true,
+      reservering_id: reservering_id
+    });
     return wachtlijst;
   };
 
+  Uitvoering.prototype.getTekoop = async function () {
+    const tekoop = await this.countTickets({ tekoop: true })
+    return tekoop;
+  }
 
-  Uitvoering.prototype.countTickets = async function (
-    wachtlijst = false,
-    reservering_id = null
-  ) {
-    const reserveringClause = reservering_id ?
+  Uitvoering.prototype.countTickets = async function (options) {
+    const reserveringClause = options.reservering_id ?
       " and id != :reservering_id" :
       "";
-      let sql = `select count(*) as count from Ticket where verkocht=:verkocht 
+    const wachtlijstClause = options.wachtlijst !== undefined ? "AND wachtlijst = :wachtlijst" : "";
+    const tekoopClause = options.tekoop ? "AND tekoop = :tekoop" : "";
+
+    let sql = `select count(*) as count from Ticket where verkocht=:verkocht 
       and geannuleerd=:geannuleerd and 
-      deletedAt IS NULL and
-      reserveringId IN (select id from Reservering where 
+      deletedAt IS NULL
+      ${tekoopClause}
+      AND reserveringId IN (select id from Reservering where 
         uitvoeringId = :uitvoeringId 
         AND deletedAt IS NULL
-        AND wachtlijst = :wachtlijst ${reserveringClause})`;
+        ${wachtlijstClause}
+        ${reserveringClause} 
+      )`;
 
     const [result] = await sequelize.query(sql, {
-	replacements: {
-	    verkocht: false,
-	    geannuleerd: false,
+      replacements: {
+        verkocht: false,
+        geannuleerd: false,
         uitvoeringId: this.id,
-        wachtlijst: wachtlijst,
-        reservering_id: reservering_id
+        wachtlijst: !!options.wachtlijst,
+        reservering_id: options.reservering_id,
+        tekoop: !!options.tekoop
       },
       type: sequelize.QueryTypes.SELECT
     });
@@ -126,14 +142,18 @@ module.exports = (sequelize, DataTypes) => {
    */
   Uitvoering.prototype.verwerkWachtlijst = async function () {
     const vrijgekomen = await this.vrijgekomen();
+    let aantalTickets = 0;
     await Promise.all(vrijgekomen.map(gelukkige => {
+      aantalTickets += gelukkige.aantal;
       return gelukkige.haalUitWachtrij();
     }));
+    const Ticket = Uitvoering.sequelize.models.Ticket;
+    await Ticket.verwerkTekoop(aantalTickets, this.id);
   };
 
   Uitvoering.prototype.toString = function () {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format
-    return `${this.extra_text||''} ${format(this.aanvang, 'dddd D MMM HH:mm', {locale: nl})}`;
+    return `${this.extra_text || ''} ${format(this.aanvang, 'dddd D MMM HH:mm', { locale: nl })}`;
 
   }
 
@@ -141,12 +161,23 @@ module.exports = (sequelize, DataTypes) => {
     const gereserveerd = await this.getGereserveerd();
     const wachtlijst = await this.getWachtlijst();
     const vrije_plaatsen = this.aantal_plaatsen - gereserveerd;
+    const tekoop = await this.getTekoop();
+    let retval;
 
     if (vrije_plaatsen) {
-      return `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen>1?'en':''}</span>`
+      retval = `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen == 1 ? '' : 'en'}</span>`
     } else {
-      return `<b>Uitverkocht</b> <span>wachtlijst: ${wachtlijst||0}</span>`
+      retval = `<b>Uitverkocht</b>`;
     }
+
+    if (!vrije_plaatsen || wachtlijst) {
+      retval += ` <span>wachtlijst: ${wachtlijst || 0}</span>`;
+    }
+    if (tekoop) {
+      retval += ` te koop: ${tekoop}`;
+    }
+
+    return retval;
   }
 
   Uitvoering.associate = function (models) {
@@ -172,8 +203,8 @@ module.exports = (sequelize, DataTypes) => {
         }
       }]
     }, {
-      override: true
-    })
+        override: true
+      })
 
   };
 

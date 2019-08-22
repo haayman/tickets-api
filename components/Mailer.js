@@ -1,27 +1,25 @@
-"use strict";
+'use strict';
 
-const nodemailer = require("nodemailer");
-const config = require("config");
-const EmailTemplates = require("email-templates");
-const path = require("path");
+const nodemailer = require('nodemailer');
+const config = require('config');
+const EmailTemplates = require('email-templates');
+const path = require('path');
 
 module.exports = class Mailer {
   constructor(params = {}) {
     this.transporter = this.createTransport(params);
     this.from = this.getRecipient(
-      config.get("email.afzender_email"),
-      config.get("email.afzender")
-
+      config.get('email.afzender_email'),
+      config.get('email.afzender')
     );
-
   }
   createTransport(params = {}) {
-    params = Object.assign({}, config.get("mail_transport"), params);
+    params = Object.assign({}, config.get('mail_transport'), params);
     return nodemailer.createTransport(params);
   }
 
   setSubject(subject) {
-    const prefix = config.get("email.subject_prefix");
+    const prefix = config.get('email.subject_prefix');
     this.subject = prefix ? `${prefix} ${subject}` : subject;
     return this;
   }
@@ -43,10 +41,10 @@ module.exports = class Mailer {
 
   initTemplate() {
     return new EmailTemplates({
-      root: path.join(path.resolve(__dirname, "../email/templates")),
+      root: path.join(path.resolve(__dirname, '../email/templates')),
       views: {
         options: {
-          extension: "ejs"
+          extension: 'ejs'
         }
       }
     });
@@ -59,12 +57,12 @@ module.exports = class Mailer {
       from: this.from,
       to: this.to,
       subject: this.subject,
-      html: html,
+      html: html
     };
-    if (config.has("email.bcc")) {
-      options.bcc = config.get("email.bcc");
+    if (config.has('email.bcc')) {
+      options.bcc = config.get('email.bcc');
     }
-    await this.transporter.sendMail(options)
+    await this.transporter.sendMail(options);
   }
 
   async render(params) {
@@ -74,9 +72,10 @@ module.exports = class Mailer {
 
   getRecipient(email, naam, override = false) {
     let alwaysTo;
-    if (override && (alwaysTo = config.has("email.alwaysTo"))) {
-      email = config.get("email.alwaysTo");
+    if (override && (alwaysTo = config.has('email.alwaysTo'))) {
+      email = config.get('email.alwaysTo');
     }
+
     let emailString;
     if (naam) {
       emailString = `"${naam}" <${email}>`;

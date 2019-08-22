@@ -21,7 +21,9 @@ module.exports = {
 	url: "https://kaarten.plusleo.nl",
     port: 3000
   },
-  mail_transport: {
+    mail_transport: {
+	debug:true,
+	logger:true,
     sendmail: true,
     path: "/usr/sbin/sendmail"
   },

@@ -37,19 +37,20 @@ router.post("/", async (req, res) => {
     reservering.uitvoering = await Uitvoering.findByPk(
       reservering.uitvoeringId
     );
-    reservering.tickets = [];
+    reservering.ticketAggregates = [];
     await Promise.all(
       req.body.tickets.map(async t => {
         const prijs = await Prijs.findByPk(t.prijs.id);
         const ta = new TicketAggregate(reservering, prijs);
         await ta.setAantal(t.aantal);
-        reservering.tickets.push(ta);
+        reservering.ticketAggregates.push(ta);
       })
     );
 
+    reservering.Tickets = await reservering.getTickets();
+
     // kassa-betaling 
     if (res.locals.user && req.body.betaald === true) {
-      reservering.Tickets = await reservering.getTickets();
       await Promise.all(reservering.onbetaaldeTickets.map(async (ticket) => {
         ticket.betaald = true;
         await ticket.save();
@@ -112,7 +113,7 @@ router.put("/:id", async (req, res) => {
         req.body.tickets.map(async t => {
           // const prijs = await Prijs.findByPk(t.prijs.id);
           // const ta = new TicketAggregate(reservering, prijs);
-          const ta = reservering.tickets.find(
+          const ta = reservering.ticketAggregates.find(
             ticket => ticket.prijs.id == t.prijs.id
           );
           await ta.setAantal(t.aantal);
@@ -152,9 +153,36 @@ router.put("/:id", async (req, res) => {
     // pas als terugbetaald is, dan wachtlijst verwerken
     await reservering.uitvoering.verwerkWachtlijst();
 
+    // nu kunnen er weer tickets doorverkocht zijn
+    await Reservering.verwerkRefunds();
+
     res.send(reservering);
   });
 });
+
+router.put("/:id/ingenomen", auth(['kassa']), async (req, res) => {
+  let id = req.params.id;
+  if (!req.params.id) {
+    return res.status(400).send("no id");
+  }
+
+  let reservering = await Reservering.findByPk(id);
+  if (!reservering) {
+    return res.status(404).send(`not found: ${id}`);
+  }
+
+  // geen wijzigingen meer toestaan nadat de reservering is ingenomen
+  if (reservering.ingenomen) {
+    return res.status('405').send('reservering is al ingenomen');
+  }
+
+  Reservering.sequelize.transaction(async transaction => {
+    await reservering.update(req.body);
+
+    res.send(reservering);
+  });
+});
+
 
 router.get("/:id", async (req, res) => {
   const params = parseQuery(Reservering, req.query);
@@ -323,7 +351,7 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).send("niet gevonden");
     }
     await Promise.all(
-      reservering.tickets.map(ta => {
+      reservering.ticketAggregates.map(ta => {
         return ta.setAantal(0);
       })
     );
@@ -337,6 +365,15 @@ router.delete("/:id", async (req, res) => {
     reservering.Tickets = await reservering.getTickets();
     if (reservering.validTickets.length === 0) {
       await reservering.destroy();
+    } else {
+      // nog niet alles verkocht. Stuur laatste status op
+      const strReservering = await reservering.asString();
+      await ReserveringMail.send(
+        reservering,
+        "gewijzigd",
+        `Gewijzigde bestelling ${strReservering}`
+      );
+
     }
 
     res.send("OK");

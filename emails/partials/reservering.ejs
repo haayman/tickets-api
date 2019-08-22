@@ -1,87 +1,90 @@
-<tr><td>
-<table class="row card ">
-	<tr class="card-header">
-		<td>Bestelling</td>
-	</tr>
+<tr>
+	<td>
+		<table class="row card ">
+			<tr class="card-header">
+				<td>Bestelling</td>
+			</tr>
 
-	<tr class="card-body">
-		<td>
-		<table class="table">
-			<tr>
-				<th>Uitvoering</th>
-				<td><%= reservering.uitvoering %></td>
-			</tr>
-			<tr>
-				<th>Deur open</th>
-				<td><%= format(reservering.uitvoering.deur_open, 'HH:mm')%></td>
-			</tr>
-			<tr>
-				<th>Kaarten</th>
+			<tr class="card-body">
 				<td>
-					<% reservering.tickets.forEach( function( ticket ) { %>
-						<% if( ticket.aantal ) { %>
-							<%= ticket.asString() %><br />
+					<table class="table">
+						<tr>
+							<th>Uitvoering</th>
+							<td><%= reservering.uitvoering %></td>
+						</tr>
+						<tr>
+							<th>Deur open</th>
+							<td><%= format(reservering.uitvoering.deur_open, 'HH:mm')%></td>
+						</tr>
+						<tr>
+							<th>Kaarten</th>
+							<td>
+								<% reservering.ticketAggregates.forEach( function( ticket ) { %>
+								<% if( ticket.aantal ) { %>
+								<%= ticket.asString() %><br />
+								<% } %>
+								<% }) %>
+							</td>
+						</tr>
+						<tr>
+							<th>Locatie</th>
+							<td>
+								<%- reservering.uitvoering.voorstelling.locatie %>
+							</td>
+						</tr>
+						<% if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
+						<tr>
+							<th>
+								Opmerking over de voorstelling
+							</th>
+							<td>
+								<%= reservering.uitvoering.voorstelling.opmerkingen %>
+							</td>
+						</tr>
 						<% } %>
-					<% }) %>
+
+						<% if( reservering.wachtlijst ) { %>
+						<tr>
+							<th>Wachtlijst</th>
+							<td><b>Je staat op de wachtlijst</b></td>
+						</tr>
+						<% } %>
+
+						<% if( reservering.status !== 'open' && reservering.openstaandBedrag && !reservering.wachtlijst ) { %>
+						<tr>
+							<th>Openstaand bedrag</th>
+							<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: €
+									<%= reservering.openstaandBedrag %>.</em><br />
+								<a class="btn btn-primary" href="<%= reservering.getBetalingUrl() %>">Betalen</a>
+							</td>
+						</tr>
+						<% } %>
+
+						<% if( reservering.opmerking_gebruiker ) { %>
+						<tr>
+							<th>Jouw opmerking</th>
+							<td><%= reservering.opmerking_gebruiker %></td>
+						</tr>
+						<% } %>
+
+						<% if( reservering.opmerking ) { %>
+						<tr>
+							<th>Reactie PlusLeo</th>
+							<td><%= reservering.opmerking %></td>
+						</tr>
+						<% } %>
+
+						<tr class="no-print">
+							<th></th>
+							<td>
+								<a class="btn btn-primary" href="<%=reservering.getTicketUrl()%>" target="_blank">Volg
+									je bestelling</a>
+							</td>
+						</tr>
+
+					</table>
 				</td>
 			</tr>
-			<tr>
-				<th>Locatie</th>
-				<td>
-					<%- reservering.uitvoering.voorstelling.locatie %>
-				</td>
-			</tr>
-			<% if( reservering.uitvoering.voorstelling.opmerkingen ) { %>
-				<tr>
-					<th>
-						Opmerking over de voorstelling
-					</th>
-					<td>
-						<%= reservering.uitvoering.voorstelling.opmerkingen %>
-					</td>
-				</tr>
-			<% } %>
-
-			<% if( reservering.wachtlijst ) { %>
-				<tr>
-					<th>Wachtlijst</th>
-					<td><b>Je staat op de wachtlijst</b></td>
-				</tr>
-			<% } %>
-
-			<% if( reservering.status !== 'open' && reservering.openstaandBedrag && !reservering.wachtlijst ) { %>
-			<tr>
-				<th>Openstaand bedrag</th>
-				<td><em>Let op! Er staat nog een bedrag open dat betaald moet worden: € 
-				<%= reservering.openstaandBedrag %>.<br />
-				We verzoeken je <a href="<%= reservering.getBetalingUrl() %>">alsnog te betalen</a></em>
-				</td>
-			</tr>
-			<% } %>
-
-			<% if( reservering.opmerking_gebruiker ) { %>
-			<tr>
-				<th>Jouw opmerking</th>
-				<td><%= reservering.opmerking_gebruiker %></td>
-			</tr>
-			<% } %>
-
-			<% if( reservering.opmerking ) { %>
-			<tr>
-				<th>Reactie PlusLeo</th>
-				<td><%= reservering.opmerking %></td>
-			</tr>
-			<% } %>
-
-			<tr class="no-print">
-				<th></th>
-				<td>
-					<a class="btn btn-primary" href="<%=reservering.getTicketUrl()%>" target="_blank">Volg je bestelling</a>
-				</td>
-			</tr>
-
 		</table>
 	</td>
 </tr>
-</table>
-</td></tr>
