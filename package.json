@@ -5,7 +5,7 @@
   "author": "Arjen Haayman",
   "private": true,
   "scripts": {
-    "server": "nodemon server",
+    "server": "NODE_ENV=staging node --inspect=0.0.0.0 server.js",
     "unit_server": "jest --watchAll tests/"
   },
   "dependencies": {
