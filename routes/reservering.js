@@ -208,8 +208,9 @@ router.get("/:id/resend", async (req, res) => {
   if (!reservering) {
     return res.status(404).send("niet gevonden");
   } else {
-    const isPaid = await reservering.status === "paid";
-    if (isPaid) {
+    const saldo = reservering.saldo;
+
+    if (saldo >= 0) {
       const strReservering = await reservering.asString();
       ReserveringMail.send(
         reservering,
