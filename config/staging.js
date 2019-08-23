@@ -11,8 +11,8 @@ module.exports = {
     url: 'https://kaarten.staging.plusleo.nl',
     port: 3003
   },
-    email: {
-	subject_prefix: "[PlusLeo test]",
-	alwaysTo: "arjen.haayman+plusleo@gmail.com"
-    }
+  email: {
+    subject_prefix: "[PlusLeo test]",
+    alwaysTo: "arjen.haayman+plusleo@gmail.com"
+  }
 };
