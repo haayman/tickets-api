@@ -62,7 +62,6 @@ module.exports = class Mailer {
     if (config.has('email.bcc')) {
       options.bcc = config.get('email.bcc');
     }
-    await this.transporter.sendMail(options);
   }
 
   async render(params) {
