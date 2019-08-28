@@ -49,7 +49,8 @@
     "jest-serializer-vue": "^2.0.2",
     "nock": "^10.0.2",
     "nodemailer-mock": "^1.3.14",
-    "supertest": "^3.3.0"
+    "supertest": "^3.3.0",
+    "webpack-dev-server": "^3.8.0"
   },
   "jest": {
     "testEnvironment": "node"
