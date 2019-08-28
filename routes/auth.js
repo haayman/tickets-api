@@ -36,12 +36,14 @@ router.get("/CheckLoggedIn", async (req, res) => {
   if (token) {
     try {
       const data = jwt.verify(token, config.get("jwtPrivateKey"));
+      // console.log('checkLoggedIn', data);
       user = await User.findByPk(data.id);
       if (user.tokenExpired(data.timestamp)) {
         user = token = null;
         error = "token expired";
       } else {
         token = user.getAuthToken(); // refresh token
+        // console.log('refresh token', token);
       }
     } catch (e) {
       user = null;
@@ -50,8 +52,12 @@ router.get("/CheckLoggedIn", async (req, res) => {
     }
   }
 
+  // console.log('header.authorization', token);
   res.header({
-    authorization: token
+    authorization: token,
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    Pragma: 'no-cache',
+    Expires: 0
   }).send({
     error: error,
     loggedIn: !!user,
