@@ -21,14 +21,15 @@ function nl2br(str) {
   return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1' + breakTag + '$2');
 }
 
-async function send(naam, email, subject, template) {
+async function send(reservering, subject, template) {
   const mail = new Mailer();
   const content = nl2br(ejs.render(template, {
-    naam,
-    email
+    reservering,
+    naam: reservering.naam,
+    email: reservering.email
   }))
   mail.setTemplate('custom')
-    .setTo(email, naam)
+    .setTo(reservering.email, reservering.naam)
     .setSubject(subject)
 
   await mail.send({
@@ -36,11 +37,12 @@ async function send(naam, email, subject, template) {
   });
 }
 
-async function render(naam, email, subject, template) {
+async function render(reservering, subject, template) {
   const mail = new Mailer();
   const content = nl2br(ejs.render(template, {
-    naam,
-    email
+    reservering,
+    naam: reservering.naam,
+    email: reservering.email
   }));
 
   const result = await mail.setTemplate('custom').render({
@@ -76,11 +78,11 @@ router.post("/", auth(['admin']), async (req, res) => {
   }
 
   await Promise.all(reserveringen.map(async reservering => {
-    await send(reservering.naam, reservering.email, subject, content);
+    await send(reservering, subject, content);
   }))
 
   if (test) {
-    const result = await render(reserveringen[0].naam, reserveringen[0].email, subject, content);
+    const result = await render(reserveringen[0], subject, content);
     res.send(result);
   } else {
     res.send(`${reserveringen.length} mails verzonden`);
