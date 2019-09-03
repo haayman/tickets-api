@@ -6,12 +6,17 @@ module.exports = {
   useMorgan: true,
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
-	},
-	server: {
-		url: 'https://kaarten.dev.plusleo.nl',
-		port: 3001
-	},
-	email: {
+  },
+  database: {
+    debug: true,
+    asyncTrackTraces: true
+  },
+
+  server: {
+    url: 'https://kaarten.dev.plusleo.nl',
+    port: 3001
+  },
+  email: {
     subject_prefix: "[PlusLeo dev]",
     alwaysTo: "arjen.haayman+plusleo@gmail.com"
   }

@@ -3,17 +3,11 @@ const path = require("path");
 module.exports = {
   name: "PlusLeo tickets",
   database: {
-    dialect: "sqlite",
-    storage: path.resolve(__dirname, "..", "..", "data", "tickets.sqlite"),
-    define: {
-      charset: "utf8",
-      dialectOptions: {
-        collate: "utf8_general_ci"
-      },
-      timestamps: true,
-      freezeTableName: true,
-      logging: false
-    },
+    client: "sqlite3",
+    connection: {
+			filename: path.resolve(__dirname, "..", "..", "data", "knex.sqlite")
+		},
+		useNullAsDefault: true
   },
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
