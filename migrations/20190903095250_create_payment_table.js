@@ -6,13 +6,13 @@ exports.up = function (knex) {
       table.string('description', 255);
       table.decimal('paidBack', 10, 5).notNullable();
       table.string('role', 255);
-      table.integer('reserveringId').notNullable().unsigned();
+      table.uuid('reserveringId').notNullable();
       table.timestamp('createdAt').defaultTo(knex.fn.now())
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
       table.timestamp('deletedAt').defaultTo(knex.fn.now())
 
       table.foreign('reserveringId')
-        .references('Resevering.id')
+        .references('Reservering.id')
         .onDelete('CASCADE')
         .onUpdate('CASCADE')
     })

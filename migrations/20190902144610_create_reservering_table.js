@@ -11,10 +11,11 @@ exports.up = function (knex) {
       table.decimal('bedrag', 10, 5);
       table.string('iban', 255);
       table.string('tennamevan', 255);
-      table.integer('uitvoeringId').notNullable();
+      table.integer('uitvoeringId').unsigned().notNullable();
       table.timestamp('createdAt').defaultTo(knex.fn.now())
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
+      table.unique('id');
       table.foreign('uitvoeringId').references('Uitvoering.id').onDelete('CASCADE')
     })
 };
