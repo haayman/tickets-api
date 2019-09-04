@@ -8,8 +8,14 @@ module.exports = {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
   },
   database: {
-    debug: true,
-    asyncTrackTraces: true
+    client: 'mysql',
+    connection: {
+      host: 'localhost',
+      user: 'plusleo',
+      database: 'plusleo_tickets_dev',
+      password: 'lekker grote database'
+
+    }
   },
 
   server: {
