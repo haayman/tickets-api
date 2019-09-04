@@ -1,11 +1,13 @@
-const models = require("./models");
+const Knex = require('knex');
+const config = require('config');
+const knex = Knex(config.get('database'));
+const User = require("./models/User");
+User.knex(knex);
+
 (async () => {
-  await models.User.destroy({
-    where: {},
-    truncate: true
-  });
+  await User.query().delete();
   try {
-    models.User.create({
+    await User.query().insert({
       username: "arjen",
       name: "Arjen",
       email: "arjen@plusleo.nl",
@@ -13,69 +15,77 @@ const models = require("./models");
       role: "admin"
     });
 
-    models.User.create({
+    await User.query().insert({
       username: "lex",
       name: "Lex",
       email: "lex@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "kassa",
       name: "Kassa",
       email: "kassa@plusleo.nl",
       password: "dit is de kassa",
       role: "kassa"
     });
-    models.User.create({
+    await User.query().insert({
       username: "jack",
       name: "Jack",
       email: "jack@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "lexp",
       name: "Lex Prinzen",
       email: "lexp@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "garmene",
       name: "Garmène",
       email: "garmene@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "gerida",
       name: "Gerida",
       email: "gerida@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "selena",
       name: "selena",
       email: "selena@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "hasse",
       name: "Hasse",
       email: "hasse@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
-    models.User.create({
+    await User.query().insert({
       username: "san",
       name: "San",
       email: "san@plusleo.nl",
       password: makePassword(20),
       role: "speler"
     });
+    await User.query().insert({
+      username: "bram",
+      name: "Bram",
+      email: "bram@plusleo.nl",
+      password: makePassword(20),
+      role: "speler"
+    });
+    return;
   } catch (e) {
     console.log(e);
   }

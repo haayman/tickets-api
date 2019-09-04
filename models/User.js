@@ -1,119 +1,86 @@
 const jwt = require("jsonwebtoken");
 const config = require("config");
-const hashPassword = require("password-hash-and-salt");
+const Password = require('objection-password')();
 const ROLES = ["admin", "speler", "kassa"];
 const crypto = require("crypto");
-const globalData = require('../components/globalData');
 const differenceInMinutes = require('date-fns/difference_in_minutes');
+const {
+  Model
+} = require('objection');
 
-module.exports = (sequelize, DataTypes) => {
-  let User = sequelize.define(
-    "User", {
-      username: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        set(val) {
-          this.setDataValue("username", val.toLowerCase());
-        }
-      },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-          isEmail: true
-        }
-      },
-      password: {
-        type: DataTypes.TEXT,
-        allowNull: false
-      },
-      role: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          isRole(value) {
-            if (!ROLES.includes(value)) {
-              throw new Error(`ongeldige rol: ${value}`);
-            }
-          }
-        }
-      }
-    }, {
-      defaultScope: {
-        attributes: {
-          exclude: ["password"]
-        }
-      },
-      scopes: {
-        withPassword: {
-          attributes: {
-            include: ["password"]
-          }
-        }
-      },
-      hooks: {
-        beforeSave: function (user) {
-          return new Promise((resolve, reject) => {
-            if (!user.changed("password")) resolve();
-            // geen wachtwoord, maar wel een bestaande? OK
-            if (!user.password) resolve();
-            hashPassword(user.password).hash((error, hash) => {
-              if (error) reject(new Error(error));
-              else {
-                user.password = hash;
-                resolve();
-              }
-            });
-          });
+
+module.exports = class User extends Password(Model) {
+  static get tableName() {
+    return 'User'
+  };
+
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['username', 'name', 'email', 'password', 'role'],
+      properties: {
+        id: {
+          type: 'integer'
+        },
+        username: {
+          type: 'string'
+        },
+        name: {
+          type: 'string'
+        },
+        email: {
+          type: 'email'
+        },
+        password: {
+          type: 'string'
+        },
+        role: {
+          type: 'string',
+          enum: ROLES
         }
       }
     }
-  );
+  }
 
-  User.prototype.checkPassword = function (password) {
-    // let user = this;
-    return new Promise((resolve, reject) => {
-      hashPassword(password).verifyAgainst(
-        this.getDataValue("password"),
-        function (error, verified) {
-          if (error) reject(error);
-          else resolve(verified);
-        }
-      );
-    });
-  };
+  /**
+   * 
+   * @param {string} password 
+   * @returns {Promise}
+   */
+  checkPassword(password) {
+    // verifyPassword is toegevoegd door Password
+    return this.verifyPassword(password);
+  }
 
-  User.prototype.getAuthToken = function () {
+  getAuthToken() {
     return jwt.sign({
-        id: this.getDataValue("id"),
-        role: this.getDataValue("role"),
+        id: this.id,
+        role: this.role,
         timestamp: new Date()
       },
       config.get("jwtPrivateKey")
     );
-  };
+  }
 
-  User.prototype.tokenExpired = function (timestamp) {
+  /**
+   * determines whether timestamp is older than 60 minutes
+   * @param {*} timestamp 
+   */
+  static tokenExpired(timestamp) {
     return differenceInMinutes(new Date(), new Date(timestamp)) >= 60;
   }
 
-  User.prototype.getEditLink = function () {
+  getEditLink() {
     return (
       config.get('server.url') +
       "/forgotten/" +
-      this.getDataValue("id") +
+      this.id +
       "/" +
       this.getHash()
     );
-  };
+  }
 
-  User.prototype.getHash = function () {
+  getHash() {
     return (
       crypto
       .createHash("sha1")
@@ -122,21 +89,21 @@ module.exports = (sequelize, DataTypes) => {
       // .update(this.password)
       .digest("hex")
     );
-  };
+  }
 
-  User.prototype.isAdministrator = function () {
+  isAdministrator() {
     return this.role === "admin";
   }
 
-  User.prototype.isSpeler = function () {
+  isSpeler() {
     return this.role === "speler" || this.isAdministrator();
   }
 
-  User.prototype.isKassa = function () {
+  isKassa() {
     return this.role === "kassa";
   }
 
-  User.prototype.isAuthorized = function (authorizationRequired) {
+  isAuthorized(authorizationRequired) {
     switch (authorizationRequired) {
       case true:
         return true;
@@ -149,5 +116,73 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
 
-  return User;
-};
+}
+
+// let User = sequelize.define(
+//   "User", {
+//     username: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//       unique: true,
+//       set(val) {
+//         this.setDataValue("username", val.toLowerCase());
+//       }
+//     },
+//     name: {
+//       type: DataTypes.STRING,
+//       allowNull: false
+//     },
+//     email: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//       unique: true,
+//       validate: {
+//         isEmail: true
+//       }
+//     },
+//     password: {
+//       type: DataTypes.TEXT,
+//       allowNull: false
+//     },
+//     role: {
+//       type: DataTypes.STRING,
+//       allowNull: false,
+//       validate: {
+//         isRole(value) {
+//           if (!ROLES.includes(value)) {
+//             throw new Error(`ongeldige rol: ${value}`);
+//           }
+//         }
+//       }
+//     }
+//   }, {
+//     defaultScope: {
+//       attributes: {
+//         exclude: ["password"]
+//       }
+//     },
+//     scopes: {
+//       withPassword: {
+//         attributes: {
+//           include: ["password"]
+//         }
+//       }
+//     },
+//     hooks: {
+//       beforeSave: function (user) {
+//         return new Promise((resolve, reject) => {
+//           if (!user.changed("password")) resolve();
+//           // geen wachtwoord, maar wel een bestaande? OK
+//           if (!user.password) resolve();
+//           hashPassword(user.password).hash((error, hash) => {
+//             if (error) reject(new Error(error));
+//             else {
+//               user.password = hash;
+//               resolve();
+//             }
+//           });
+//         });
+//       }
+//     }
+//   }
+// );
