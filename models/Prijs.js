@@ -1,39 +1,49 @@
-module.exports = (sequelize, DataTypes) => {
-  let Prijs = sequelize.define(
-    "Prijs", {
-      description: {
-        type: DataTypes.STRING,
-        allowNull: false
-      },
-      prijs: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
-      },
-      role: {
-        type: DataTypes.STRING,
-        allowNull: true
-      }
-    }, {
-      name: {
-        singular: "prijs",
-        plural: "prijzen"
+const {
+  Model
+} = require('objection');
+
+module.exports = class Prijs extends Model {
+  static get tableName() {
+    return 'Prijs'
+  }
+
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['description', 'prijs'],
+      properties: {
+        id: {
+          type: 'integer'
+        },
+        description: {
+          type: 'string'
+        },
+        prijs: {
+          type: 'number',
+          minimum: 0,
+        },
+        role: {
+          type: 'string'
+        }
       }
     }
-  );
+  }
 
-  Prijs.prototype.asString = function () {
-    //    return `${this.description} (à € ${this.prijs.toFixed(2)})`;
-    return `${this.description}`;
-  };
+  asString() {
+    return this.description;
+  }
 
-  Prijs.associate = function (models) {
-    Prijs.Voorstelling = models.Prijs.belongsTo(models.Voorstelling, {
-      onDelete: "CASCADE",
-      foreignKey: {
-        allowNull: false
+  static get relationMappings() {
+    const Voorstelling = require('./Voorstelling');
+    return {
+      voorstelling: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Voorstelling,
+        join: {
+          from: 'Prijs.voorstellingId',
+          to: 'Voorstelling.id'
+        }
       }
-    });
-  };
-
-  return Prijs;
-};
+    }
+  }
+}

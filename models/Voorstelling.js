@@ -1,58 +1,53 @@
-const Prijs = require("./Prijs");
-const Uitvoering = require("./Uitvoering");
+const {
+  Model
+} = require('objection');
+module.exports = class Voorstelling extends Model {
+  static get tableName() {
+    return 'Voorstelling';
+  }
 
-module.exports = (sequelize, DataTypes) => {
-  const Voorstelling = sequelize.define(
-    "Voorstelling", {
-      title: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true
-      },
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: false
-      },
-      active: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: true
-      },
-      url: {
-        type: DataTypes.STRING,
-        validate: {
-          isUrl: true
-        }
-      },
-      locatie: {
-        type: DataTypes.STRING
-      },
-      opmerkingen: {
-        type: DataTypes.STRING
-      },
-      poster: {
-        type: DataTypes.STRING,
-        validate: {
-          isUrl: true
-        }
-      },
-      thumbnail: {
-        type: DataTypes.STRING,
-        validate: {
-          isUrl: true
-        }
-      }
-    }, {
-      name: {
-        singular: "voorstelling",
-        plural: "voorstellingen"
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['title', 'description'],
+      properties: {
+        id: {
+          type: 'integer'
+        },
+        title: {
+          type: 'string'
+        },
+        description: {
+          type: 'string'
+        },
+        active: {
+          type: 'boolean'
+        },
+        url: {
+          type: 'string',
+          format: 'uri'
+        },
+        locatie: {
+          type: 'string'
+        },
+        opmerkingen: {
+          type: 'string'
+        },
+        poster: {
+          type: 'string',
+          format: 'uri'
+        },
+        thumbnail: {
+          type: 'string',
+          format: 'uri'
+        },
       }
     }
-  );
+  }
 
-  Voorstelling.prototype.toJSONA = async function (res = null) {
+  async toJSONA(res = null) {
     let obj = this.toJSON();
-    const uitvoeringen = await this.getUitvoeringen();
+    const uitvoeringen = await this.uitvoeringen;
     if (obj.prijzen) {
       obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
       if (res) {
@@ -70,37 +65,31 @@ module.exports = (sequelize, DataTypes) => {
     return obj;
   };
 
-  Voorstelling.prototype.toString = function () {
-    return this.title;
+  // toString() {
+  //   return this.title;
+  // }
+
+  static get relationMappings() {
+    const Prijs = require('./Prijs');
+    const Uitvoering = require('./Uitvoering');
+    return {
+      prijzen: {
+        relation: Model.HasManyRelation,
+        modelClass: Prijs,
+        join: {
+          from: 'Prijs.voorstellingId',
+          to: 'Voorstelling.id'
+        },
+      },
+      uitvoeringen: {
+        relation: Model.HasManyRelation,
+        modelClass: Uitvoering,
+        join: {
+          from: 'Uitvoering.voorstellingId',
+          to: 'Voorstelling.id'
+        }
+      }
+    }
   }
 
-  Voorstelling.associate = function (models) {
-    const embed = require("sequelize-embed")(sequelize);
-    const {
-      mkInclude
-    } = embed.util.helpers;
-
-    models.Voorstelling.Prijzen = models.Voorstelling.hasMany(models.Prijs);
-    // models.Prijs.belongsTo(models.Voorstelling);
-
-    models.Voorstelling.Uitvoeringen = models.Voorstelling.hasMany(
-      models.Uitvoering
-    );
-    // models.Uitvoering.belongsTo(models.Voorstelling);
-
-    // https://www.npmjs.com/package/sequelize-embed
-    Voorstelling.updateIncludes = (voorstellingData, options) => {
-      if (options.include) {
-        let include = options.include.map(include => mkInclude(include));
-        _options = Object.assign({}, options, {
-          reload: include
-        });
-        embed.update(Voorstelling, voorstellingData, include, _options);
-      } else {
-        Voorstelling.update(voorstellingData, options);
-      }
-    };
-  };
-
-  return Voorstelling;
 };
