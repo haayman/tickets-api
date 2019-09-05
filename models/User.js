@@ -29,7 +29,8 @@ module.exports = class User extends Password(Model) {
           type: 'string'
         },
         email: {
-          type: 'email'
+          type: 'email',
+          format: 'email'
         },
         password: {
           type: 'string'
