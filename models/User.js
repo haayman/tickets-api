@@ -18,7 +18,7 @@ module.exports = class User extends Password(TimestampedModel) {
       required: ['username', 'name', 'email', 'password', 'role'],
       properties: {
         id: {
-          type: 'integer'
+          type: 'uuid'
         },
         username: {
           type: 'string'

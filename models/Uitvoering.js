@@ -2,6 +2,7 @@ const format = require('date-fns/format');
 const nl = require('date-fns/locale/nl')
 const TimestampedModel = require('./TimestampedModel');
 const {
+  Model,
   raw
 } = require('objection');
 const Ticket = require('./Ticket');

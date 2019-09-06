@@ -1,7 +1,9 @@
+const UUIDTrigger = require('./functions/UUIDTrigger')
+
 exports.up = function (knex) {
   return knex.schema
     .createTable('reserveringen', (table) => {
-      table.uuid('id');
+      table.uuid('id').primary();
       table.string('naam', 255).notNullable();
       table.string('email', 255).notNullable();
       table.string('opmerking', 255);
@@ -15,9 +17,8 @@ exports.up = function (knex) {
       table.timestamp('createdAt').defaultTo(knex.fn.now())
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
-      table.unique('id');
       table.foreign('uitvoeringId').references('uitvoeringen.id').onDelete('CASCADE')
-    })
+    }).then(() => knex.raw(UUIDTrigger('reserveringen')));
 };
 
 exports.down = function (knex) {
