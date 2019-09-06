@@ -4,12 +4,10 @@ const Password = require('objection-password')();
 const ROLES = ["admin", "speler", "kassa"];
 const crypto = require("crypto");
 const differenceInMinutes = require('date-fns/difference_in_minutes');
-const {
-  Model
-} = require('objection');
+const TimestampedModel = require('./TimestampedModel');
 
 
-module.exports = class User extends Password(Model) {
+module.exports = class User extends Password(TimestampedModel) {
   static get tableName() {
     return 'users'
   };
