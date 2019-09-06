@@ -1,4 +1,7 @@
 const TimestampedModel = require('./TimestampedModel')
+const {
+  Model
+} = require('objection');
 
 module.exports = class Prijs extends TimestampedModel {
   static get tableName() {
