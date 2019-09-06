@@ -1,6 +1,6 @@
 exports.up = async function (knex) {
   return knex.schema
-    .createTable('Uitvoering', (table) => {
+    .createTable('uitvoeringen', (table) => {
       table.increments('id');
       table.datetime('aanvang').notNullable();
       table.datetime('deur_open').notNullable();
@@ -10,10 +10,11 @@ exports.up = async function (knex) {
       table.timestamp('createdAt').defaultTo(knex.fn.now())
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
-      table.foreign('voorstellingId').references('Voorstelling.id')
+      table.foreign('voorstellingId').references('voorstellingen.id').onDelete('CASCADE').onUpdate('CASCADE');
+
     })
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTable('Uitvoering');
+  return knex.schema.dropTable('uitvoeringen');
 };

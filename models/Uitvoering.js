@@ -8,7 +8,7 @@ const Ticket = require('./Ticket');
 
 module.exports = class Uitvoering extends Model {
   static get tableName() {
-    return 'Uitvoering';
+    return 'uitvoeringen';
   };
 
   static get jsonSchema() {
@@ -204,16 +204,16 @@ module.exports = class Uitvoering extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Voorstelling,
         join: {
-          from: 'Voorstelling.id',
-          to: 'Uitvoering.voorstellingId'
+          from: 'voorstellingen.id',
+          to: 'uitvoeringen.voorstellingId'
         }
       },
       reserveringen: {
         relation: Model.HasManyRelation,
         modelClass: Reservering,
         join: {
-          from: 'Reservering.uitvoeringId',
-          to: 'Uitvoering.id'
+          from: 'reserveringen.uitvoeringId',
+          to: 'uitvoeringen.id'
         }
       }
     }
