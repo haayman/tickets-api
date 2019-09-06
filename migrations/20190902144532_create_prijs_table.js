@@ -1,6 +1,6 @@
 exports.up = function (knex) {
   return knex.schema
-    .createTable('Prijs', (table) => {
+    .createTable('prijzen', (table) => {
       table.increments('id');
       table.string('description', 255).notNullable();
       table.decimal('prijs', 10, 5).notNullable();
@@ -10,12 +10,12 @@ exports.up = function (knex) {
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
       table.foreign('voorstellingId')
-        .references('Voorstelling.id')
+        .references('voorstellingen.id')
         .onDelete('CASCADE')
         .onUpdate('CASCADE')
     })
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTable('Prijs');
+  return knex.schema.dropTable('prijzen');
 };

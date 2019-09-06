@@ -4,7 +4,7 @@ const {
 
 module.exports = class Prijs extends Model {
   static get tableName() {
-    return 'Prijs'
+    return 'prijzen'
   }
 
   static get jsonSchema() {
@@ -40,8 +40,8 @@ module.exports = class Prijs extends Model {
         relation: Model.BelongsToOneRelation,
         modelClass: Voorstelling,
         join: {
-          from: 'Prijs.voorstellingId',
-          to: 'Voorstelling.id'
+          from: 'prijzen.voorstellingId',
+          to: 'voorstellingen.id'
         }
       }
     }

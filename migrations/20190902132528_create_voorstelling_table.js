@@ -1,9 +1,10 @@
 exports.up = function (knex) {
   return knex.schema
-    .createTable('Voorstelling', (table) => {
+    .createTable('voorstellingen', (table) => {
       table.increments('id');
       table.string('title', 255).notNullable().unique();
       table.text('description').notNullable();
+      table.string('opmerkingen', 255);
       table.boolean('active').defaultTo(true);
       table.string('url', 255);
       table.string('locatie', 255);
@@ -15,5 +16,5 @@ exports.up = function (knex) {
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTable('Voorstelling');
+  return knex.schema.dropTable('voorstellingen');
 };

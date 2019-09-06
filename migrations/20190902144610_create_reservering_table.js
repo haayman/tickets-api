@@ -1,6 +1,6 @@
 exports.up = function (knex) {
   return knex.schema
-    .createTable('Reservering', (table) => {
+    .createTable('reserveringen', (table) => {
       table.uuid('id');
       table.string('naam', 255).notNullable();
       table.string('email', 255).notNullable();
@@ -16,10 +16,10 @@ exports.up = function (knex) {
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
       table.unique('id');
-      table.foreign('uitvoeringId').references('Uitvoering.id').onDelete('CASCADE')
+      table.foreign('uitvoeringId').references('uitvoeringen.id').onDelete('CASCADE')
     })
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTable('Reservering');
+  return knex.schema.dropTable('reserveringen');
 };

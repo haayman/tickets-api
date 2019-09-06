@@ -1,6 +1,6 @@
 exports.up = function (knex) {
   return knex.schema
-    .createTable('Ticket', (table) => {
+    .createTable('tickets', (table) => {
       table.increments('id');
       table.boolean('betaald').defaultTo(false);
       table.boolean('tekoop').defaultTo(false);
@@ -14,11 +14,11 @@ exports.up = function (knex) {
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
       table.timestamp('deletedAt').nullable();
 
-      table.foreign('paymentId').references('Payment.id').onDelete('CASCADE')
-      table.foreign('reserveringId').references('Reservering.id').onDelete('CASCADE')
+      table.foreign('paymentId').references('payments.id').onDelete('CASCADE')
+      table.foreign('reserveringId').references('reserveringen.id').onDelete('CASCADE')
     })
 };
 
 exports.down = function (knex) {
-  return knex.schema.dropTable('Ticket');
+  return knex.schema.dropTable('tickets');
 };

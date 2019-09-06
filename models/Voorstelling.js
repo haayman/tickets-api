@@ -3,7 +3,7 @@ const {
 } = require('objection');
 module.exports = class Voorstelling extends Model {
   static get tableName() {
-    return 'Voorstelling';
+    return 'voorstellingen';
   }
 
   static get jsonSchema() {
@@ -77,16 +77,16 @@ module.exports = class Voorstelling extends Model {
         relation: Model.HasManyRelation,
         modelClass: Prijs,
         join: {
-          from: 'Prijs.voorstellingId',
-          to: 'Voorstelling.id'
+          from: 'prijzen.voorstellingId',
+          to: 'voorstellingen.id'
         },
       },
       uitvoeringen: {
         relation: Model.HasManyRelation,
         modelClass: Uitvoering,
         join: {
-          from: 'Uitvoering.voorstellingId',
-          to: 'Voorstelling.id'
+          from: 'uitvoeringen.voorstellingId',
+          to: 'voorstellingen.id'
         }
       }
     }

@@ -11,7 +11,7 @@ const {
 
 module.exports = class User extends Password(Model) {
   static get tableName() {
-    return 'User'
+    return 'users'
   };
 
   static get jsonSchema() {
