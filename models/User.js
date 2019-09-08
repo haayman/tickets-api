@@ -41,6 +41,15 @@ module.exports = class User extends Password(TimestampedModel) {
     }
   }
 
+  $formatJson(json) {
+    json = super.$formatJson(json);
+    delete json.createdAt;
+    delete json.updatedAt;
+    delete json.password;
+
+    return json;
+  }
+
   /**
    * 
    * @param {string} password 
@@ -65,7 +74,7 @@ module.exports = class User extends Password(TimestampedModel) {
    * determines whether timestamp is older than 60 minutes
    * @param {*} timestamp 
    */
-  static tokenExpired(timestamp) {
+  tokenExpired(timestamp) {
     return differenceInMinutes(new Date(), new Date(timestamp)) >= 60;
   }
 

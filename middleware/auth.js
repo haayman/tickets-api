@@ -1,9 +1,10 @@
 const jwt = require("jsonwebtoken");
 const config = require("config");
-const { User } = require("../models/User");
+const User = require('../models/User');
 
-module.exports = function(authRequired = true) {
-  return function(req, res, next) {
+module.exports = function (authRequired = true) {
+  return function (req, res, next) {
+
     const token = req.get("x-auth-token");
     if (!token) return res.status(401).send("Access denied. No token provided");
 

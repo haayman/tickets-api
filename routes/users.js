@@ -1,31 +1,25 @@
 const auth = require("../middleware/auth");
 const express = require("express");
-const {
-  User
-} = require("../models");
+const User = require('../models/User');
 const Mailer = require("../components/Mailer");
 
 const router = express.Router();
 
 router.get("/", auth(["admin"]), async (req, res) => {
-  let users = await User.findAll({
-    order: ["username"]
-  });
+  let users = await User.query().orderBy('username');
   res.send(users);
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
   try {
-    let user = await User.findOne({
-      where: {
-        name: req.body.name
-      }
+    let user = await User.query().findOne({
+      name: req.body.name
     });
     if (user) {
       return res.status(400).send(`Gebruiker ${user.name} al geregistreerd`);
     }
 
-    user = await User.create(req.body);
+    user = await User.query().insert(req.body);
     res.header("x-auth-token", user.getAuthToken()).send(user);
   } catch (e) {
     // console.error(e);
@@ -39,7 +33,7 @@ router.put("/:id", async (req, res) => {
     return res.status(400).send("no id");
   }
 
-  const user = await User.findByPk(id);
+  let user = await User.query().findById(id);
   if (!user) {
     return res.status(404).send(`not found: ${id}`);
   }
@@ -54,36 +48,34 @@ router.put("/:id", async (req, res) => {
     }
   }
 
-  await user.update(req.body, {
-    returning: true
-  });
+  user = await User.query().patchAndFetchById(id, req.body);
 
   res.send(user);
 });
 
 router.get("/:id", async (req, res) => {
-  const user = await User.findByPk(req.params.id);
+  const user = await User.query().findById(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
-  if (!res.locals.user) {
-    // not logged in
-    const hash = req.query.hash;
-    if (!hash) {
-      return res.status(403).send("no hash");
-    } else if (hash != user.getHash()) {
-      return res.status(403).send("invalid hash");
-    }
-  }
-  res.send(user);
+  // if (!res.locals.user) {
+  //   // not logged in
+  //   const hash = req.query.hash;
+  //   if (!hash) {
+  //     return res.status(403).send("no hash");
+  //   } else if (hash != user.getHash()) {
+  //     return res.status(403).send("invalid hash");
+  //   }
+  // }
+  res.send(user.$omit(['password']));
 });
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
-  const user = await User.findByPk(req.params.id);
+  const user = await User.query().findById(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
-  await user.destroy();
+  await User.query().deleteById(user.id);
 
   res.send(user);
 });
@@ -93,10 +85,8 @@ router.post("/forgotten", async (req, res) => {
   if (!username) {
     return res.status(403).send("geen username");
   }
-  const user = await User.findOne({
-    where: {
-      username: username
-    }
+  const user = await User.query().findOne({
+    username: username
   });
   if (!user) {
     return res.status(404).send("niet gevonden");
