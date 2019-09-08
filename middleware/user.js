@@ -1,3 +1,7 @@
+/**
+ * voeg de gegevens van de ingelogde gebruiker toe aan res.locals
+ */
+
 const jwt = require("jsonwebtoken");
 const config = require("config");
 const {
@@ -12,6 +16,6 @@ module.exports = function (req, res, next) {
       user = jwt.verify(token, config.get("jwtPrivateKey"));
     } catch (e) {}
   }
-  res.locals.user = user ? User.build(user) : user;
+  res.locals.user = user; // ? User.fromJson(user) : user;
   next();
 };
