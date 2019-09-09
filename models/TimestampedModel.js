@@ -12,4 +12,11 @@ module.exports = class extends Model {
     this.updatedAt = new Date() //.toISOString();
     return super.$beforeUpdate(opt, queryContext);
   }
+
+  $formatJson(json) {
+    delete json.createdAt;
+    delete json.updatedAt;
+
+    return json;
+  }
 }
