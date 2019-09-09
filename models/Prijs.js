@@ -30,7 +30,7 @@ module.exports = class Prijs extends TimestampedModel {
     }
   }
 
-  asString() {
+  toString() {
     return this.description;
   }
 
