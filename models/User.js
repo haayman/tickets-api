@@ -42,12 +42,10 @@ module.exports = class User extends Password(TimestampedModel) {
   }
 
   $formatJson(json) {
-    json = super.$formatJson(json);
-    delete json.createdAt;
-    delete json.updatedAt;
-    delete json.password;
+    let retval = super.$formatJson(json);
+    // delete retval.password;
 
-    return json;
+    return retval;
   }
 
   /**
