@@ -8,7 +8,7 @@ process.env.NODE_CONFIG_DIR = __dirname + "/config/";
 require("./startup/config")(app);
 
 require("./startup/logging")();
-// require("./startup/database")();
+require("./startup/database")();
 require("./startup/routes")(app);
 
 require("./startup/env")();
