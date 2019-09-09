@@ -1,7 +1,5 @@
 const express = require("express");
-const {
-  User
-} = require("../models");
+const User = require("../models/User");
 const config = require("config");
 const jwt = require("jsonwebtoken");
 const checker = require('zxcvbn');
@@ -13,14 +11,12 @@ router.post("/", async (req, res) => {
   };
 
   // standaard wordt password niet opgehaald. Doe nu maar wel
-  let user = await User.scope("withPassword").findOne({
-    where: {
-      username: req.body.username
-    }
+  let user = await User.query().findOne({
+    username: req.body.username
   });
   if (!user) return sendError();
 
-  const verified = await user.checkPassword(req.body.password);
+  const verified = user.checkPassword(req.body.password);
   if (!verified) return sendError();
 
   const token = user.getAuthToken();
@@ -37,7 +33,7 @@ router.get("/CheckLoggedIn", async (req, res) => {
     try {
       const data = jwt.verify(token, config.get("jwtPrivateKey"));
       // console.log('checkLoggedIn', data);
-      user = await User.findByPk(data.id);
+      user = await User.query().findById(data.id);
       if (user.tokenExpired(data.timestamp)) {
         user = token = null;
         error = "token expired";
