@@ -49,88 +49,74 @@ module.exports = class Uitvoering extends TimestampedModel {
   //   this.voorstelling = await this.getVoorstelling();
   // };
 
-  // Uitvoering.prototype.toJSONA = async function () {
-  //   let obj = this.toJSON();
-  //   obj.gereserveerd = await this.getGereserveerd();
-  //   obj.wachtlijst = await this.getWachtlijst();
-  //   obj.tekoop = await this.getTekoop();
-  //     obj.vrije_plaatsen = Math.max(obj.aantal_plaatsen - obj.gereserveerd,0);
+  static get virtualAttributes() {
+    return ['gereserveerd', 'wachtlijst', 'tekoop', 'vrije_plaatsen'];
+  }
 
-  //   return obj;
-  // };
+  async toJSONA() {
+    let obj = this.toJSON();
+    obj.gereserveerd = await this.getGereserveerd();
+    obj.wachtlijst = await this.getWachtlijst();
+    obj.tekoop = await this.getTekoop();
+    obj.vrije_plaatsen = Math.max(obj.aantal_plaatsen - obj.gereserveerd, 0);
 
-  async getGereserveerd(reservering_id = 0) {
-    const gereserveerd = await this.countTickets({
+    return obj;
+  };
+
+  $formatJson(json) {
+    let retval = super.$formatJson(json);
+    delete retval.myTickets;
+
+    return retval;
+  }
+
+  async $afterGet() {
+    const tickets = await Ticket.getCache();
+    this.myTickets = tickets.filter(t => t.reservering.uitvoeringId == this.id);
+  }
+
+  gereserveerd(reservering_id = 0) {
+    const gereserveerd = this.countTickets({
       wachtlijst: false,
       reservering_id: reservering_id
     });
     return gereserveerd;
   };
 
-  async getWachtlijst(reservering_id = 0) {
-    const wachtlijst = await this.countTickets({
+  wachtlijst(reservering_id = 0) {
+    const wachtlijst = this.countTickets({
       wachtlijst: true,
       reservering_id: reservering_id
     });
     return wachtlijst;
   };
 
-  async getTekoop() {
-    const tekoop = await this.countTickets({
+  tekoop() {
+    const tekoop = this.countTickets({
       tekoop: true
     })
     return tekoop;
   }
 
-  async countTickets(options) {
-    let query = Ticket.query()
-      .select('count(*) as count')
-      .where('verkocht', '=', false)
-      .where('geannuleerd', '=', 'false')
-      .where('deletedAt', '=', null)
+  vrije_plaatsen() {
+    return Math.max(this.aantal_plaatsen - this.gereserveerd(), 0);
+  }
+
+  countTickets(options) {
+    let tickets = this.myTickets;
+
     if (options.tekoop) {
-      query = query.where('tekoop', '=', !!options.tekoop);
+      tickets = tickets.filter(t => t.tekoop !== !!options.tekoop);
     }
-
-    let reserveringQuery = Reservering.query()
-      .select('id')
-      .where('uitvoeringId', '=', this.id)
-
-    query = query.whereIn('reserveringId', reserveringQuery);
 
     if (options.reservering_id) {
-      reserveringQuery = qureserveringQueryery.where('id', '!=', options.reservering_id);
+      tickets = tickets.filter(t => t.reserveringId !== options.reservering_id);
     }
     if (options.wachtlijst) {
-      reserveringQuery = reserveringQuery.where('wachtlijst', '=', !!options.wachtlijst);
+      tickets = tickets.filter(t => t.wachtlijst != !!options.wachtlijst);
     }
 
-    const result = await query;
-
-    // let sql = `select count(*) as count from Ticket where verkocht=:verkocht 
-    //   and geannuleerd=:geannuleerd and 
-    //   deletedAt IS NULL
-    //   ${tekoopClause}
-    //   AND reserveringId IN (select id from Reservering where 
-    //     uitvoeringId = :uitvoeringId 
-    //     AND deletedAt IS NULL
-    //     ${wachtlijstClause}
-    //     ${reserveringClause} 
-    //   )`;
-
-    // const [result] = await this.query(sql, {
-    //   replacements: {
-    //     verkocht: false,
-    //     geannuleerd: false,
-    //     uitvoeringId: this.id,
-    //     wachtlijst: !!options.wachtlijst,
-    //     reservering_id: options.reservering_id,
-    //     tekoop: !!options.tekoop
-    //   },
-    //   type: sequelize.QueryTypes.SELECT
-    // });
-
-    return result.count;
+    return tickets.length;
   };
 
   async wachtenden() {
@@ -197,7 +183,7 @@ module.exports = class Uitvoering extends TimestampedModel {
   }
 
   static get relationMappings() {
-    const Reservering = require('./Reservering');
+    // const Reservering = require('./Reservering');
     const Voorstelling = require('./Voorstelling');
 
     return {
@@ -209,14 +195,14 @@ module.exports = class Uitvoering extends TimestampedModel {
           to: 'uitvoeringen.voorstellingId'
         }
       },
-      reserveringen: {
-        relation: Model.HasManyRelation,
-        modelClass: Reservering,
-        join: {
-          from: 'reserveringen.uitvoeringId',
-          to: 'uitvoeringen.id'
-        }
-      }
+      // reserveringen: {
+      //   relation: Model.HasManyRelation,
+      //   modelClass: Reservering,
+      //   join: {
+      //     from: 'reserveringen.uitvoeringId',
+      //     to: 'uitvoeringen.id'
+      //   }
+      // }
     }
   }
 }
