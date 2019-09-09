@@ -15,7 +15,8 @@ module.exports = {
       database: 'plusleo_tickets_dev',
       password: 'lekker grote database'
 
-    }
+    },
+    debug: true
   },
 
   server: {
