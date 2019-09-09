@@ -47,29 +47,45 @@ module.exports = class Voorstelling extends TimestampedModel {
     }
   }
 
-  async toJSONA(res = null) {
-    let obj = this.toJSON();
-    const uitvoeringen = await this.uitvoeringen;
-    if (obj.prijzen) {
-      obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
-      if (res) {
-        const user = res.locals.user;
-        obj.prijzen = obj.prijzen.filter((p) => {
-          return !p.role || (user && user.isAuthorized(p.role));
-        })
-
-      }
+  $formatJson(json) {
+    json = super.$formatJson(json);
+    if (json.prijzen) {
+      json.prijzen = json.prijzen.sort((a, b) => b.prijs - a.prijs);
     }
-    obj.uitvoeringen = await Promise.all(
-      uitvoeringen.map(async v => v.toJSONA(res))
-    );
 
-    return obj;
-  };
+    return json;
+  }
 
-  // toString() {
-  //   return this.title;
+  // async toJSONA(res = null) {
+  //   let obj = this.toJSON();
+  //   const uitvoeringen = await this.getUitvoeringen();
+  //   if (obj.prijzen) {
+  //     obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
+  //     // filter de prijzen waarvoor de gebruiker niet is geautoriseerd
+  //     if (res) {
+  //       const user = res.locals.user;
+  //       obj.prijzen = obj.prijzen.filter((p) => {
+  //         return !p.role || (user && user.isAuthorized(p.role));
+  //       })
+
+  //     }
+  //   }
+  //   obj.uitvoeringen = await Promise.all(
+  //     uitvoeringen.map(async v => v.toJSONA(res))
+  //   );
+
+  //   return obj;
+  // };
+
+  // // toString() {
+  // //   return this.title;
+  // // }
+  // async getUitvoeringen() {
+  //   console.log('uitvoeringen', this.uitvoeringen);
+  //   const uitvoeringen = this.uitvoeringen || await this.$relatedQuery('uitvoeringen')
+  //   return uitvoeringen;
   // }
+
 
   static get relationMappings() {
     const Prijs = require('./Prijs');
