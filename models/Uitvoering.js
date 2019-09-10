@@ -70,6 +70,21 @@ module.exports = class Uitvoering extends TimestampedModel {
     return retval;
   }
 
+  $parseJson(json, opt) {
+    json = super.$parseJson(json, opt);
+
+    ['aanvang', 'deur_open'].forEach(column => {
+      if (json[column] && typeof json[column] == 'string') {
+        json[column] = new Date(json[column]);
+      }
+    })
+
+    Uitvoering.virtualAttributes.forEach(a => {
+      delete json[a];
+    })
+    return json;
+  }
+
   async $afterGet() {
     const tickets = await Ticket.getCache();
     this.myTickets = tickets.filter(t => t.reservering.uitvoeringId == this.id);
