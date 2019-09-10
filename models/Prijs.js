@@ -24,7 +24,14 @@ module.exports = class Prijs extends TimestampedModel {
           minimum: 0,
         },
         role: {
-          type: 'string'
+          anyOf: [{
+              type: 'string'
+            },
+            {
+              type: 'null'
+            }
+          ]
+
         }
       }
     }
