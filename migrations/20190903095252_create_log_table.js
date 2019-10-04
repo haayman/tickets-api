@@ -4,10 +4,10 @@ exports.up = function (knex) {
       table.increments('id');
       table.text('message').notNullable();
       table.text('sourceCode').notNullable();
-      table.uuid('reserveringId').notNullable();
+      table.uuid('reserveringId');
       table.timestamp('createdAt').defaultTo(knex.fn.now())
 
-      table.foreign('reserveringId').references('reserveringen.id').onDelete('CASCADE')
+      table.foreign('reserveringId').references('reserveringen.id').onDelete('SET NULL')
     })
 };
 

@@ -23,5 +23,17 @@ module.exports = {
       password: 'lekker grote database'
 
     }
-  }
+  },
+  test: {
+    client: 'mysql',
+    connection: {
+      host: 'localhost',
+      user: 'plusleo',
+      database: 'plusleo_tickets_test',
+      password: 'lekker grote database'
+
+    }
+  },
+
+
 }
