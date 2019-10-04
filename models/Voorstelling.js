@@ -1,9 +1,9 @@
-const TimestampedModel = require('./TimestampedModel');
+const BaseModel = require('./BaseModel');
 const {
   Model
 } = require('objection');
 
-module.exports = class Voorstelling extends TimestampedModel {
+module.exports = class Voorstelling extends BaseModel {
   static get tableName() {
     return 'voorstellingen';
   }
@@ -50,42 +50,12 @@ module.exports = class Voorstelling extends TimestampedModel {
   $formatJson(json) {
     json = super.$formatJson(json);
     if (json.prijzen) {
+			// aflopende volgorde
       json.prijzen = json.prijzen.sort((a, b) => b.prijs - a.prijs);
     }
 
     return json;
   }
-
-  // async toJSONA(res = null) {
-  //   let obj = this.toJSON();
-  //   const uitvoeringen = await this.getUitvoeringen();
-  //   if (obj.prijzen) {
-  //     obj.prijzen = obj.prijzen.sort((a, b) => b.prijs - a.prijs)
-  //     // filter de prijzen waarvoor de gebruiker niet is geautoriseerd
-  //     if (res) {
-  //       const user = res.locals.user;
-  //       obj.prijzen = obj.prijzen.filter((p) => {
-  //         return !p.role || (user && user.isAuthorized(p.role));
-  //       })
-
-  //     }
-  //   }
-  //   obj.uitvoeringen = await Promise.all(
-  //     uitvoeringen.map(async v => v.toJSONA(res))
-  //   );
-
-  //   return obj;
-  // };
-
-  // // toString() {
-  // //   return this.title;
-  // // }
-  // async getUitvoeringen() {
-  //   console.log('uitvoeringen', this.uitvoeringen);
-  //   const uitvoeringen = this.uitvoeringen || await this.$relatedQuery('uitvoeringen')
-  //   return uitvoeringen;
-  // }
-
 
   static get relationMappings() {
     const Prijs = require('./Prijs');

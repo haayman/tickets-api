@@ -6,8 +6,8 @@ const Mailer = require("../components/Mailer");
 const router = express.Router();
 
 router.get("/", auth(["admin"]), async (req, res) => {
-  let users = await User.query().orderBy('username');
-  res.send(users);
+  let users = await User.query().orderBy('username')
+  res.send(users.map(u => u.$omit('password')));
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
@@ -38,15 +38,15 @@ router.put("/:id", async (req, res) => {
     return res.status(404).send(`not found: ${id}`);
   }
 
-  if (!res.locals.user) {
-    // not logged in
-    const hash = req.query.hash;
-    if (!hash) {
-      return res.status(403).send("no hash");
-    } else if (hash != user.getHash()) {
-      return res.status(403).send("invalid hash");
-    }
-  }
+  // if (!res.locals.user) {
+  //   // not logged in
+  //   const hash = req.query.hash;
+  //   if (!hash) {
+  //     return res.status(403).send("no hash");
+  //   } else if (hash != user.getHash()) {
+  //     return res.status(403).send("invalid hash");
+  //   }
+  // }
 
   user = await User.query().patchAndFetchById(id, req.body);
 
@@ -67,7 +67,7 @@ router.get("/:id", async (req, res) => {
   //     return res.status(403).send("invalid hash");
   //   }
   // }
-  res.send(user.$omit(['password']));
+  res.send(user.$omit('password'));
 });
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {

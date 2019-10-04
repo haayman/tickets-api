@@ -5,10 +5,9 @@ const {
 const addDays = require('date-fns/add_days');
 
 module.exports = async function () {
-  const voorstelling = await Voorstelling.create({
+  const voorstelling = await Voorstelling.query().allowEager('[uitvoeringen,prijzen]').insertGraph({
     title: "title1",
     description: "Description 1",
-    aantal_plaatsen: 60,
     active: true,
     url: "https://plusleo.nl/",
     locatie: "locatie 1",
@@ -37,14 +36,6 @@ module.exports = async function () {
       deur_open: new Date(),
       aantal_plaatsen: 2
     }]
-  }, {
-    include: [{
-        association: Voorstelling.Prijzen
-      },
-      {
-        association: Voorstelling.Uitvoeringen
-      }
-    ]
   });
 
   return voorstelling;

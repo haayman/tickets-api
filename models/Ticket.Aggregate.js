@@ -1,10 +1,12 @@
-module.exports = class {
+const Ticket = require('./Ticket');
+const Log = require('./Log');
+
+module.exports = class TicketAggregate {
   constructor(reservering, prijs, tickets = []) {
     this.reservering = reservering;
     this.prijs = prijs;
     this.tickets = tickets;
-
-    this.Ticket = reservering.sequelize.models.Ticket;
+    this.trx = reservering.$transaction();
   }
 
   get aantal() {
@@ -23,18 +25,20 @@ module.exports = class {
     };
   }
 
-  async setAantal(aantal) {
+  async setAantal(Ticket, aantal) {
     try {
       let oldAantal = this.aantal - this.aantalTekoop;
+      const trx = this.trx;
 
-      const strPrijs = this.prijs.asString();
+      const strPrijs = this.prijs.toString();
 
       // als er kaarten bij moeten, maar er zijn er nog in de verkoop
       // haal deze dan uit de verkoop
       if (aantal >= oldAantal && this.aantalTekoop) {
         let diff = aantal - oldAantal;
         let tickets = this.tekoop;
-        await this.reservering.logMessage(
+        await Log.addMessage(
+          this.reservering,
           `${diff} x ${strPrijs} uit de verkoop gehaald`
         );
 
@@ -42,21 +46,24 @@ module.exports = class {
           let ticket = tickets[i];
           ticket.tekoop = false;
           oldAantal++;
-          await ticket.save();
+          await ticket.$query(this.trx).patch({
+            tekoop: false
+          });
         }
       }
 
       if (oldAantal < aantal) {
         let diff = aantal - oldAantal;
-        await this.reservering.logMessage(
-          `${diff} x ${strPrijs} ${oldAantal ? "bij" : ""}besteld`
+        await Log.addMessage(
+          this.reservering,
+          `${diff} x ${strPrijs} ${oldAantal ? 'bij' : ''}besteld`
         );
 
         // kijk of er tickets te koop zijn. Deze worden bij deze verkocht
-        await this.Ticket.verwerkTekoop(diff);
+        await Ticket.verwerkTekoop(this.trx, diff);
 
         while (diff--) {
-          const ticket = await this.Ticket.create({
+          const ticket = await Ticket.query(this.trx).insertAndFetch({
             reserveringId: this.reservering.id,
             prijsId: this.prijs.id,
             betaald: this.prijs.prijs == 0 // vrijkaartjes zijn automatisch betaald
@@ -71,28 +78,42 @@ module.exports = class {
       } else if (oldAantal > aantal) {
         let diff = oldAantal - aantal;
         let tickets = this.validTickets;
-        await this.reservering.logMessage(`${diff} x ${strPrijs} geannuleerd`);
+        await Log.addMessage(
+          this.reservering,
+          `${diff} x ${strPrijs} geannuleerd`
+        );
         for (let i = 0; i < diff; i++) {
           let ticket = tickets[i];
-          const ticketDescription = await ticket.asString();
-          if (!ticket.PaymentId) {
-            await ticket.destroy();
-            this.tickets = this.tickets.filter(t => t.id !== ticket.id);
+          const ticketDescription = ticket.toString();
+          if (!ticket.paymentId) {
+            // nog niet betaald? Kan veilig verwijderd worden
+            await Ticket.query(this.trx).deleteById(ticket.id);
+            this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
           } else {
-            let payment = ticket.Payment || (ticket.Payment = await ticket.getPayment());
-            if (payment.betaalstatus == "paid") {
-              const teruggeefbaar = await this.reservering.teruggeefbaar();
+            let payment = ticket.payment;
+            if (payment.betaalstatus == 'paid') {
+              const teruggeefbaar = this.reservering.teruggeefbaar;
               if (teruggeefbaar) {
-                await this.reservering.logMessage(`${ticketDescription} terugbetalen`);
+                await Log.addMessage(
+                  this.reservering,
+                  `${ticketDescription} terugbetalen`
+                );
                 ticket.terugbetalen = true;
               } else {
-                await this.reservering.logMessage(`zet te koop ${ticketDescription}`);
+                await Log.addMessage(
+                  this.reservering,
+                  `zet te koop ${ticketDescription}`
+                );
                 ticket.tekoop = true;
               }
-              await ticket.save();
+              await ticket.$query(this.trx).patch({
+                terugbetalen: !!ticket.terugbetalen,
+                tekoop: !!ticket.tekoop
+              });
             } else {
-              await ticket.destroy();
-              this.tickets = this.tickets.filter(t => t.id !== ticket.id);
+              // niet betaald: kan weg
+              await Ticket.query(this.trx).deleteById(ticket.id);
+              this.tickets = this.tickets.filter((t) => t.id !== ticket.id);
             }
           }
         }
@@ -105,23 +126,23 @@ module.exports = class {
 
   get validTickets() {
     return this.tickets ?
-      this.tickets.filter(t => !(t.geannuleerd || t.verkocht)) : [];
+      this.tickets.filter((t) => !(t.geannuleerd || t.verkocht)) : [];
   }
 
   get aantalBetaald() {
-    return this.validTickets.filter(t => t.betaald).length;
+    return this.validTickets.filter((t) => t.betaald).length;
   }
 
   get onbetaald() {
-    return this.tickets.filter(t => !t.betaald);
+    return this.tickets.filter((t) => !t.betaald);
   }
 
   get tekoop() {
-    return this.validTickets.filter(t => t.tekoop);
+    return this.validTickets.filter((t) => t.tekoop);
   }
 
   get terugbetalen() {
-    return this.validTickets.filter(t => t.terugbetalen);
+    return this.validTickets.filter((t) => t.terugbetalen);
   }
 
   get aantalTerugbetalen() {
@@ -152,7 +173,7 @@ module.exports = class {
    * het bedrag dat nodig is voor een payment
    */
   get paymentBedrag() {
-    return this.tickets.filter(t => !t.paymentId).length * this.prijs.prijs;
+    return this.tickets.filter((t) => !t.paymentId).length * this.prijs.prijs;
   }
 
   /**
@@ -162,18 +183,30 @@ module.exports = class {
     return this.aantalTeKoop * this.prijs.prijs;
   }
 
-  asString() {
+  toString() {
     const aantal = this.aantal;
     const totaal = aantal * this.prijs.prijs;
     const aantalTekoop = this.aantalTekoop;
     const aantalTerugbetalen = this.aantalTerugbetalen;
-    let retval = `${this.aantal}x ${this.prijs.asString()}: €${totaal.toFixed(2)}`;
+    let retval = `${this.aantal}x ${this.prijs}: €${totaal.toFixed(2)}`;
     if (aantalTekoop) {
       retval += ` waarvan ${aantalTekoop} te koop`;
     }
     if (aantalTerugbetalen) {
-      retval += ` ${aantalTekoop ? 'en' : 'waarvan'} ${aantalTerugbetalen} wacht op terugbetaling`;
+      retval += ` ${
+        aantalTekoop ? 'en' : 'waarvan'
+      } ${aantalTerugbetalen} wacht op terugbetaling`;
     }
     return retval;
+  }
+
+  static factory(reservering, uitvoering, tickets) {
+    return uitvoering.voorstelling.prijzen.map((prijs) => {
+      return new TicketAggregate(
+        reservering,
+        prijs,
+        tickets.filter((t) => t.prijsId == prijs.id)
+      );
+    });
   }
 };

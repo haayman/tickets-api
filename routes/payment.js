@@ -7,7 +7,8 @@ const mollie = require("@mollie/api-client")({
 const {
   Reservering,
   Payment,
-  Ticket
+  Ticket,
+  Log
 } = require("../models");
 const winston = require("winston");
 const ReserveringMail = require("../components/ReserveringMail");
@@ -18,12 +19,15 @@ const router = express.Router();
 router.post("/bank/:id", async (req, res) => {
   winston.info(req.body);
   const mollie_payment = await mollie.payments.get(req.body.id);
-  const params = parseQuery(Reservering, {
-    include: ['tickets', 'Payments']
-  });
+  const query = parseQuery({
+    include: ['tickets', 'payments']
+  }, Reservering);
 
-  let reservering = await Reservering.findByPk(req.params.id, params);
-  const payment = reservering.Payments.find((p) => p.paymentId == mollie_payment.id);
+  let reservering = await query.findById(req.params.id);
+  if (!reservering) {
+    return res.send('OK'); // niet langer proberen
+  }
+  const payment = reservering.payments.find((p) => p.paymentId == mollie_payment.id);
   if (payment.betaalstatus == mollie_payment.status) {
     // dubbele melding
     return res.send('OK');
@@ -31,19 +35,18 @@ router.post("/bank/:id", async (req, res) => {
   await payment.setStatus();
 
   // await reservering.reload(params);
-  reservering = await Reservering.findByPk(reservering.id, params);
+  const refetched = await reservering.$query().eager(Reservering.getStandardEager());
+  reservering.$set(refetched);
 
   const tickets = await payment.getTickets();
-  const description = await Ticket.description(tickets);
-  await reservering.logMessage(`Status ${description}: ${payment.betaalstatus}`);
-
-  const ticketDescription = await reservering.asString();
+  const description = Ticket.description(tickets);
+  await Log.addMessage(reservering, `Status ${description}: ${payment.betaalstatus}`);
 
   if (payment.betaalstatus == "paid") {
     await ReserveringMail.send(
       reservering,
       "confirmationPayment",
-      `Kaarten voor ${ticketDescription}`
+      `Kaarten voor ${reservering}`
     );
   } else {
     await ReserveringMail.send(reservering, "paymentFailure", "Betaling mislukt");
@@ -52,8 +55,8 @@ router.post("/bank/:id", async (req, res) => {
 });
 
 router.get("/done/:id", async (req, res) => {
-  const payment = await Payment.findOne({
-    where: req.query.payment_id
+  const payment = await Payment.query().findOne({
+    reserveringId: req.params.id
   });
   const mollie_payment = await mollie.payments.get(payment.paymentId);
   const isPaid = await mollie_payment.isPaid;

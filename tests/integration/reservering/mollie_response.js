@@ -1,3 +1,6 @@
+const config = require('config');
+const url = config.get('server.url');
+
 let payments = {};
 
 function paymentResponse(options = {
@@ -39,8 +42,8 @@ function paymentResponse(options = {
       "expiresAt": "2018-11-22T20:35:12+00:00",
       "profileId": "pfl_S3BMD2hEpQ",
       "sequenceType": "oneoff",
-      "redirectUrl": "https://dev.plusleo.nl/api/payment/done/2fce39f7-f5f5-480f-b031-d3c7f61c9c13",
-      "webhookUrl": "https://dev.plusleo.nl/api/payment/bank/2fce39f7-f5f5-480f-b031-d3c7f61c9c13",
+      "redirectUrl": `${url}/api/payment/done/2fce39f7-f5f5-480f-b031-d3c7f61c9c13`,
+      "webhookUrl": `${url}/://dev.plusleo.nl/api/payment/bank/2fce39f7-f5f5-480f-b031-d3c7f61c9c13`,
       "_links": {
         "self": {
           "href": "https://api.mollie.com/v2/payments/tr_AEb4jp2uJy",

@@ -1,6 +1,4 @@
 const config = require("config");
-const winston = require("winston");
-const ngrok = require("ngrok");
 const globalData = require('../components/globalData');
 
 async function connect() {

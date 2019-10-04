@@ -1,30 +1,45 @@
-module.exports = (sequelize, DataTypes) => {
-  let StatusUpdate = sequelize.define(
-    "StatusUpdate",
-    {
-      status: { type: DataTypes.STRING, allowNull: true },
-      betaalstatus: { type: DataTypes.BOOLEAN, allowNull: false }
-    },
-    {
-      getterMethods: {
-        asString() {
-          return this.betaalstatus ? `betaling ${this.status}` : this.status;
+const {
+  Model
+} = require('objection');
+
+module.exports = class extends Model {
+  static get tableName() {
+    return 'statusupdates';
+  }
+
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['status', 'betaalstatus', 'reserveringId'],
+      properties: {
+        status: {
+          type: 'string'
+        },
+        betaalstatus: {
+          type: 'boolean'
+        },
+        reserveringId: {
+          type: 'uuid'
         }
       }
     }
-  );
+  }
 
-  StatusUpdate.associate = function(models) {
-    StatusUpdate.Reservering = models.StatusUpdate.belongsTo(
-      models.Reservering,
-      {
-        onDelete: "CASCADE",
-        foreignKey: {
-          allowNull: false
+  toString() {
+    return this.betaalstatus ? `betaling ${this.status}` : this.status
+  }
+
+  static get relationMappings() {
+    const Reservering = require('./Reservering');
+    return {
+      reservering: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Reservering,
+        join: {
+          from: 'statusupdates.reserveringId',
+          to: 'reserveringen.id'
         }
       }
-    );
-  };
-
-  return StatusUpdate;
-};
+    }
+  }
+}

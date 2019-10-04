@@ -1,31 +1,31 @@
-const path = require('path');
-const winston = require('winston');
+// const server_url = require("./server_url");
+// const defer = require("config/defer").deferConfig;
 
 module.exports = {
-  "jwtPrivateKey": "test",
-  "payment": {
-    "mollie_key": "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
+  name: "My app (dev)",
+  useMorgan: true,
+  payment: {
+    mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8"
   },
   database: {
-    storage: path.resolve(__dirname, "..", "data", "test.sqlite"),
-    logging: false
+    client: 'mysql',
+    connection: {
+      host: 'localhost',
+      user: 'plusleo',
+      database: 'plusleo_tickets_test',
+      password: 'lekker grote database'
+
+    },
+    debug: false
   },
-  namespace: "PlusLeoTestNamespace", // t.b.v transacties,
+
   server: {
-    url: "https://dev.plusleo.nl"
+    url: 'https://kaarten.dev.plusleo.nl',
+    port: 3001
   },
-  mail_transport: {
-    // debug: true,
-    // logger: true,
-    sendmail: false, // override default
-    path: "",
-    host: "smtp.t-mobilethuis.nl",
-    port: 465,
-    secure: true,
-    auth: {
-      user: "plusleo@t-mobilethuis.nl",
-      pass: "u9cW^nCG5RMNT6e@HZS1jE@"
-    }
+  email: {
+    subject_prefix: "[PlusLeo test]",
+    alwaysTo: "arjen.haayman+plusleo@gmail.com"
   }
 
-}
+};

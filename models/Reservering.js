@@ -1,483 +1,436 @@
-const config = require("config");
+const config = require('config');
 
-const TicketAggregate = require("./Ticket.Aggregate");
+const TicketAggregate = require('./Ticket.Aggregate');
+const Payment = require('./Payment');
+
 const ReserveringMail = require("../components/ReserveringMail");
 
-var differenceInCalendarDays = require("date-fns/difference_in_calendar_days");
-const globalData = require("../components/globalData");
-const stackTrace = require("stack-trace");
-const path = require("path");
-const iban = require("iban");
+var differenceInCalendarDays = require('date-fns/difference_in_calendar_days');
+const globalData = require('../components/globalData');
+const iban = require('iban');
+const BaseModel = require('./BaseModel');
+const {
+  Model
+} = require('objection');
+const uuid = require('uuid/v4');
 
-module.exports = (sequelize, DataTypes) => {
-  const Payment = sequelize.models.Payment;
-
-  let Reservering = sequelize.define(
-    "Reservering", {
-      id: {
-        primaryKey: true,
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        allowNull: false
-      },
-      naam: {
-        type: DataTypes.STRING,
-        allowUnknown: false
-      },
-      email: {
-        type: DataTypes.STRING,
-        allowUnknown: false,
-        validate: {
-          isEmail: true
-        }
-      },
-      opmerking: {
-        type: DataTypes.STRING
-      },
-      opmerking_gebruiker: {
-        type: DataTypes.STRING
-      },
-      status: {
-        type: DataTypes.STRING
-      },
-      wachtlijst: {
-        type: DataTypes.BOOLEAN
-      },
-      ingenomen: {
-        type: DataTypes.DATE
-      },
-      bedrag: {
-        type: DataTypes.DECIMAL(5, 2)
-      },
-      iban: {
-        type: DataTypes.STRING,
-        validate: {
-          validIBAN() {
-            if (!iban.isValid(this.iban)) {
-              throw new Error("Ongeldig IBAN nummer");
-            }
-          }
-        }
-      },
-      tennamevan: {
-        type: DataTypes.STRING
-      }
-    }, {
-      name: {
-        singular: "reservering",
-        plural: "reserveringen"
-      },
-      paranoid: true, // zorgt er voor dat dit nooit echt verwijderd wordt
-      timestamps: true,
-      getterMethods: {
-        bedrag() {
-          // this.ticketAggregates: ticketAggregates
-          return this.ticketAggregates ?
-            this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
-            null;
-        },
-        saldo() {
-          // bereken het totaal betaalde bedrag
-          if (!this.Payments) {
-            return null;
-          }
-
-          // totaal betaald
-          let saldo = this.Payments.reduce((saldo, payment) => {
-            if (!payment.payment && payment.paymentId) {
-              debugger;
-              throw new Error('payment not initialized')
-            }
-            if (payment.isPaid) {
-              return saldo + (+payment.amount - (payment.amountRefunded || 0));
-            } else {
-              return saldo;
-            }
-          }, 0);
-
-          // bereken kosten van alle te betalen tickets
-          saldo = this.ticketAggregates.reduce((saldo, ta) => {
-            return (
-              saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop)
-            );
-          }, saldo);
-
-          return saldo;
-        },
-        openstaandBedrag() {
-          return -this.saldo;
-        },
-
-        /**
-         * @returns {Ticket[]}
-         */
-        validTickets() {
-          return this.Tickets ?
-            this.Tickets.filter(t => !(t.geannuleerd || t.verkocht)) : [];
-          // this.Tickets.reduce((validTickets, ticket) => {
-          //   return validTickets.concat(ticket.validTickets);
-          // }, []) : [];
-        },
-
-        /**
-         * het bedrag dat teveel is betaald
-         */
-
-        tegoed() {
-          if (!this.validTickets) {
-            return null;
-          }
-          return this.validTickets.reduce(
-            (tegoed, ticket) => tegoed + ticket.tegoed,
-            0
-          );
-        },
-
-        /**
-         * aantal gereserveerde plaatsen
-         */
-        aantal() {
-          // if (!this.tickets) {
-          //   return null;
-          // }
-          return this.validTickets.length
-        },
-
-        onbetaaldeTickets() {
-          return this.validTickets.filter(t => !t.betaald);
-        },
-
-        interneVerkoop() {
-          let tekoop = this.validTickets.filter(t => t.tekoop);
-          if (this.saldo < 0 && tekoop.length) {
-            let tegoed = -this.saldo;
-            let tickets = this.onbetaaldeTickets();
-            while (tegoed) {
-              let ticket = tickets.find(t => t.prijs.prijs <= tegoed);
-              if (ticket) {
-                let verkocht = tekoop.find(t => t.prijs.prijs)
-              }
-            }
-          }
-        },
-
-        isPaid() {
-          let retval = false;
-          if (!this.payment) {
-            return null;
-          }
-
-          for (let payment of this.Payments) {
-            if (!payment.isPaid) {
-              return false;
-            } else {
-              retval = true;
-            }
-          }
-          return retval;
-        },
-
-        redirectUrl() {
-          return this.getRoot() + "/api/payment/done/" + this.id;
-        },
-
-        webhookUrl() {
-          return this.getWebhookRoot() + "/api/payment/bank/" + this.id;
-        }
-      },
-
-      hooks: {
-        beforeDestroy: async reservering => {
-          const {
-            Payment,
-            Ticket
-          } = require("./");
-          Payment.destroy({
-            where: {
-              reserveringId: reservering.id
-            }
-          });
-          Ticket.destroy({
-            where: {
-              reserveringId: reservering.id
-            }
-          });
-        }
-      }
-    }
-  );
-
-  Reservering.initTickets = async function (reservering) {
-    if (!reservering) {
-      return;
-    }
-    if (reservering.length !== undefined) {
-      await Promise.all(reservering.map(r => r.initTickets()));
-    } else {
-      await reservering.initTickets();
-    }
-  };
-
-  Reservering.prototype.initTickets = async function () {
-    if (!this.Payments) this.Payments = await this.getPayments();
-    await Promise.all(this.Payments.map(async payment => await payment.initPayment()));
-    let payments = {};
-    this.Payments.forEach((p) => payments[p.id] = p);
-
-    if (!this.uitvoering) this.uitvoering = await this.getUitvoering();
-    if (!this.ticketAggregates) {
-      const voorstelling =
-        this.uitvoering.voorstelling ||
-        (this.uitvoering.voorstelling = await this.uitvoering.getVoorstelling());
-      const prijzen = voorstelling.prijzen || (voorstelling.prijzen = await voorstelling.getPrijzen());
-      const Tickets = this.Tickets || (this.Tickets = await this.getTickets());
-
-      // zorg er voor dat initPayment() is aangeroepen
-      Tickets.forEach(t => {
-        if (t.PaymentId) {
-          t.Payment = payments[t.PaymentId];
-        }
-      })
-
-      this.ticketAggregates = await Promise.all(
-        prijzen.map(async prijs => {
-          return new TicketAggregate(
-            this,
-            prijs,
-            Tickets.filter(t => t.prijsId == prijs.id)
-          );
-        })
-      );
-    }
-    // if (!this.logs) this.logs = await this.getLogs();
-  };
-
-  Reservering.prototype.getAttr = async function (attr) {
-    let value = this[attr];
-    if (typeof value === 'function') {
-      value = this[attr]();
-    }
-    if (value instanceof Promise) {
-      value = await value;
-    }
-
-    return value;
+module.exports = class Reservering extends BaseModel {
+  static get tableName() {
+    return 'reserveringen';
   }
 
-  Reservering.prototype.toJSONA = async function (req = null) {
-    const json = await this.toJSON();
-    json.uitvoering = this.uitvoering || (await this.getUitvoering());
-    json.tickets = this.ticketAggregates;
-    json.payments = this.Payments || (await this.getPayments());
-    json.paymentUrl = this.paymentUrl();
-    json.teruggeefbaar = await this.teruggeefbaar();
-    if (this.Logs) {
-      json.logs = this.Logs;
-    }
-    if (this.StatusUpdates) {
-      json.StatusUpdates = this.StatusUpdates;
-    }
-    if (req && req.extraFields) {
-      await Promise.all(req.extraFields.map(async (attr) => {
-        json[attr] = await this.getAttr(attr);
-      }));
-    }
-    return json;
-  };
-
-  Reservering.prototype.setStatus = async function (
-    status,
-    betaalstatus = true
-  ) {
-    this.status = status;
-    const StatusUpdate = this.sequelize.models.StatusUpdate;
-    await this.addStatusUpdate(
-      StatusUpdate.build({
-        status,
-        betaalstatus
-      })
-    );
-  };
-
-  (Reservering.prototype.moetInWachtrij = async function () {
-    const uitvoering = await this.getUitvoering();
-
-    // tel aantal vrije plaatsen excl. deze reservering
-    const vrije_plaatsen = await uitvoering.getVrijePlaatsen(this.id);
-    return vrije_plaatsen < this.aantal;
-  }),
-    (Reservering.prototype.paymentUrl = function () {
-      let url;
-      if (!this.Payments) return null;
-      for (let payment of this.Payments) {
-        if ((url = payment.paymentUrl)) {
-          return url;
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['naam', 'email'],
+      properties: {
+        id: {
+          type: 'uuid'
+        },
+        naam: {
+          type: 'string'
+        },
+        email: {
+          type: 'string',
+          format: 'email'
+        },
+        opmerking: {
+          type: 'string'
+        },
+        opmerking_gebruiker: {
+          type: 'string'
+        },
+        // status: {
+        //   type: 'string'
+        // },
+        wachtlijst: {
+          type: 'boolean'
+        },
+        ingenomen: {
+          type: 'date-time'
+        },
+        bedrag: {
+          type: 'number'
+        },
+        iban: {
+          // @todo: validatie
+          anyOf: [{
+              type: 'string'
+            },
+            {
+              type: 'null'
+            }
+          ]
+        },
+        tennamevan: {
+          anyOf: [{
+              type: 'string'
+            },
+            {
+              type: 'null'
+            }
+          ]
+        },
+        uitvoeringId: {
+          type: 'integer'
         }
       }
-      return null;
-    });
-
-  Reservering.prototype.createPaymentIfNeeded = async function () {
-    if (!this.Tickets) {
-      this.Tickets = await this.getTickets();
-    }
-    if (!this.Payments) {
-      this.Payments = await this.getPayments();
-    }
-    if (
-      !this.wachtlijst &&
-      this.onbetaaldeTickets.length &&
-      this.Payments.filter(p => p.status == "open").length === 0
-    ) {
-      const payment = Payment.build({
-        reserveringId: this.id
-      });
-      await payment.newPayment(this);
-      // await payment.save();
-      // await this.addPayment(payment);
-      // waarom is dit nog nodig???
-      this.Payments = (this.Payments || []).concat([payment]);
-    }
-  };
-
-  Reservering.prototype.extraBetaling = async function () {
-    const payment = Payment.build();
-
-    // hier wordt automatisch een nieuw payment + bedrag aangemaakt
-    await payment.setReservering(this);
-
-    return payment;
-  };
-
-  Reservering.prototype.haalUitWachtrij = async function () {
-    this.wachtlijst = false;
-    await this.save();
-    await ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst`);
-  };
-
-  Reservering.prototype.logMessage = async function (message) {
-    const Log = Reservering.sequelize.models.Log;
-    // if( user = Application.getUser()) {
-    //   message += ` (door ${user.name})`;
-    // }
-
-    const trace = stackTrace.get();
-    const caller = trace[1];
-
-    await Log.create({
-      reserveringId: this.id,
-      message: message,
-      sourceCode: `${path.basename(
-        caller.getFileName()
-      )}(${caller.getLineNumber()})`
-    });
-  };
-
-  Reservering.prototype.getBetalingUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/betalen`;
-  };
-
-  Reservering.prototype.getResendUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/resend`;
-  };
-
-  Reservering.prototype.getEditLink = function () {
-    return this.getRoot() + `/reserveren/${this.id}/edit`;
-  };
-
-  Reservering.prototype.getTicketUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/details`;
-  };
-
-  Reservering.prototype.getIBANUrl = function () {
-    return this.getRoot() + `/reserveren/${this.id}/iban`;
-  };
-
-  Reservering.prototype.getQrUrl = function () {
-    return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`;
-  };
-
-  Reservering.prototype.getMailUrl = function () {
-    return this.getRoot() + `/api/reservering/${this.id}/mail`;
+    };
   }
 
-  Reservering.prototype.getRoot = function () {
-    //return globalData.get("server");
-    return config.get('server.url');
-  };
+  $beforeInsert() {
+    this.id = uuid();
+  }
 
-  Reservering.prototype.getWebhookRoot = function () {
-    const root = globalData.get("localtunnel") ?
-      globalData.get("localtunnel") :
-      config.get("server.url");
-    return root;
-  };
+  // set id(value) {
+  //   console.log('SETID ==> ', value)
+  //   this._id = value;
+  // }
+  // get id() {
+  //   return this._id;
+  // }
 
-
-  Reservering.prototype.asString = async function () {
-    // const tickets = this.Tickets ? this.Tickets : await this.getTickets();
-    // const description = await this.sequelize.models.Ticket.description(tickets);
+  toString() {
     return `${this.aantal}x ${this.uitvoering}`;
-  };
+  }
+
+  // ---------- virtual attributes --------------------------
+
+  static get virtualAttributes() {
+    return [
+      'bedrag',
+      'saldo',
+      'openstaandBedrag',
+      'validTickets',
+      'tegoed',
+      'aantal',
+      'paymentUrl',
+      'teruggeefbaar',
+      'onbetaaldeTickets'
+    ];
+  }
+
+  get bedrag() {
+    // this.ticketAggregates: ticketAggregates
+    return this.ticketAggregates ?
+      this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
+      undefined;
+  }
+
+  // dummy setter
+  set bedrag(value) {
+    //this.bedrag = value;
+  }
+
+  get saldo() {
+    // bereken het totaal betaalde bedrag
+    if (!this.payments) {
+      return undefined;
+    }
+
+    // totaal betaald
+    let saldo = this.payments.reduce((saldo, payment) => {
+      if (!payment.payment && payment.paymentId) {
+        debugger;
+        throw new Error('payment not initialized');
+      }
+      if (payment.isPaid) {
+        return saldo + (+payment.amount - (payment.amountRefunded || 0));
+      } else {
+        return saldo;
+      }
+    }, 0);
+
+    // bereken kosten van alle te betalen tickets
+    saldo = this.ticketAggregates.reduce((saldo, ta) => {
+      return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
+    }, saldo);
+
+    return saldo;
+  }
+
+  get openstaandBedrag() {
+    return -this.saldo;
+  }
+
+  get validTickets() {
+    return this.tickets ?
+      this.tickets.filter((t) => !(t.geannuleerd || t.verkocht)) :
+      undefined;
+  }
+
+  /**
+   * het bedrag dat teveel is betaald
+   */
+  get tegoed() {
+    if (!this.validTickets) return undefined;
+
+    return this.validTickets.reduce(
+      (tegoed, ticket) => tegoed + ticket.tegoed,
+      0
+    );
+  }
+
+  /**
+   * aantal gereserveerde plaatsen
+   */
+  get aantal() {
+    return this.validTickets === undefined ?
+      undefined :
+      this.validTickets.length;
+  }
 
   /**
    * Bepaal of de uitvoering binnen de teruggave_termijn valt
    */
-  Reservering.prototype.teruggeefbaar = async function () {
-    const uitvoering = await this.getUitvoering();
+  get teruggeefbaar() {
+    if (!this.uitvoering) {
+      return undefined;
+    }
     const today = new Date();
-    const days = config.get("teruggave_termijn");
-    const diff = differenceInCalendarDays(uitvoering.aanvang, today);
+    const days = config.get('teruggave_termijn');
+    const diff = differenceInCalendarDays(this.uitvoering.aanvang, today);
 
     return diff > days;
-  };
+  }
 
-  Reservering.prototype.hasRefunds = async function () {
-    const payments = await this.getPayments();
-    return payments.find(p => p.refunds).length;
-  };
+  get onbetaaldeTickets() {
+    return this.validTickets !== undefined ?
+      this.validTickets.filter((t) => !t.betaald) :
+      undefined;
+  }
 
-  Reservering.verwerkRefunds = async function () {
-    const mixin = require('./Refund.mixin');
-    Object.assign(Reservering.prototype, mixin);
+  get moetInWachtrij() {
+    if (!this.uitvoering) {
+      return undefined;
+    }
+    const vrije_plaatsen = this.uitvoering.vrije_plaatsen(this.id);
+    return vrije_plaatsen < this.aantal;
+  }
 
-    const Ticket = Reservering.sequelize.models.Ticket;
-    const reserveringen = await Reservering.findAll({
-      include: [{
-        model: Ticket,
-        where: {
-          terugbetalen: true
-        },
-        required: true
-      }]
+  get hasRefunds() {
+    if (!this.payments) {
+      return undefined;
+    }
+    return this.payments.find((p) => p.refunds).length;
+  }
+
+
+  async haalUitWachtrij() {
+    this.wachtlijst = false;
+    await this.patch({
+      wachtlijst: false
     });
+    await ReserveringMail.send(this, 'uit_wachtlijst', `uit wachtlijst`);
+  }
 
-    await Promise.all(
-      reserveringen.map(async reservering => reservering.refund())
+  async logMessage(message) {
+    throw new Error('deprecated. Gebruik Log.addMessage()');
+  }
+
+  get paymentUrl() {
+    let url;
+    if (this.payments === undefined) {
+      return undefined;
+    }
+    let payment;
+    if ((payment = this.payments.find((p) => p.paymentUrl))) {
+      return payment.paymentUrl;
+    }
+    return undefined;
+  }
+
+  get newPaymentNeeded() {
+    return (
+      !this.wachtlijst &&
+      this.onbetaaldeTickets.length &&
+      this.payments.filter((p) => p.status == 'open').length == 0
     );
-  };
+  }
 
-  Reservering.associate = function (models) {
-    Reservering.Uitvoering = models.Reservering.belongsTo(models.Uitvoering, {
-      onDelete: "CASCADE",
-      foreignKey: {
-        allowNull: false
+  async createPaymentIfNeeded() {
+    console.assert(this.tickets);
+    console.assert(this.payments);
+
+    if (this.newPaymentNeeded) {
+      const payment = await Payment.newPayment(this);
+      this.payments.push(payment);
+    }
+  }
+
+  // interneVerkoop() {
+  //   let tekoop = this.validTickets.filter(t => t.tekoop);
+  //   if (this.saldo < 0 && tekoop.length) {
+  //     let tegoed = -this.saldo;
+  //     let tickets = this.onbetaaldeTickets();
+  //     while (tegoed) {
+  //       let ticket = tickets.find(t => t.prijs.prijs <= tegoed);
+  //       if (ticket) {
+  //         let verkocht = tekoop.find(t => t.prijs.prijs)
+  //       }
+  //     }
+  //   }
+  // }
+
+  get isPaid() {
+    if (!this.payments) {
+      return undefined;
+    }
+
+    return this.payments.every((p) => p.isPaid);
+  }
+
+  getBetalingUrl() {
+    return this.getRoot() + `/reserveren/${this.id}/betalen`;
+  }
+
+  getResendUrl() {
+    return this.getRoot() + `/reserveren/${this.id}/resend`;
+  }
+
+  getEditLink() {
+    return this.getRoot() + `/reserveren/${this.id}/edit`;
+  }
+
+  getTicketUrl() {
+    return this.getRoot() + `/reserveren/${this.id}/details`;
+  }
+
+  getIBANUrl() {
+    return this.getRoot() + `/reserveren/${this.id}/iban`;
+  }
+
+  getQrUrl() {
+    return this.getWebhookRoot() + `/api/reservering/${this.id}/qr`;
+  }
+
+  getMailUrl() {
+    return this.getRoot() + `/api/reservering/${this.id}/mail`;
+  }
+
+  get redirectUrl() {
+    return this.getRoot() + '/api/payment/done/' + this.id;
+  }
+
+  get webhookUrl() {
+    return this.getWebhookRoot() + '/api/payment/bank/' + this.id;
+  }
+
+  getRoot() {
+    //return globalData.get("server");
+    return config.get('server.url');
+  }
+
+  getWebhookRoot() {
+    const root = globalData.get('localtunnel') ?
+      globalData.get('localtunnel') :
+      config.get('server.url');
+    return root;
+  }
+
+  /**
+   * zet status en voeg een status record toe
+   */
+  async setStatus(status, betaalstatus = true) {
+    await this.$query().patch({
+      status: status
+    });
+    await this.$relatedQuery('statusupdates').insert({
+      status: status,
+      betaalstatus: betaalstatus,
+      reserveringId: this.id
+    });
+    this.status = status;
+  }
+
+  // /---------- virtual attributes --------------------------
+
+  $afterGet(queryContext) {
+    // niet achteraf doen. Zorg er voor dat 't in de route allemaal geladen is
+    // await this.$loadRelated('[uitvoering.voorstelling.prijzen,payments,tickets]');
+
+    // dit zou toch allemaal overbodig moeten zijn?
+
+    // let payments = {};
+    // this.payments.forEach((p) => payments[p.id] = p);
+
+    // if (!this.ticketAggregates) {
+    //   this.tickets.forEach(t => {
+    //     t.payment = payments[t.paymentId];
+    //   })
+    // }
+
+    if (this.uitvoering) {
+      this.ticketAggregates = TicketAggregate.factory(
+        this,
+        this.uitvoering,
+        this.tickets
+      );
+    }
+    return this;
+  }
+
+  $formatJson(json) {
+    json = super.$formatJson(json);
+    json.tickets = this.ticketAggregates;
+    delete json.ticketAggregates;
+    delete json.validTickets;
+    // json.paymentUrl = this.paymentUrl
+    return json;
+  }
+
+  static get relationMappings() {
+    const Uitvoering = require('./Uitvoering');
+    const Ticket = require('./Ticket');
+    const Payment = require('./Payment');
+    const Log = require('./Log');
+    const StatusUpdate = require('./StatusUpdate');
+
+    return {
+      uitvoering: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Uitvoering,
+        join: {
+          from: 'reserveringen.uitvoeringId',
+          to: 'uitvoeringen.id'
+        }
+      },
+      tickets: {
+        relation: Model.HasManyRelation,
+        modelClass: Ticket,
+        join: {
+          from: 'tickets.reserveringId',
+          to: 'reserveringen.id'
+        }
+      },
+      logs: {
+        relation: Model.HasManyRelation,
+        modelClass: Log,
+        join: {
+          from: 'logs.reserveringId',
+          to: 'reserveringen.id'
+        }
+      },
+      payments: {
+        relation: Model.HasManyRelation,
+        modelClass: Payment,
+        join: {
+          from: 'payments.reserveringId',
+          to: 'reserveringen.id'
+        }
+      },
+      statusupdates: {
+        relation: Model.HasManyRelation,
+        modelClass: StatusUpdate,
+        join: {
+          from: 'statusupdates.reserveringId',
+          to: 'reserveringen.id'
+        }
       }
-    });
+    };
+  }
 
-    Reservering.Tickets = models.Reservering.hasMany(models.Ticket, {
-      onDelete: "cascade"
-    });
-    Reservering.Payments = models.Reservering.hasMany(models.Payment, {
-      onDelete: "cascade"
-    });
-    Reservering.Logs = models.Reservering.hasMany(models.Log);
-    Reservering.StatusUpdates = models.Reservering.hasMany(
-      models.StatusUpdate, {
-        onDelete: "cascade"
-      }
-    );
-  };
-
-  return Reservering;
+  static getStandardEager() {
+    return '[uitvoering.voorstelling.prijzen,tickets.[payment,prijs],payments]'
+  }
 };

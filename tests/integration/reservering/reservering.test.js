@@ -1,4 +1,6 @@
 jest.setTimeout(3000000);
+process.env.NODE_CONFIG_DIR = __dirname + "/../../../config/";
+process.env.NODE_ENV = 'test';
 const request = require("supertest");
 const clone = require("lodash/clone");
 require('axios-debug-log');
@@ -22,119 +24,28 @@ const {
 
 let app = require("../../../app");
 const {
-  User,
   Reservering,
   Voorstelling,
-  sequelize
 } = require("../../../models/");
 const getAuthToken = require("./getAuthToken");
 const createVoorstelling = require("./createVoorstelling");
 
-let authToken, voorstelling;
+let authToken = await getAuthToken(), 
+	voorstelling = await await.createVoorstelling();
 
 beforeAll(async () => {
-  await sequelize.sync({
-    force: true
-  });
-  authToken = await getAuthToken();
-  voorstelling = await createVoorstelling();
-  // console.log("voorstelling created");
-});
-
-afterAll(async (done) => {
-  // console.log("delete voorstelling");
-  await Voorstelling.destroy({
-    where: {},
-    truncate: true
-  });
+  await Voorstelling.query().delete();
   jest.resetAllMocks();
-  done();
 });
 
-afterEach(async () => {
+beforeEach(async () => {
   // console.log("delete reservering");
-  await Reservering.destroy({
-    where: {},
-    truncate: true
-  });
+  await Reservering.query().delete();
   nodemailerMock.mock.reset();
   nock.cleanAll();
 });
 
-describe("/reservering", () => {
-  describe("/GET", () => {
-    it("should return alle reserveringen", async () => {
-      try {
-        await Reservering.bulkCreate(
-          [{
-              naam: "naam1",
-              email: "naam1@plusleo.nl",
-              uitvoeringId: voorstelling.uitvoeringen[0].id,
-              tickets: [{
-                prijsId: voorstelling.prijzen[0].id
-              }]
-            },
-            {
-              naam: "naam2",
-              email: "naam@plusleo.nl",
-              uitvoeringId: voorstelling.uitvoeringen[0].id,
-              tickets: [{
-                prijsId: voorstelling.prijzen[1].id
-              }]
-            }
-          ], {
-            include: [{
-                association: Reservering.Tickets
-              },
-              {
-                association: Voorstelling.Uitvoeringen
-              }
-            ]
-          }
-        );
-      } catch (ex) {
-        //console.log(ex);
-        throw (ex);
-      }
-      const res = await request(app)
-        .get("/api/reservering")
-        .set("x-auth-token", authToken);
-      expect(res.status).toBe(200);
-      expect(res.body.length).toBe(2);
-      expect(res.body.some(u => u.naam === "naam1")).toBeTruthy();
-      expect(res.body.some(u => u.naam === "naam2")).toBeTruthy();
-    });
-
-    describe("/GET/id", () => {
-      it("should return specific reservering", async () => {
-        let reservering;
-        try {
-          reservering = await Reservering.create({
-            naam: "naam3",
-            email: "naam3@plusleo.nl",
-            uitvoeringId: voorstelling.uitvoeringen[0].id
-          });
-        } catch (ex) {
-          //console.log(ex);
-          throw (ex)
-        }
-
-        const id = reservering.id;
-        const res = await request(app)
-          .get("/api/reservering/" + id)
-          .set("x-auth-token", authToken);
-        expect(res.status).toBe(200);
-        expect(res.body.id).toBe(id);
-      });
-
-      it("should return 404 not found", async () => {
-        const res = await request(app)
-          .get("/api/reservering/1")
-          .set("x-auth-token", authToken);
-        expect(res.status).toBe(404);
-      });
-    });
-  });
+describe("/reservering", async () => {
 
   describe("/post", () => {
     it("succesvolle reservering", async () => {
@@ -280,7 +191,7 @@ describe("/reservering", () => {
         expect(sentMail.find(m => m.subject.match(/Gewijzigde bestelling/))).toBeTruthy();
         expect(sentMail.find(m => m.subject.match(/€10.00 teruggestort/))).toBeTruthy();
         expect(sentMail.find(m => m.subject.match(/uit wachtlijst/))).toBeTruthy();
-        expect(sentMail[2].html).toMatch(/alsnog te betalen/);
+        expect(sentMail.findOne(m => m.subject.match(/Gewijzigde/).html)).toMatch(/alsnog te betalen/);
 
       } catch (ex) {
         //debugger;
@@ -404,6 +315,7 @@ describe("/reservering", () => {
 
       nodemailerMock.mock.reset();
 
+      // zet aantal op 0
       res = await request(app)
         .put("/api/reservering/" + reserveringId1)
         .send({
@@ -432,37 +344,37 @@ describe("/reservering", () => {
 
   // ===============================================================================================
 
-  // it("should completely refund if deleted", async () => {
-  //   try {
-  //     const uitvoeringId = voorstelling.uitvoeringen[0].id
+  it("should completely refund if deleted", async () => {
+    try {
+      const uitvoeringId = voorstelling.uitvoeringen[0].id
 
-  //     let res = await createReservering(request(app), {
-  //       naam: "noshow",
-  //       email: "noshow@mail.example",
-  //       uitvoeringId: uitvoeringId,
-  //       tickets: [{
-  //         prijs: voorstelling.prijzen[0],
-  //         aantal: 2
-  //       }]
-  //     });
+      let res = await createReservering(request(app), {
+        naam: "noshow",
+        email: "noshow@mail.example",
+        uitvoeringId: uitvoeringId,
+        tickets: [{
+          prijs: voorstelling.prijzen[0],
+          aantal: 2
+        }]
+      });
 
-  //     const reserveringId1 = res.reservering.body.id;
+      const reserveringId1 = res.reservering.body.id;
 
-  //     nodemailerMock.mock.reset();
+      nodemailerMock.mock.reset();
 
-  //     res = await request(app).del("/api/reservering/" + reserveringId1)
+      res = await request(app).del("/api/reservering/" + reserveringId1)
 
-  //     let sentMail = nodemailerMock.mock.sentMail();
-  //     expect(sentMail.find(m => m.subject.match(/Gewijzigde bestelling/))).toBeTruthy();
-  //     expect(sentMail.find(m => m.subject.match(/€20.00 teruggestort/))).toBeTruthy();
+      let sentMail = nodemailerMock.mock.sentMail();
+      expect(sentMail.find(m => m.subject.match(/Gewijzigde bestelling/))).toBeTruthy();
+      expect(sentMail.find(m => m.subject.match(/€20.00 teruggestort/))).toBeTruthy();
 
 
-  //   } catch (ex) {
-  //     //debugger;
-  //     //console.log(ex);
-  //     throw (ex);
-  //   }
-  // });
+    } catch (ex) {
+      //debugger;
+      //console.log(ex);
+      throw (ex);
+    }
+  });
 
 
   // ===============================================================================================
@@ -508,7 +420,6 @@ describe("/reservering", () => {
           ]
         });
 
-      debugger;
       let sentMail = nodemailerMock.mock.sentMail();
       expect(res.body.aantal).toBe(2);
       expect(res.body.onbetaaldeTickets.length).toBe(0);
