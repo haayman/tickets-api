@@ -1,44 +1,40 @@
 const winston = require("winston");
 const auth = require("../middleware/auth");
 const express = require("express");
-const {
-  Voorstelling
-} = require("../models");
+const Voorstelling = require('../models/Voorstelling');
 const parseQuery = require('./helpers/parseQuery');
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  let params = parseQuery(Voorstelling, req.query);
+  let query = Voorstelling.query().allowEager('[uitvoeringen,prijzen]');
+  query = parseQuery(query, req.query);
 
-  let voorstellingen = await Voorstelling.findAll(params);
-  const json = await Promise.all(voorstellingen.map(async v => v.toJSONA(res)));
-  res.send(json);
+  let voorstellingen = await query;
+  // const json = await Promise.all(voorstellingen.map(async v => v.toJSONA(res)));
+  res.send(voorstellingen);
 });
 
 router.get("/:id", async (req, res) => {
-  let params = parseQuery(Voorstelling, req.query);
+  let query = Voorstelling.query().findById(req.params.id).allowEager('[uitvoeringen,prijzen]');;
+  query = parseQuery(query, req.query);
 
-  const voorstelling = await Voorstelling.findByPk(req.params.id, params);
+  const voorstelling = await query;
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   } else {
-    const json = await voorstelling.toJSONA(res);
-    res.send(json);
+    //const json = await voorstelling.toJSONA(res);
+    res.send(voorstelling);
   }
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
   try {
-    const voorstelling = await Voorstelling.create(req.body, {
-      include: [{
-          association: Voorstelling.Prijzen
-        },
-        {
-          association: Voorstelling.Uitvoeringen
-        }
-      ]
-    });
+    const voorstelling = await Voorstelling
+      .query()
+      .allowInsert('[uitvoeringen,prijzen]')
+      .insertGraphAndFetch(req.body);
+
     res.send(voorstelling);
   } catch (e) {
     winston.error(e.message, e);
@@ -52,28 +48,26 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
     return res.status(400).send("no id");
   }
 
-  let voorstelling = await Voorstelling.findByPk(id, {
-    include: [Voorstelling.Uitvoeringen, Voorstelling.Prijzen]
-  });
+  let voorstelling = await Voorstelling.query().findById(id);
   if (!voorstelling) {
     return res.status(404).send("not found");
   }
 
-  await Voorstelling.updateIncludes(req.body, {
-    include: [Voorstelling.Uitvoeringen, Voorstelling.Prijzen]
-  });
+  voorstelling = await Voorstelling.query()
+    .allowUpsert('[uitvoeringen,prijzen]')
+    .upsertGraphAndFetch(req.body);
 
   res.send(voorstelling);
 });
 
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
-  const voorstelling = await Voorstelling.findByIdAndDelete(req.params.id);
-  if (!voorstelling) {
+  const deleted = await Voorstelling.query().deleteById(req.params.id);
+  if (!deleted) {
     return res.status(404).send("niet gevonden");
   }
 
-  res.send(voorstelling);
+  res.send(deleted);
 });
 
 module.exports = router;

@@ -16,6 +16,7 @@ function mockPayment(status) {
       status: 'open',
     });
 
+    // .times(99) zodat heel vaak het request 'gemocked' wordt
     mollieMock.get('/v2/payments/' + paymentId).times(99).reply(200, paymentResponse({
       paymentId,
       status: status

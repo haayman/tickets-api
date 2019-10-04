@@ -11,7 +11,7 @@ require("./startup/logging")();
 require("./startup/database")();
 require("./startup/routes")(app);
 
-require("./startup/env")();
+// require("./startup/env")();
 
 
 module.exports = app;

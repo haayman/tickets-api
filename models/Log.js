@@ -1,26 +1,56 @@
-module.exports = (sequelize, DataTypes) => {
-  const Log = sequelize.define("Log", {
-    message: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    sourceCode: {
-      type: DataTypes.TEXT,
-      allowNull: true
+const {
+  Model
+} = require('objection');
+const stackTrace = require("stack-trace");
+const path = require("path");
+
+
+module.exports = class Log extends Model {
+  static get tableName() {
+    return 'logs';
+  }
+
+  static get jsonSchema() {
+    return {
+      type: 'object',
+      required: ['message'],
+      properties: {
+        message: {
+          type: 'string'
+        },
+        sourceCode: {
+          type: 'string'
+        },
+        reserveringId: {
+          type: 'uuid'
+        }
+      }
     }
-  }, {
-    paranoid: true, // zorgt er voor dat dit nooit echt verwijderd wordt
+  }
 
-  });
+  static get relationMappings() {
+    const Reservering = require('./Reservering');
+    return {
+      reservering: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Reservering,
+        join: {
+          from: 'logs.reserveringId',
+          to: 'reserveringen.id'
+        }
+      }
+    }
+  }
 
-  Log.associate = function (models) {
-    Log.Reservering = models.Log.belongsTo(models.Reservering, {
-      onDelete: "SET NULL",
+  static async addMessage(reservering, message) {
+    const trace = stackTrace.get();
+    const caller = trace[1];
+
+    await reservering.$relatedQuery('logs', reservering.$transaction()).insert({
+      message: message,
+      sourceCode: `${path.basename(
+        caller.getFileName()
+      )}(${caller.getLineNumber()})`
     });
-    Log.User = models.Log.belongsTo(models.User), {
-      onDelete: 'SET NULL',
-    }
-  };
-
-  return Log;
-};
+  }
+}

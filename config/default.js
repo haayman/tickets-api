@@ -5,9 +5,9 @@ module.exports = {
   database: {
     client: "sqlite3",
     connection: {
-			filename: path.resolve(__dirname, "..", "..", "data", "knex.sqlite")
-		},
-		useNullAsDefault: true
+      filename: path.resolve(__dirname, "..", "..", "data", "knex.sqlite")
+    },
+    useNullAsDefault: true
   },
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
@@ -16,7 +16,7 @@ module.exports = {
     port: 3000
   },
   mail_transport: {
-    debug: true,
+    debug: false,
     logger: true,
     sendmail: true,
     path: "/usr/sbin/sendmail"

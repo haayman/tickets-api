@@ -70,7 +70,7 @@ module.exports = class Mailer {
     return await template.render(this.template, params);
   }
 
-  getRecipient(email, naam, override = false) {
+  getRecipient(email, naam, override = true) {
     let alwaysTo;
     if (override && (alwaysTo = config.has('email.alwaysTo'))) {
       email = config.get('email.alwaysTo');

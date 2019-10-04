@@ -15,14 +15,18 @@
   'terugbetaald'
   'verkocht'
 */
-const TimestampedModel = require('./TimestampedModel');
+const REFRESH_CACHE = 5 // minutes
+const BaseModel = require('./BaseModel');
+const Log = require('./Log');
+
 const {
   Model
 } = require('objection');
 
 let _cache;
+let _dirty = true;
 
-module.exports = class Ticket extends TimestampedModel {
+module.exports = class Ticket extends BaseModel {
   static get tableName() {
     return 'tickets';
   }
@@ -31,6 +35,9 @@ module.exports = class Ticket extends TimestampedModel {
     return {
       type: 'object',
       properties: {
+        id: {
+          type: 'integer'
+        },
         betaald: {
           type: 'boolean'
         },
@@ -46,29 +53,62 @@ module.exports = class Ticket extends TimestampedModel {
         terugbetalen: {
           type: 'boolean'
         },
+        paymentId: {
+          type: 'integer'
+        },
+        reserveringId: {
+          type: 'uuid'
+        },
+        prijsId: {
+          type: 'integer'
+        }
       }
-    }
+    };
   }
 
   static get virtualAttributes() {
-    return {
-      isPaid() {
-        return this.payment && this.Payment.isPaid;
-      }
-    }
+    return ['isPaid'];
+  }
+
+  isPaid() {
+    return this.payment && this.payment.isPaid;
+  }
+
+  /**
+   * virtual attributes negeren
+   * @param {*} json
+   * @param {*} opt
+   */
+  $parseJson(json, opt) {
+    json = super.$parseJson(json, opt);
+
+    Ticket.virtualAttributes.forEach((a) => {
+      delete json[a];
+    });
+    return json;
+  }
+
+  // voorkom recursie
+  $formatJson(json) {
+    delete json.reservering;
+    // delete json.ticket; // 
+    return json;
   }
 
   // ========= cache ====================
 
-  static async getCache(force = false) {
-    if (!_cache || force) {
+  static async getCache(trx) {
+    if (!_cache || _dirty) {
       // _cache = await Ticket.query().eager('[prijs,reservering,payment]')
-      _cache = await Ticket.query().eager('[prijs,payment]')
+      // console.log('refresh Ticket cache');
+      _cache = await Ticket.query(trx)
+        .eager('[prijs,payment,reservering]')
         .where({
           geannuleerd: false,
           verkocht: false,
           deletedAt: null
         });
+      _dirty = false;
     }
 
     return _cache;
@@ -87,29 +127,31 @@ module.exports = class Ticket extends TimestampedModel {
   }
 
   $afterDelete() {
-    Ticket.getCache(true)
+    _dirty = true;
+    // Ticket.getCache();
   }
 
   $afterInsert() {
-    Ticket.getCache(true);
+    _dirty = true;
+    // Ticket.getCache();
   }
 
+
   $afterUpdate() {
-    Ticket.getCache(true);
+    _dirty = true;
+    // Ticket.getCache();
   }
   // /========= cache ====================
 
   static get modifiers() {
     return {
       tekoop(builder) {
-        builder.where('tekoop', '=', true)
+        builder.where('tekoop', '=', true);
       },
       valid(builder) {
-        builder
-          .where('geannuleerd', '=', false)
-          .where('verkocht', '=', false)
+        builder.where('geannuleerd', '=', false).where('verkocht', '=', false);
       }
-    }
+    };
   }
 
   toString() {
@@ -120,11 +162,12 @@ module.exports = class Ticket extends TimestampedModel {
    * Maak een beschrijving van een groep tickets
    * @param {*} tickets
    */
-  async description(tickets) {
+  static description(tickets) {
     // Tel aantal tickets per prijs
     const counter = {};
-    await Promise.all(tickets.map(async t => {
-      t.prijs = await t.getPrijs();
+    // await Promise.all(tickets.map(async t => {
+    tickets.forEach((t) => {
+      // t.prijs = await t.getPrijs();
       if (!counter[t.prijs.id]) {
         counter[t.prijs.id] = {
           prijs: t.prijs,
@@ -133,15 +176,15 @@ module.exports = class Ticket extends TimestampedModel {
         };
       }
       counter[t.prijs.id].count++;
-    }));
+    });
 
     return Object.values(counter)
-      .map(c => {
+      .map((c) => {
         const totaal = (c.count * c.prijs.prijs).toFixed(2);
         const count = c.count;
-        return `${count}x ${c.prijs.asString()}: €${totaal}`;
+        return `${count}x ${c.prijs}: €${totaal}`;
       })
-      .join("\n");
+      .join('\n');
   }
 
   /**
@@ -152,34 +195,40 @@ module.exports = class Ticket extends TimestampedModel {
     return tickets.reduce((totaal, t) => totaal + t.prijs.prijs, 0);
   }
 
-
   /**
    * welke tickets staan te koop voor deze Uitvoering
-   * @param {number} aantal 
+   * @param {number} aantal
    * @param {number} uitvoeringId
    * @return {Ticket[]}
    */
-  static async tekoop(aantal, uitvoeringId = null) {
-    const uitvoeringFilter = uitvoeringId !== null ? 'AND uitvoeringId=:uitvoering' : '';
-    const sql = `SELECT * from Ticket
-      WHERE reserveringId in (
-        SELECT id from reservering WHERE 
-          deletedAt IS NULL
-          ${uitvoeringFilter}
-        )
-      AND tekoop=:tekoop
-      ORDER BY updatedAt
-      LIMIT ${aantal}`;
+  static async tekoop(trx, aantal, uitvoeringId = null) {
+    let tickets = await Ticket.getCache(trx);
+    tickets = tickets.filter(t => t.tekoop).sort((a, b) => a.updatedAt - b.updatedAt)
+    if (uitvoeringId) {
+      tickets = tickets.filter(t => t.reservering.uitvoeringId == uitvoeringId);
+    }
 
-    const tickets = await Ticket.query().raw(sql, {
-      model: Ticket,
-      type: sequelize.QueryTypes.SELECT,
-      replacements: {
-        tekoop: true,
-        uitvoering: uitvoeringId
-      }
-    })
-    return tickets
+    // const uitvoeringFilter =
+    //   uitvoeringId !== null ? 'AND uitvoeringId=:uitvoering' : '';
+    // const sql = `SELECT * from Ticket
+    //   WHERE reserveringId in (
+    //     SELECT id from reservering WHERE 
+    //       deletedAt IS NULL
+    //       ${uitvoeringFilter}
+    //     )
+    //   AND tekoop=:tekoop
+    //   ORDER BY updatedAt
+    //   LIMIT ${aantal}`;
+
+    // const tickets = await Ticket.query().raw(sql, {
+    //   model: Ticket,
+    //   type: sequelize.QueryTypes.SELECT,
+    //   replacements: {
+    //     tekoop: true,
+    //     uitvoering: uitvoeringId
+    //   }
+    // });
+    return tickets.slice(0, aantal);
   }
 
   /**
@@ -188,32 +237,33 @@ module.exports = class Ticket extends TimestampedModel {
    * @param {number} aantal
    */
 
-  static async verwerkTekoop(aantal, uitvoeringId = null) {
-    const tekoop = await Ticket.tekoop(aantal, uitvoeringId);
+  static async verwerkTekoop(trx, aantal, uitvoeringId = null) {
+    const tekoop = await Ticket.tekoop(trx, aantal, uitvoeringId);
     let verkocht = {};
 
-    await Promise.all(tekoop.map(async (ticket) => {
-      const reservering = await ticket.getReservering();
-      verkocht[reservering.id] = reservering;
-
-      ticket.verkocht = true;
-      ticket.tekoop = false;
-      ticket.terugbetalen = true;
-
-      await ticket.save();
-      const strTicket = await ticket.asString();
-      await reservering.logMessage(`${strTicket} verkocht`);
-    }))
-
     await Promise.all(
-      Object.values(verkocht).map(async r => r.refund()));
+      tekoop.map(async (ticket) => {
+        const reservering = ticket.reservering;
+        verkocht[reservering.id] = reservering;
 
-    return tekoop.length;
+        ticket.verkocht = true;
+        ticket.tekoop = false;
+        ticket.terugbetalen = true;
+
+        await ticket.$query(trx).patch({
+          verkocht: true,
+          tekoop: false,
+          terugbetalen: true
+        });
+        await Log.addMessage(reservering, `${ticket} verkocht`);
+      })
+    );
   }
 
   static get relationMappings() {
     const Payment = require('./Payment');
     const Prijs = require('./Prijs');
+    const Reservering = require('./Reservering');
 
     return {
       prijs: {
@@ -232,14 +282,14 @@ module.exports = class Ticket extends TimestampedModel {
           to: 'payments.id'
         }
       },
-      // reservering: {
-      //   relation: Model.BelongsToOneRelation,
-      //   modelClass: Reservering,
-      //   join: {
-      //     from: 'ticket.reserveringId',
-      //     to: 'reservering.id'
-      //   }
-      // }
-    }
-  };
+      reservering: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: Reservering,
+        join: {
+          from: 'tickets.reserveringId',
+          to: 'reserveringen.id'
+        }
+      }
+    };
+  }
 };

@@ -38,7 +38,7 @@ async function updateReservering(request, reservering) {
   expect(reserveringResult.status).toBe(200);
   expect(reserveringResult.body.id).toBeDefined();
 
-  const notPaid = reserveringResult.body.Payments.find(p => p.status !== 'paid');
+  const notPaid = reserveringResult.body.payments.find(p => p.status !== 'paid');
   if (notPaid) {
     const id = reserveringResult.body.id;
     const paymentId = notPaid.paymentId;

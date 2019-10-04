@@ -11,8 +11,6 @@ const {
 const winston = require("winston");
 const ReserveringMail = require("../components/ReserveringMail");
 const parseQuery = require('./helpers/parseReserveringQuery');
-const Sequelize = require('sequelize');
-const Op = Sequelize.Op;
 
 const router = express.Router();
 
@@ -61,20 +59,17 @@ router.post("/", auth(['admin']), async (req, res) => {
   let reserveringen;
 
   if (test) {
-    const user = await User.findByPk(res.locals.user.id);
-    const reservering = Reservering.build({
-      naam: user.name,
-      email: user.email
-    })
+    const user = await User.query().findById(res.locals.user.id);
+
+    const reservering = new Reservering();
+
+    reservering.naam = user.name;
+    reservering.email = user.email;
     reserveringen = [reservering];
   } else {
-    reserveringen = await Reservering.findAll({
-      where: {
-        uitvoeringId: {
-          [Op.in]: uitvoeringIds
-        }
-      }
-    });
+    reserveringen = await Reservering.query().whereIn(
+      'uitvoeringId', uitvoeringIds
+    );
   }
 
   await Promise.all(reserveringen.map(async reservering => {

@@ -23,6 +23,9 @@ function parseQuery(query, params) {
       }
     })
   }
+  if (params.limit) {
+    query.page(+(params.offset) || 0, +(params.limit));
+  }
   return query
 }
 

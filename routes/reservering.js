@@ -1,169 +1,204 @@
-"use strict";
-const auth = require("../middleware/auth");
-const express = require("express");
+'use strict';
+const auth = require('../middleware/auth');
+const express = require('express');
+const {
+  transaction
+} = require('objection');
+
 const {
   Reservering,
   Prijs,
-  Uitvoering
-} = require("../models");
-const TicketAggregate = require("../models/Ticket.Aggregate");
-const ReserveringMail = require("../components/ReserveringMail");
-const parseQuery = require("./helpers/parseReserveringQuery");
+  Ticket,
+  Log
+} = require('../models');
+const TicketAggregate = require('../models/Ticket.Aggregate');
+const ReserveringMail = require('../components/ReserveringMail');
+const RefundHandler = require('../models/RefundHandler');
+const parseQuery = require('./helpers/parseReserveringQuery');
 
 const router = express.Router();
 
-router.get("/", auth(true), async (req, res) => {
-  const params = parseQuery(Reservering, req.query);
-  if (req.query.uitvoeringId) {
-    params.where = {
-      uitvoeringId: req.query.uitvoeringId
-    };
+router.get(
+  '/',
+  auth(true),
+  async (req, res) => {
+    let query = parseQuery(req.query);
+    if (req.query.uitvoeringId) {
+      query.where('uitvoeringId', req.query.uitvoeringId);
+    }
+
+    let reserveringen = await query;
+
+    res.send(reserveringen);
   }
+);
 
-  let reserveringen = await Reservering.findAll(params);
-  Reservering.removeHook("afterFind");
+router.get('/:id', async (req, res) => {
+  const query = parseQuery(req.query);
 
-  const json = await Promise.all(
-    reserveringen.map(async r => r.toJSONA(req.query))
-  );
+  // const mixin = require("../models/Refund.mixin");
+  // Object.assign(Reservering.prototype, mixin);
 
-  res.send(json);
+  const reservering = await query.findById(req.params.id);
+  if (!reservering) {
+    return res.status(404).send('niet gevonden');
+  } else {
+    // const json = await reservering.toJSONA(req.query);
+    res.send(reservering);
+  }
 });
 
-router.post("/", async (req, res) => {
-  Reservering.sequelize.transaction(async transaction => {
+router.post('/', async (req, res) => {
+  await transaction(Reservering, Prijs, Ticket, async (Reservering, Prijs, Ticket, trx) => {
     /** @type {Reservering} */
-    let reservering = await Reservering.create(req.body);
-    reservering.uitvoering = await Uitvoering.findByPk(
-      reservering.uitvoeringId
-    );
+    let data = Reservering.cleanProperties(req.body);
+    // data.id = uuid();
+    let reservering = await Reservering.query().insertAndFetch(data);
+    reservering.uitvoering = await reservering.$relatedQuery('uitvoering');
     reservering.ticketAggregates = [];
     await Promise.all(
-      req.body.tickets.map(async t => {
-        const prijs = await Prijs.findByPk(t.prijs.id);
+      req.body.tickets.map(async (t) => {
+        const prijs = await Prijs.query().findById(t.prijs.id);
         const ta = new TicketAggregate(reservering, prijs);
-        await ta.setAantal(t.aantal);
+        await ta.setAantal(Ticket, t.aantal);
         reservering.ticketAggregates.push(ta);
       })
     );
 
-    reservering.Tickets = await reservering.getTickets();
+    const refetched = await reservering
+      .$query()
+      .eager(Reservering.getStandardEager());
+    reservering.$set(refetched);
 
-    // kassa-betaling 
+    // kassa-betaling
     if (res.locals.user && req.body.betaald === true) {
-      await Promise.all(reservering.onbetaaldeTickets.map(async (ticket) => {
-        ticket.betaald = true;
-        await ticket.save();
-      }));
+      await Promise.all(
+        reservering.onbetaaldeTickets.map(async (ticket) => {
+          ticket.betaald = true;
+          await ticket.save();
+        })
+      );
     }
 
-    reservering.wachtlijst = await reservering.moetInWachtrij();
+    reservering.wachtlijst = reservering.moetInWachtrij;
+    if (reservering.wachtlijst) {
+      await reservering.$query().patch({
+        wachtlijst: reservering.wachtlijst
+      });
+    }
 
     await reservering.createPaymentIfNeeded();
-    await reservering.save();
+    //await reservering.save();
 
     const saldo = reservering.saldo;
-    const strReservering = await reservering.asString();
+    const strReservering = reservering.toString();
     if (!saldo) {
       // vrijkaartjes
-      await ReserveringMail.send(reservering, "ticket", strReservering);
+      await ReserveringMail.send(reservering, 'ticket', strReservering);
     } else if (reservering.wachtlijst) {
       await ReserveringMail.send(
         reservering,
-        "wachtlijst",
-        "Je staat op de wachtlijst"
+        'wachtlijst',
+        'Je staat op de wachtlijst'
       );
     } else {
-      await ReserveringMail.send(reservering, "aangevraagd", "kaarten besteld");
+      await ReserveringMail.send(reservering, 'aangevraagd', 'kaarten besteld');
     }
 
-    await Reservering.verwerkRefunds();
-    const json = await reservering.toJSONA()
-    res.send(json);
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+    res.send(reservering);
   });
 });
 
-router.put("/:id", async (req, res) => {
-  let id = req.params.id;
-  if (!req.params.id) {
-    return res.status(400).send("no id");
-  }
+router.put('/:id', async (req, res) => {
+  await transaction(Reservering, async (Reservering, trx) => {
+    let id = req.params.id;
 
-  const params = parseQuery(Reservering, {
-    include: ["tickets", "Payments"]
-  });
-  let reservering = await Reservering.findByPk(id, params);
-  if (!reservering) {
-    return res.status(404).send(`not found: ${id}`);
-  }
+    if (!req.params.id) {
+      return res.status(400).send('no id');
+    }
 
-  // geen wijzigingen meer toestaan nadat de reservering is ingenomen
-  if (reservering.ingenomen) {
-    return res.status('405').send('reservering is al ingenomen');
-  }
+    const query = parseQuery({
+      include: ['tickets', 'payments']
+    }, Reservering);
+    const eagerObject = query.eagerObject();
 
-  Reservering.sequelize.transaction(async transaction => {
-    await reservering.update(req.body);
+    let reservering = await query.findById(id);
+    if (!reservering) {
+      return res.status(404).send(`not found: ${id}`);
+    }
 
-    reservering.uitvoering = await Uitvoering.findByPk(
-      reservering.uitvoeringId
-    );
+    // geen wijzigingen meer toestaan nadat de reservering is ingenomen
+    if (reservering.ingenomen) {
+      return res.status('405').send('reservering is al ingenomen');
+    }
+
+    let data = Reservering.cleanProperties(req.body);
+    reservering = await query.eager(eagerObject).patchAndFetchById(id, data);
+    if (!reservering.ticketAggregates) {
+      reservering.ticketAggregates = TicketAggregate.factory(reservering, reservering.uitvoering, reservering.tickets);
+    }
+
     if (req.body.tickets) {
       await Promise.all(
-        req.body.tickets.map(async t => {
+        req.body.tickets.map(async (t) => {
           // const prijs = await Prijs.findByPk(t.prijs.id);
           // const ta = new TicketAggregate(reservering, prijs);
           const ta = reservering.ticketAggregates.find(
-            ticket => ticket.prijs.id == t.prijs.id
+            (ticket) => ticket.prijs.id == t.prijs.id
           );
-          await ta.setAantal(t.aantal);
+          await ta.setAantal(Ticket, t.aantal);
           // reservering.tickets.push(ta);
         })
       );
     }
 
-    reservering.wachtlijst = await reservering.moetInWachtrij();
-    await reservering.save();
-
-    // reservering = await reservering.reload(params);
-    reservering = await Reservering.findByPk(reservering.id, params);
-    // Reservering.removeHook("afterFind");
+    reservering.wachtlijst = await reservering.moetInWachtrij;
+    await reservering.$query().patch({
+      wachtlijst: reservering.wachtlijst
+    });
 
     const saldo = reservering.saldo;
 
     if (saldo < 0) {
       await reservering.createPaymentIfNeeded();
     } else {
-      if (saldo > 0 && reservering.teruggeefbaar()) {
-        const mixin = require("../models/Refund.mixin");
-        Object.assign(Reservering.prototype, mixin);
-
-        await reservering.refund();
-      }
-      const strReservering = await reservering.asString();
+      // if (saldo > 0 && reservering.teruggeefbaar()) {
+      //   // const mixin = require("../models/Refund.mixin");
+      //   // Object.assign(Reservering.prototype, mixin);
+      //   // await reservering.refund();
+      //   await new RefundHandler(reservering).refund();
+      // }
       await ReserveringMail.send(
         reservering,
-        "gewijzigd",
-        `Gewijzigde bestelling ${strReservering}`
+        'gewijzigd',
+        `Gewijzigde bestelling ${reservering}`
       );
     }
 
-    await Reservering.verwerkRefunds();
+    // geef de Reservering en Ticket binnen deze transactie door
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
     // wacht op verwerking refunds.
     // pas als terugbetaald is, dan wachtlijst verwerken
-    await reservering.uitvoering.verwerkWachtlijst();
+    await reservering.uitvoering.verwerkWachtlijst(trx);
 
     // nu kunnen er weer tickets doorverkocht zijn
-    await Reservering.verwerkRefunds();
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
+    const refetched = await reservering
+      .$query()
+      .eager(Reservering.getStandardEager());
+    reservering.$set(refetched);
 
     res.send(reservering);
   });
 });
 
-router.put("/:id/ingenomen", auth(['kassa']), async (req, res) => {
+router.put('/:id/ingenomen', auth(['kassa']), async (req, res) => {
   let id = req.params.id;
   if (!req.params.id) {
-    return res.status(400).send("no id");
+    return res.status(400).send('no id');
   }
 
   let reservering = await Reservering.findByPk(id);
@@ -176,37 +211,22 @@ router.put("/:id/ingenomen", auth(['kassa']), async (req, res) => {
     return res.status('405').send('reservering is al ingenomen');
   }
 
-  Reservering.sequelize.transaction(async transaction => {
+  Reservering.sequelize.transaction(async (transaction) => {
     await reservering.update(req.body);
 
     res.send(reservering);
   });
 });
 
+router.get('/:id/resend', async (req, res) => {
+  const query = parseQuery(req.query);
 
-router.get("/:id", async (req, res) => {
-  const params = parseQuery(Reservering, req.query);
+  // const mixin = require("../models/Refund.mixin");
+  // Object.assign(Reservering.prototype, mixin);
 
-  const mixin = require("../models/Refund.mixin");
-  Object.assign(Reservering.prototype, mixin);
-
-  const reservering = await Reservering.findByPk(req.params.id, params);
-  Reservering.removeHook("afterFind");
+  const reservering = await query.findById(req.params.id);
   if (!reservering) {
-    return res.status(404).send("niet gevonden");
-  } else {
-    const json = await reservering.toJSONA(req.query);
-    res.send(json);
-  }
-});
-
-router.get("/:id/resend", async (req, res) => {
-  const reservering = await Reservering.findByPk(
-    req.params.id,
-    parseQuery(Reservering, {})
-  );
-  if (!reservering) {
-    return res.status(404).send("niet gevonden");
+    return res.status(404).send('niet gevonden');
   } else {
     const saldo = reservering.saldo;
 
@@ -214,26 +234,29 @@ router.get("/:id/resend", async (req, res) => {
       const strReservering = await reservering.asString();
       ReserveringMail.send(
         reservering,
-        "ticket",
+        'ticket',
         `Kaarten voor ${strReservering}`
       );
     } else {
-      ReserveringMail.send(reservering, "paymentFailure", "Betalingsherinnering");
+      ReserveringMail.send(
+        reservering,
+        'paymentFailure',
+        'Betalingsherinnering'
+      );
     }
-    res.send("OK");
+    res.send('OK');
   }
 });
 
-router.post("/:id/newPayment", async (req, res) => {
-  const params = parseQuery(Reservering, {
-    include: ["tickets"]
+router.post('/:id/newPayment', async (req, res) => {
+  const query = parseQuery({
+    include: ['tickets']
   });
-  const reservering = await Reservering.findByPk(req.params.id, params);
-  Reservering.removeHook("afterFind");
-  if (!reservering) return res.status(404).send("niet gevonden");
+  const reservering = await query.findById(req.params.id);
+  if (!reservering) return res.status(404).send('niet gevonden');
 
   await reservering.createPaymentIfNeeded();
-  const paymentUrl = reservering.paymentUrl();
+  const paymentUrl = reservering.paymentUrl;
   if (paymentUrl) {
     res.send({
       paymentUrl
@@ -243,143 +266,151 @@ router.post("/:id/newPayment", async (req, res) => {
   }
 });
 
-router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
-  const mixin = require("../models/Refund.mixin");
-  Object.assign(Reservering.prototype, mixin);
-
-  const params = parseQuery(Reservering, {
-    include: ["tickets"]
+router.post('/:id/terugbetaald', auth(['admin']), async (req, res) => {
+  const params = parseQuery({
+    include: ['tickets']
   });
   const reservering = await Reservering.findByPk(req.params.id, params);
-  if (!reservering) return res.status(404).send("niet gevonden");
+  if (!reservering) return res.status(404).send('niet gevonden');
+  const refund = new RefundHandler(reservering);
 
-  const bedrag = await reservering.nonRefundableAmount();
+  const bedrag = refund.nonRefundableAmount();
   if (bedrag) {
-    const tickets = await reservering.terugtebetalenTickets();
+    const tickets = refund.terugtebetalenTickets();
     await Promise.all(
-      tickets.map(async ticket => {
+      tickets.map(async (ticket) => {
         ticket.terugbetalen = false;
         ticket.geannuleerd = true;
-        const payment = ticket.Payment || (await ticket.getPayment());
+        const payment = ticket.payment;
         payment.paidBack = (payment.paidBack || 0) + ticket.prijs.prijs;
-        await payment.save();
-        await ticket.save();
+        await payment.update({
+          paidBack: payment.paidBack
+        });
+        await ticket.update({
+          terugbetalen: ticket.terugbetalen,
+          geannuleerd: ticket.geannuleerd
+        });
       })
     );
-    await reservering.logMessage(`€ ${bedrag.toFixed(2)} terugbetaald`);
+    await Log.addMessage(reservering, `€ ${bedrag.toFixed(2)} terugbetaald`);
 
     await ReserveringMail.send(
       reservering,
-      "terugbetaald",
+      'terugbetaald',
       `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
         bedrag: bedrag
       }
     );
   }
-  res.send("OK");
+  res.send('OK');
 });
 
-router.get("/:id/mail", async (req, res) => {
-  const params = parseQuery(Reservering, {
-    include: ["tickets"]
+router.get('/:id/mail', async (req, res) => {
+  const query = parseQuery({
+    include: ['tickets']
   });
-  const reservering = await Reservering.findByPk(req.params.id, params);
-  Reservering.removeHook("afterFind");
-  if (!reservering) return res.status(404).send("niet gevonden");
+  const reservering = await query.findById(req.params.id);
+  if (!reservering) return res.status(404).send('niet gevonden');
   const html = await ReserveringMail.render(
     reservering,
-    req.query.template || "ticket",
+    req.query.template || 'ticket',
     req.query
   );
   res.send(html);
 });
 
-router.get("/:id/qr", async (req, res) => {
-  const reservering = await Reservering.findByPk(req.params.id);
-  if (!reservering) return res.status(404).send("niet gevonden");
+router.get('/:id/qr', async (req, res) => {
+  const reservering = await Reservering.query().findById(req.params.id);
+  if (!reservering) return res.status(404).send('niet gevonden');
 
-  const qr = require("qr-image");
+  const qr = require('qr-image');
 
   const png = qr.imageSync(reservering.getTicketUrl(), {
-    type: "png",
+    type: 'png',
     size: 5,
     margin: 3
   });
-  res.type("png").send(png);
+  res.type('png').send(png);
 });
 
-router.get("/:id/qr_teruggave", async (req, res) => {
-  const mixin = require("../models/Refund.mixin");
-  Object.assign(Reservering.prototype, mixin);
-  const params = parseQuery(Reservering, {
-    include: ["tickets", "Payments"]
-  });
-  const reservering = await Reservering.findByPk(req.params.id, params);
-  const getBic = require("bic-from-iban");
-  if (!reservering) return res.status(404).send("niet gevonden");
+// router.get('/:id/qr_teruggave', async (req, res) => {
+//   const mixin = require('../models/RefundHandler');
+//   Object.assign(Reservering.prototype, mixin);
+//   const params = parseQuery(Reservering, {
+//     include: ['tickets', 'Payments']
+//   });
+//   const reservering = await Reservering.findByPk(req.params.id, params);
+//   const getBic = require('bic-from-iban');
+//   if (!reservering) return res.status(404).send('niet gevonden');
 
-  const qr = require("qr-image");
-  // https://gathering.tweakers.net/forum/list_messages/1800141
-  // https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/quick-response-code-guidelines-enable-data-capture-initiation
-  const bedrag = await reservering.nonRefundableAmount();
-  const IBAN = reservering.iban.replace(/\s/g, "");
-  const BIC = getBic.getBIC(IBAN) || "TRIONL2U";
-  const content = `BCD
-001
-1
-SCT
-${BIC}
-${reservering.tennamevan}
-${IBAN}
-EUR${bedrag.toFixed(2)}
-Terugstorting PlusLeo`;
+//   const qr = require('qr-image');
+//   // https://gathering.tweakers.net/forum/list_messages/1800141
+//   // https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/quick-response-code-guidelines-enable-data-capture-initiation
+//   const bedrag = await reservering.nonRefundableAmount();
+//   const IBAN = reservering.iban.replace(/\s/g, '');
+//   const BIC = getBic.getBIC(IBAN) || 'TRIONL2U';
+//   const content = `BCD
+// 001
+// 1
+// SCT
+// ${BIC}
+// ${reservering.tennamevan}
+// ${IBAN}
+// EUR${bedrag.toFixed(2)}
+// Terugstorting PlusLeo`;
 
-  const png = qr.imageSync(content, {
-    type: "png",
-    size: 5,
-    margin: 3
-  });
-  res.type("png").send(png);
-});
+//   const png = qr.imageSync(content, {
+//     type: 'png',
+//     size: 5,
+//     margin: 3
+//   });
+//   res.type('png').send(png);
+// });
 
-router.delete("/:id", async (req, res) => {
-  const params = parseQuery(Reservering, {
-    include: ["tickets", "Payments"]
-  });
-  Reservering.sequelize.transaction(async transaction => {
-    const reservering = await Reservering.findByPk(req.params.id, params);
+router.delete('/:id', async (req, res) => {
+  await transaction(Reservering, Ticket, async (Reservering, Ticket, trx) => {
+
+    const query = parseQuery({
+      include: ['tickets', 'payments']
+    }, Reservering);
+
+    const reservering = await query.findById(req.params.id);
     if (!reservering) {
-      return res.status(404).send("niet gevonden");
+      return res.status(404).send('niet gevonden');
     }
+
     await Promise.all(
-      reservering.ticketAggregates.map(ta => {
-        return ta.setAantal(0);
+      reservering.ticketAggregates.map(async (ta) => {
+        await ta.setAantal(Ticket, 0);
       })
     );
-    const strReservering = await reservering.asString();
-    await reservering.logMessage(`${strReservering} geannuleerd`);
-    const uitvoering = reservering.uitvoering;
 
-    await Reservering.verwerkRefunds();
-    uitvoering.verwerkWachtlijst();
+    // const strReservering = await reservering.toString();
+    await Log.addMessage(reservering, `${reservering} geannuleerd`);
 
-    reservering.Tickets = await reservering.getTickets();
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
+    // wacht op verwerking refunds.
+    // pas als terugbetaald is, dan wachtlijst verwerken
+    await reservering.uitvoering.verwerkWachtlijst(trx);
+
+    // nu kunnen er weer tickets doorverkocht zijn
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
+
     if (reservering.validTickets.length === 0) {
-      await reservering.destroy();
+      await reservering.query(trx).delete();
     } else {
       // nog niet alles verkocht. Stuur laatste status op
-      const strReservering = await reservering.asString();
       await ReserveringMail.send(
         reservering,
-        "gewijzigd",
-        `Gewijzigde bestelling ${strReservering}`
+        'gewijzigd',
+        `${reservering} te koop aangeboden`
       );
-
     }
 
-    res.send("OK");
+    res.send('OK');
   });
-
 });
 
 module.exports = router;
