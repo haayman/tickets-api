@@ -7,10 +7,11 @@ exports.up = function (knex) {
       table.string('naam', 255).notNullable();
       table.string('email', 255).notNullable();
       table.string('opmerking', 255);
+      table.string('opmerking_gebruiker', 255);
       table.string('status', 255);
       table.boolean('wachtlijst').defaultTo(false);
       table.datetime('ingenomen');
-      table.decimal('bedrag', 10, 5);
+      // table.decimal('bedrag', 10, 5);
       table.string('iban', 255);
       table.string('tennamevan', 255);
       table.integer('uitvoeringId').unsigned().notNullable();
@@ -18,7 +19,7 @@ exports.up = function (knex) {
       table.timestamp('updatedAt').defaultTo(knex.fn.now())
 
       table.foreign('uitvoeringId').references('uitvoeringen.id').onDelete('CASCADE')
-    }).then(() => knex.raw(UUIDTrigger('reserveringen')));
+    });
 };
 
 exports.down = function (knex) {
