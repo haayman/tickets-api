@@ -99,18 +99,18 @@ module.exports = class Ticket extends BaseModel {
   // ========= cache ====================
 
   static async getCache(trx) {
-    if (!_cache || _dirty || trx) {
-      // _cache = await Ticket.query().eager('[prijs,reservering,payment]')
-      // console.log('refresh Ticket cache');
-      _cache = await Ticket.query(trx)
-        .eager('[prijs,payment,reservering]')
-        .where({
-          geannuleerd: false,
-          verkocht: false,
-          deletedAt: null
-        });
-      _dirty = false;
-    }
+    // if (!_cache || _dirty) {
+    // _cache = await Ticket.query().eager('[prijs,reservering,payment]')
+    // console.log('refresh Ticket cache');
+    _cache = await Ticket.query(trx)
+      .eager('[prijs,payment,reservering]')
+      .where({
+        geannuleerd: false,
+        verkocht: false,
+        deletedAt: null
+      });
+    _dirty = false;
+    // }
 
     return _cache;
   }
