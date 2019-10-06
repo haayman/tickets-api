@@ -42,11 +42,11 @@ module.exports = class Log extends Model {
     }
   }
 
-  static async addMessage(reservering, message) {
+  static async addMessage(reservering, message, trx) {
     const trace = stackTrace.get();
     const caller = trace[1];
 
-    await reservering.$relatedQuery('logs', reservering.$transaction()).insert({
+    await reservering.$relatedQuery('logs', trx).insert({
       message: message,
       sourceCode: `${path.basename(
         caller.getFileName()

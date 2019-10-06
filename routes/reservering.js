@@ -195,6 +195,57 @@ router.put('/:id', async (req, res) => {
   });
 });
 
+router.delete('/:id', async (req, res) => {
+  await transaction(Reservering, Ticket, async (Reservering, Ticket, trx) => {
+
+    const query = parseQuery({
+      include: ['tickets', 'payments']
+    }, Reservering);
+
+    const reservering = await query.findById(req.params.id);
+    if (!reservering) {
+      return res.status(404).send('niet gevonden');
+    }
+
+    await Promise.all(
+      reservering.ticketAggregates.map(async (ta) => {
+        await ta.setAantal(Ticket, 0);
+      })
+    );
+
+    // const strReservering = await reservering.toString();
+    await Log.addMessage(reservering, `${reservering} geannuleerd`);
+
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
+    // wacht op verwerking refunds.
+    // pas als terugbetaald is, dan wachtlijst verwerken
+    await reservering.uitvoering.verwerkWachtlijst(trx);
+
+    // nu kunnen er weer tickets doorverkocht zijn
+    await RefundHandler.verwerkRefunds(Reservering, Ticket);
+
+    const refetched = await reservering
+      .$query()
+      .eager(Reservering.getStandardEager());
+    reservering.$set(refetched);
+
+    if (reservering.validTickets.length === 0) {
+      await reservering.$query(trx).delete();
+    } else {
+      // nog niet alles verkocht. Stuur laatste status op
+      await ReserveringMail.send(
+        reservering,
+        'gewijzigd',
+        `${reservering} te koop aangeboden`
+      );
+    }
+
+    res.send('OK');
+  });
+});
+
+
 router.put('/:id/ingenomen', auth(['kassa']), async (req, res) => {
   let id = req.params.id;
   if (!req.params.id) {
@@ -367,50 +418,5 @@ router.get('/:id/qr', async (req, res) => {
 //   res.type('png').send(png);
 // });
 
-router.delete('/:id', async (req, res) => {
-  await transaction(Reservering, Ticket, async (Reservering, Ticket, trx) => {
-
-    const query = parseQuery({
-      include: ['tickets', 'payments']
-    }, Reservering);
-
-    const reservering = await query.findById(req.params.id);
-    if (!reservering) {
-      return res.status(404).send('niet gevonden');
-    }
-
-    await Promise.all(
-      reservering.ticketAggregates.map(async (ta) => {
-        await ta.setAantal(Ticket, 0);
-      })
-    );
-
-    // const strReservering = await reservering.toString();
-    await Log.addMessage(reservering, `${reservering} geannuleerd`);
-
-    await RefundHandler.verwerkRefunds(Reservering, Ticket);
-
-    // wacht op verwerking refunds.
-    // pas als terugbetaald is, dan wachtlijst verwerken
-    await reservering.uitvoering.verwerkWachtlijst(trx);
-
-    // nu kunnen er weer tickets doorverkocht zijn
-    await RefundHandler.verwerkRefunds(Reservering, Ticket);
-
-
-    if (reservering.validTickets.length === 0) {
-      await reservering.query(trx).delete();
-    } else {
-      // nog niet alles verkocht. Stuur laatste status op
-      await ReserveringMail.send(
-        reservering,
-        'gewijzigd',
-        `${reservering} te koop aangeboden`
-      );
-    }
-
-    res.send('OK');
-  });
-});
 
 module.exports = router;

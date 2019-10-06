@@ -98,10 +98,11 @@ module.exports = class RefundHandler {
             );
 
             // als er geen tickets meer over zijn, reservering verwijderen
-            this.reservering.tickets = await this.reservering.$relatedQuery('tickets');
-            if (this.reservering.validTickets.length === 0) {
-              await this.reservering.$query().delete();
-            }
+            // this.reservering.tickets = await this.reservering.$relatedQuery('tickets');
+            // if (this.reservering.validTickets.length === 0) {
+            //   ReserveringMail.send(reservering, 'verwijderd', 'Alle kaarten zijn verkocht')
+            //   // await this.reservering.$query().delete();
+            // }
           }
         } else {
           nonRefundable.push({

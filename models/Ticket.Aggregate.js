@@ -80,7 +80,8 @@ module.exports = class TicketAggregate {
         let tickets = this.validTickets;
         await Log.addMessage(
           this.reservering,
-          `${diff} x ${strPrijs} geannuleerd`
+          `${diff} x ${strPrijs} geannuleerd`,
+          trx
         );
         for (let i = 0; i < diff; i++) {
           let ticket = tickets[i];
@@ -96,13 +97,15 @@ module.exports = class TicketAggregate {
               if (teruggeefbaar) {
                 await Log.addMessage(
                   this.reservering,
-                  `${ticketDescription} terugbetalen`
+                  `${ticketDescription} terugbetalen`,
+                  trx
                 );
                 ticket.terugbetalen = true;
               } else {
                 await Log.addMessage(
                   this.reservering,
-                  `zet te koop ${ticketDescription}`
+                  `zet te koop ${ticketDescription}`,
+                  trx
                 );
                 ticket.tekoop = true;
               }

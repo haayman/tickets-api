@@ -216,9 +216,9 @@ module.exports = class Reservering extends BaseModel {
   }
 
 
-  async haalUitWachtrij() {
+  async haalUitWachtrij(trx) {
     this.wachtlijst = false;
-    await this.patch({
+    await this.$query(trx).patch({
       wachtlijst: false
     });
     await ReserveringMail.send(this, 'uit_wachtlijst', `uit wachtlijst`);
