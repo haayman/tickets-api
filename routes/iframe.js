@@ -12,19 +12,8 @@ const process = require('process');
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const voorstellingen = await Voorstelling.findAll({
-    include: [{
-        association: Voorstelling.Prijzen
-      },
-      {
-        association: Voorstelling.Uitvoeringen
-      }
-    ]
-  });
+  const voorstellingen = await Voorstelling.query().eager('[prijzen,uitvoeringen]');
   const voorstelling = voorstellingen[0];
-  await Promise.all(voorstelling.uitvoeringen.map(async (uitvoering) => {
-    uitvoering.Status = await uitvoering.status();
-  }));
 
   aejs.renderFile(__dirname + '/templates/iframe.ejs', {
     voorstelling,
