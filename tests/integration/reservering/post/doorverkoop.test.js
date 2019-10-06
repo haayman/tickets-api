@@ -144,6 +144,7 @@ describe("/reservering", async () => {
         }]
       })
       expect(res.reservering.body.wachtlijst).toBe(true);
+      const reserveringId2 = res.reservering.body.id;
 
       res = await createReservering(request(app), {
         naam: "In wachtlijst",
@@ -154,6 +155,7 @@ describe("/reservering", async () => {
           aantal: 1
         }]
       })
+      const reserveringId3 = res.reservering.body.id;
 
       expect(res.reservering.body.wachtlijst).toBe(true);
 
@@ -165,6 +167,14 @@ describe("/reservering", async () => {
       expect(sentMail.length).toBe(3);
       expect(sentMail.find(m => m.subject.match(/€20.00 teruggestort/))).toBeTruthy();
       expect(sentMail.filter(m => m.subject.match(/wachtlijst/)).length).toBe(2);
+
+      res = await request(app).get("/api/reservering/" + reserveringId2);
+      expect(res.body.openstaandBedrag).toBe(10);
+
+      res = await request(app).get("/api/uitvoering/" + uitvoeringId);
+      expect(res.body.wachtlijst).toBe(0);
+      expect(res.body.tekoop).toBe(0);
+      expect(res.body.aantal_plaatsen).toBe(2);
     });
 
   })
