@@ -162,18 +162,6 @@ router.put('/:id', async (req, res) => {
 
     if (saldo < 0) {
       await reservering.createPaymentIfNeeded();
-    } else {
-      // if (saldo > 0 && reservering.teruggeefbaar()) {
-      //   // const mixin = require("../models/Refund.mixin");
-      //   // Object.assign(Reservering.prototype, mixin);
-      //   // await reservering.refund();
-      //   await new RefundHandler(reservering).refund();
-      // }
-      await ReserveringMail.send(
-        reservering,
-        'gewijzigd',
-        `Gewijzigde bestelling ${reservering}`
-      );
     }
 
     // geef de Reservering en Ticket binnen deze transactie door
@@ -190,6 +178,14 @@ router.put('/:id', async (req, res) => {
       .$query()
       .eager(Reservering.getStandardEager());
     reservering.$set(refetched);
+
+    if (saldo >= 0) {
+      await ReserveringMail.send(
+        reservering,
+        'gewijzigd',
+        `Gewijzigde bestelling ${reservering}`
+      );
+    }
 
     res.send(reservering);
   });
