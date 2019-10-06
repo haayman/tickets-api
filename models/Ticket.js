@@ -25,6 +25,7 @@ const {
 
 let _cache;
 let _dirty = true;
+let latest_trx = null;
 
 module.exports = class Ticket extends BaseModel {
   static get tableName() {
@@ -98,7 +99,7 @@ module.exports = class Ticket extends BaseModel {
   // ========= cache ====================
 
   static async getCache(trx) {
-    if (!_cache || _dirty) {
+    if (!_cache || _dirty || trx) {
       // _cache = await Ticket.query().eager('[prijs,reservering,payment]')
       // console.log('refresh Ticket cache');
       _cache = await Ticket.query(trx)
@@ -202,7 +203,7 @@ module.exports = class Ticket extends BaseModel {
    * @return {Ticket[]}
    */
   static async tekoop(trx, aantal, uitvoeringId = null) {
-    let tickets = await Ticket.getCache(trx);
+    let tickets = await Ticket.getCache(trx, true);
     tickets = tickets.filter(t => t.tekoop).sort((a, b) => a.updatedAt - b.updatedAt)
     if (uitvoeringId) {
       tickets = tickets.filter(t => t.reservering.uitvoeringId == uitvoeringId);
@@ -255,7 +256,7 @@ module.exports = class Ticket extends BaseModel {
           tekoop: false,
           terugbetalen: true
         });
-        await Log.addMessage(reservering, `${ticket} verkocht`);
+        await Log.addMessage(reservering, `${ticket} verkocht`, trx);
       })
     );
   }
