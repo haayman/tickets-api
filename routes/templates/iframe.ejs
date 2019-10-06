@@ -20,6 +20,7 @@
       margin-right: 0;
       padding: 1em;
     }
+
   </style>
   <script>
     // zet main domain
@@ -28,6 +29,7 @@
     // remove all but the last two elements
     parts.splice(0, parts.length - 2);
     document.domain = parts.join('.');
+
   </script>
 
 </head>
@@ -48,7 +50,7 @@
     <div class="d-flex flex-column">
       <% voorstelling.prijzen.forEach(function(prijs){ %>
       <% if( prijs.prijs ) { %>
-      <span><%= prijs.asString() %>: € <%=prijs.prijs.toFixed(2)%></span>
+      <span><%= prijs %>: € <%=prijs.prijs.toFixed(2)%></span>
       <%}%>
           <%})%>
     </div>
@@ -60,6 +62,12 @@
     <div><%-voorstelling.opmerkingen%></div>
   </div>
   <%}%>
+
+  <div class="row">
+    <label>Wachtlijst</label>
+    <div>Aarzel niet om een plaats op de wachtlijst te nemen. <br>
+      De ervaring leert dat er op het laatst nog veel plaatsen vrij kunnen komen</div>
+  </div>
 
       <div class="row">
         <table class="table ml-0">
@@ -89,7 +97,7 @@
       </a>
     </td>
     <td><%=format(uitvoering.deur_open, "HH:mm", {locale:nl})%></td>
-    <td><%- uitvoering.Status %></td>
+    <td><%- uitvoering.status %></td>
   </tr>
   <%})%>
   </tbody>

@@ -171,28 +171,28 @@ module.exports = class Uitvoering extends BaseModel {
 
   }
 
-  // async status() {
-  //   const gereserveerd = await this.getGereserveerd();
-  //   const wachtlijst = await this.getWachtlijst();
-  //   const vrije_plaatsen = this.aantal_plaatsen - gereserveerd;
-  //   const tekoop = await this.getTekoop();
-  //   let retval;
+  get status() {
+    const wachtlijst = this.wachtlijst();
+    const vrije_plaatsen = this.vrije_plaatsen();
+    const tekoop = this.tekoop();
+    let retval;
 
-  //   if (vrije_plaatsen) {
-  //     retval = `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen == 1 ? '' : 'en'}</span>`
-  //   } else {
-  //     retval = `<b>Uitverkocht</b>`;
-  //   }
+    if (vrije_plaatsen) {
+      retval = `<span>${vrije_plaatsen} vrije plaats${vrije_plaatsen == 1 ? '' : 'en'}</span>`
+    } else {
+      retval = `<b>Uitverkocht</b>`;
+    }
 
-  //   if (!vrije_plaatsen || wachtlijst) {
-  //     retval += ` <span>wachtlijst: ${wachtlijst || 0}</span>`;
-  //   }
-  //   if (tekoop) {
-  //     retval += ` te koop: ${tekoop}`;
-  //   }
+    if (!vrije_plaatsen || wachtlijst) {
+      retval += ` <span>wachtlijst: ${wachtlijst || 0}</span>`;
+    }
+    if (tekoop) {
+      retval += ` te koop: ${tekoop}`;
+    }
 
-  //   return retval;
-  // }
+    return retval;
+  }
+
 
   static get relationMappings() {
     const Reservering = require('./Reservering');
@@ -218,16 +218,3 @@ module.exports = class Uitvoering extends BaseModel {
     }
   }
 }
-
-// // scopes ---------------------------
-
-// models.Uitvoering.addScope('defaultScope', {
-//   include: [{
-//     model: models.Voorstelling,
-//     where: {
-//       active: true
-//     }
-//   }]
-// }, {
-//   override: true
-// })
