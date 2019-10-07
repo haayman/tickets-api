@@ -8,8 +8,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
   <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
   <link rel="stylesheet" type="text/css" href="/css/iframe.css" />
-  <!--<meta http-equiv="refresh" content="10" />-->
-  <!-- elke 10 seconden verversen -->
   <style>
     label {
       min-width: 10em;
@@ -37,9 +35,9 @@
 <body>
   <div>
     <% if( env.NODE_ENV !== 'production') { %>
-    <div class="alert alert-warning">Dit is een test omgeving</div>
+    <div class="alert alert-warning rounded-0 mb-0">Dit is een test omgeving</div>
     <%}%>
-    <div class="card ml-0">
+    <div class="card ml-0 rounded-0">
       <div class="row">
         <label>Locatie</label>
         <div><%-voorstelling.locatie%></div>
@@ -52,7 +50,7 @@
       <% if( prijs.prijs ) { %>
       <span><%= prijs %>: € <%=prijs.prijs.toFixed(2)%></span>
       <%}%>
-          <%})%>
+            <%})%>
     </div>
   </div>
 
@@ -63,25 +61,28 @@
   </div>
   <%}%>
 
-  <div class="row">
-    <label>Wachtlijst</label>
-    <div>Aarzel niet om een plaats op de wachtlijst te nemen. <br>
-      De ervaring leert dat er op het laatst nog veel plaatsen vrij kunnen komen</div>
-  </div>
+    <div class="row">
+      <label>Wachtlijst</label>
+      <div>Aarzel niet om een plaats op de wachtlijst te nemen. <br>
+        De ervaring leert dat er op het laatst nog veel plaatsen vrij kunnen komen</div>
+    </div>
 
-      <div class="row">
-        <table class="table ml-0">
-          <thead>
-            <tr>
-              <th>datum</th>
-              <th></th>
-              <th>aanvang</th>
-              <th>ontvangst</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-  <% voorstelling.uitvoeringen.filter(u => u.aanvang > new Date()).sort((a,b) => a.aanvang - b.aanvang).forEach( function( uitvoering ) {%>
+    <div class="row">
+      <table class="table ml-0">
+        <thead>
+          <tr>
+            <th>datum</th>
+            <th></th>
+            <th>aanvang</th>
+            <th>ontvangst</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        <% voorstelling.uitvoeringen
+          .filter(u => u.aanvang > new Date()) // geen uitvoeringen in het verleden
+          .sort((a,b) => a.aanvang - b.aanvang)
+          .forEach( function( uitvoering ) {%>
   <tr>
     <td>
       <a href="/reserveren/?uitvoeringId=<%=uitvoering.id%>" target="_top">
