@@ -1,4 +1,4 @@
-export function (model) {
+export default function (model) {
   return {
     save: async function () {
       if (!this.id) {
