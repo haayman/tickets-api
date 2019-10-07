@@ -36,24 +36,24 @@
     "serve-favicon": "^2.5.0",
     "stack-trace": "0.0.10",
     "swig-email-templates": "^5.0.1",
+    "uuid": "^3.3.3",
     "webpack": "^4.29.6",
     "winston": "^3.1.0",
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
+    "@babel/core": "^7.0.0",
     "axios-debug-log": "^0.4.0",
+    "babel-core": "7.0.0-bridge.0",
     "cross-env": "^5.2.0",
     "eslint": "^6.3.0",
-    "eslint-plugin-import": "^2.18.2",
-    "eslint-plugin-vue": "^5.2.3",
     "jest": "^23.6.0",
     "jest-serializer-vue": "^2.0.2",
     "nock": "^10.0.2",
     "nodemailer-mock": "^1.3.14",
     "supertest": "^3.3.0",
-    "webpack-dev-server": "^3.8.0",
-    "@babel/core": "^7.0.0",
-    "babel-core": "7.0.0-bridge.0"
+    "webpack": "^4.41.0",
+    "webpack-dev-server": "^3.8.0"
   },
   "jest": {
     "testEnvironment": "node"
