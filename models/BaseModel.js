@@ -13,12 +13,12 @@ module.exports = class extends Model {
     return super.$beforeUpdate(opt, queryContext);
   }
 
-  $formatJson(json) {
-    delete json.createdAt;
-    delete json.updatedAt;
+  // $formatJson(json) {
+  //   delete json.createdAt;
+  //   delete json.updatedAt;
 
-    return json;
-  }
+  //   return json;
+  // }
 
   // bij inserts alle velden die niet in jsonSchema of relationMappings voorkomen verwijderen
   static cleanProperties(json, relations = false) {
