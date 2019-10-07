@@ -203,32 +203,13 @@ module.exports = class Ticket extends BaseModel {
    * @return {Ticket[]}
    */
   static async tekoop(trx, aantal, uitvoeringId = null) {
-    let tickets = await Ticket.getCache(trx, true);
+    let tickets = await Ticket.getCache(trx);
     tickets = tickets.filter(t => t.tekoop).sort((a, b) => a.updatedAt - b.updatedAt)
     if (uitvoeringId) {
       tickets = tickets.filter(t => t.reservering.uitvoeringId == uitvoeringId);
     }
 
-    // const uitvoeringFilter =
-    //   uitvoeringId !== null ? 'AND uitvoeringId=:uitvoering' : '';
-    // const sql = `SELECT * from Ticket
-    //   WHERE reserveringId in (
-    //     SELECT id from reservering WHERE 
-    //       deletedAt IS NULL
-    //       ${uitvoeringFilter}
-    //     )
-    //   AND tekoop=:tekoop
-    //   ORDER BY updatedAt
-    //   LIMIT ${aantal}`;
-
-    // const tickets = await Ticket.query().raw(sql, {
-    //   model: Ticket,
-    //   type: sequelize.QueryTypes.SELECT,
-    //   replacements: {
-    //     tekoop: true,
-    //     uitvoering: uitvoeringId
-    //   }
-    // });
+    // 1e <aantal> tickets
     return tickets.slice(0, aantal);
   }
 
