@@ -2,14 +2,30 @@ const {
   Model
 } = require('objection')
 
+function convertDate(date) {
+  let strDate;
+  if (date instanceof Date) {
+    strDate = date.toISOString()
+  } else if( !date ) {
+    strDate = new Date().toISOString()
+  } else {
+    strDate = date;
+  }
+  return strDate.slice(0, 19).replace('T', ' ');
+}
+
 module.exports = class extends Model {
   $beforeInsert(queryContext) {
-    this.createdAt = new Date() //.toISOString();
+    this.createdAt = convertDate(new Date());
+    this.updatedAt = convertDate(new Date());
+    console.log(this.createdAt);
     return super.$beforeInsert(queryContext);
   }
 
   $beforeUpdate(opt, queryContext) {
-    this.updatedAt = new Date() //.toISOString();
+    console.log({createdAt: this.createdAt})
+    this.createdAt = convertDate(this.createdAt);
+    this.updatedAt = convertDate(new Date());
     return super.$beforeUpdate(opt, queryContext);
   }
 
