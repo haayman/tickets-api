@@ -30,6 +30,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", auth(["admin"]), async (req, res) => {
   try {
+    delete req.body.id; // verwijder id=null
     const voorstelling = await Voorstelling
       .query()
       .allowInsert('[uitvoeringen,prijzen]')
