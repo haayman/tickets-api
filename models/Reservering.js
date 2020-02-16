@@ -3,15 +3,13 @@ const config = require('config');
 const TicketAggregate = require('./Ticket.Aggregate');
 const Payment = require('./Payment');
 
-const ReserveringMail = require("../components/ReserveringMail");
+const ReserveringMail = require('../components/ReserveringMail');
 
 var differenceInCalendarDays = require('date-fns/difference_in_calendar_days');
 const globalData = require('../components/globalData');
 const iban = require('iban');
 const BaseModel = require('./BaseModel');
-const {
-  Model
-} = require('objection');
+const { Model } = require('objection');
 const uuid = require('uuid/v4');
 
 module.exports = class Reservering extends BaseModel {
@@ -54,7 +52,8 @@ module.exports = class Reservering extends BaseModel {
         },
         iban: {
           // @todo: validatie
-          anyOf: [{
+          anyOf: [
+            {
               type: 'string'
             },
             {
@@ -63,7 +62,8 @@ module.exports = class Reservering extends BaseModel {
           ]
         },
         tennamevan: {
-          anyOf: [{
+          anyOf: [
+            {
               type: 'string'
             },
             {
@@ -112,9 +112,9 @@ module.exports = class Reservering extends BaseModel {
 
   get bedrag() {
     // this.ticketAggregates: ticketAggregates
-    return this.ticketAggregates ?
-      this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0) :
-      undefined;
+    return this.ticketAggregates
+      ? this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0)
+      : undefined;
   }
 
   // dummy setter
@@ -154,9 +154,9 @@ module.exports = class Reservering extends BaseModel {
   }
 
   get validTickets() {
-    return this.tickets ?
-      this.tickets.filter((t) => !(t.geannuleerd || t.verkocht)) :
-      undefined;
+    return this.tickets
+      ? this.tickets.filter((t) => !(t.geannuleerd || t.verkocht))
+      : undefined;
   }
 
   /**
@@ -175,9 +175,9 @@ module.exports = class Reservering extends BaseModel {
    * aantal gereserveerde plaatsen
    */
   get aantal() {
-    return this.validTickets === undefined ?
-      undefined :
-      this.validTickets.length;
+    return this.validTickets === undefined
+      ? undefined
+      : this.validTickets.length;
   }
 
   /**
@@ -195,9 +195,9 @@ module.exports = class Reservering extends BaseModel {
   }
 
   get onbetaaldeTickets() {
-    return this.validTickets !== undefined ?
-      this.validTickets.filter((t) => !t.betaald) :
-      undefined;
+    return this.validTickets !== undefined
+      ? this.validTickets.filter((t) => !t.betaald)
+      : undefined;
   }
 
   get moetInWachtrij() {
@@ -214,7 +214,6 @@ module.exports = class Reservering extends BaseModel {
     }
     return this.payments.find((p) => p.refunds).length;
   }
-
 
   async haalUitWachtrij(trx) {
     this.wachtlijst = false;
@@ -322,9 +321,9 @@ module.exports = class Reservering extends BaseModel {
   }
 
   getWebhookRoot() {
-    const root = globalData.get('localtunnel') ?
-      globalData.get('localtunnel') :
-      config.get('server.url');
+    const root = globalData.get('localtunnel')
+      ? globalData.get('localtunnel')
+      : config.get('server.url');
     return root;
   }
 
@@ -430,7 +429,7 @@ module.exports = class Reservering extends BaseModel {
     };
   }
 
-  static getStandardEager() {
-    return '[uitvoering.voorstelling.prijzen,tickets.[payment,prijs],payments]'
+  static getStandardGraph() {
+    return '[uitvoering.voorstelling.prijzen,tickets.[payment,prijs],payments]';
   }
 };
