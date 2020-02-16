@@ -1,12 +1,12 @@
-const express = require("express");
-const User = require("../models/User");
-const config = require("config");
-const jwt = require("jsonwebtoken");
+const express = require('express');
+const User = require('../models/User');
+const config = require('config');
+const jwt = require('jsonwebtoken');
 const checker = require('zxcvbn');
 const router = express.Router();
 
-router.post("/", async (req, res) => {
-  const sendError = function (message = "Onbekende gebruiker of wachtwoord") {
+router.post('/', async (req, res) => {
+  const sendError = function(message = 'Onbekende gebruiker of wachtwoord') {
     return res.status(400).send(message);
   };
 
@@ -20,23 +20,25 @@ router.post("/", async (req, res) => {
   if (!verified) return sendError();
 
   const token = user.getAuthToken();
-  res.header({
-    authorization: token
-  }).send(user);
+  res
+    .header({
+      authorization: token
+    })
+    .send(user);
 });
 
-router.get("/CheckLoggedIn", async (req, res) => {
+router.get('/CheckLoggedIn', async (req, res) => {
   let user = null,
     error = null;
-  let token = req.header("x-auth-token");
+  let token = req.header('x-auth-token');
   if (token) {
     try {
-      const data = jwt.verify(token, config.get("jwtPrivateKey"));
+      const data = jwt.verify(token, config.get('jwtPrivateKey'));
       // console.log('checkLoggedIn', data);
       user = await User.query().findById(data.id);
       if (user.tokenExpired(data.timestamp)) {
         user = token = null;
-        error = "token expired";
+        error = 'token expired';
       } else {
         token = user.getAuthToken(); // refresh token
         // console.log('refresh token', token);
@@ -49,25 +51,24 @@ router.get("/CheckLoggedIn", async (req, res) => {
   }
 
   // console.log('header.authorization', token);
-  res.header({
-    authorization: token,
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    Pragma: 'no-cache',
-    Expires: 0
-  }).send({
-    error: error,
-    loggedIn: !!user,
-    user: user
-  });
+  res
+    .header({
+      authorization: token,
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: 0
+    })
+    .send({
+      error: error,
+      loggedIn: !!user,
+      user: user
+    });
 });
 
-router.post("/checkPassword", async (req, res) => {
-  const {
-    password,
-    userInputs
-  } = req.body;
+router.post('/checkPassword', async (req, res) => {
+  const { password, userInputs } = req.body;
   const result = checker(password, userInputs);
   return res.send(result);
-})
+});
 
 module.exports = router;

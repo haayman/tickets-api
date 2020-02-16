@@ -15,13 +15,11 @@
   'terugbetaald'
   'verkocht'
 */
-const REFRESH_CACHE = 5 // minutes
+const REFRESH_CACHE = 5; // minutes
 const BaseModel = require('./BaseModel');
 const Log = require('./Log');
 
-const {
-  Model
-} = require('objection');
+const { Model } = require('objection');
 
 let _cache;
 let _dirty = true;
@@ -92,7 +90,7 @@ module.exports = class Ticket extends BaseModel {
   // voorkom recursie
   $formatJson(json) {
     delete json.reservering;
-    // delete json.ticket; // 
+    // delete json.ticket; //
     return json;
   }
 
@@ -100,10 +98,10 @@ module.exports = class Ticket extends BaseModel {
 
   static async getCache(trx) {
     // if (!_cache || _dirty) {
-    // _cache = await Ticket.query().eager('[prijs,reservering,payment]')
+    // _cache = await Ticket.query().withGraphFetched('[prijs,reservering,payment]')
     // console.log('refresh Ticket cache');
     _cache = await Ticket.query(trx)
-      .eager('[prijs,payment,reservering]')
+      .withGraphFetched('[prijs,payment,reservering]')
       .where({
         geannuleerd: false,
         verkocht: false,
@@ -137,23 +135,22 @@ module.exports = class Ticket extends BaseModel {
     // Ticket.getCache();
   }
 
-
   $afterUpdate() {
     _dirty = true;
     // Ticket.getCache();
   }
   // /========= cache ====================
 
-  static get modifiers() {
-    return {
-      tekoop(builder) {
-        builder.where('tekoop', '=', true);
-      },
-      valid(builder) {
-        builder.where('geannuleerd', '=', false).where('verkocht', '=', false);
-      }
-    };
-  }
+  // static get modifiers() {
+  //   return {
+  //     tekoop(builder) {
+  //       builder.where('tekoop', '=', true);
+  //     },
+  //     valid(builder) {
+  //       builder.where('geannuleerd', '=', false).where('verkocht', '=', false);
+  //     }
+  //   };
+  // }
 
   toString() {
     return `1x ${this.prijs}`;
@@ -198,15 +195,20 @@ module.exports = class Ticket extends BaseModel {
 
   /**
    * welke tickets staan te koop voor deze Uitvoering
+   * @param {transaction} trx
    * @param {number} aantal
    * @param {number} uitvoeringId
    * @return {Ticket[]}
    */
   static async tekoop(trx, aantal, uitvoeringId = null) {
     let tickets = await Ticket.getCache(trx);
-    tickets = tickets.filter(t => t.tekoop).sort((a, b) => a.updatedAt - b.updatedAt)
+    tickets = tickets
+      .filter((t) => t.tekoop)
+      .sort((a, b) => a.updatedAt - b.updatedAt);
     if (uitvoeringId) {
-      tickets = tickets.filter(t => t.reservering.uitvoeringId == uitvoeringId);
+      tickets = tickets.filter(
+        (t) => t.reservering.uitvoeringId == uitvoeringId
+      );
     }
 
     // 1e <aantal> tickets
@@ -216,7 +218,9 @@ module.exports = class Ticket extends BaseModel {
   /**
    * Verkoop {aantal} tickets
    * @async
+   * @param {transaction} trx
    * @param {number} aantal
+   * @param {number} uitvoeringId
    */
 
   static async verwerkTekoop(trx, aantal, uitvoeringId = null) {

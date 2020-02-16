@@ -10,7 +10,7 @@ const router = express.Router();
 router.get("/", auth(true), async (req, res) => {
   let params = req.query;
 
-  const query = parseQuery(Log.query().allowEager('[reservering]'), params)
+  const query = parseQuery(Log.query().allowGraph('[reservering]'), params)
   const logs = await query.orderBy('id', 'desc');
   res.send(logs.results);
 });
