@@ -1,16 +1,15 @@
-const jwt = require("jsonwebtoken");
-const config = require("config");
+const jwt = require('jsonwebtoken');
+const config = require('config');
 const Password = require('objection-password')();
-const ROLES = ["admin", "speler", "kassa"];
-const crypto = require("crypto");
-const differenceInMinutes = require('date-fns/difference_in_minutes');
+const ROLES = ['admin', 'speler', 'kassa'];
+const crypto = require('crypto');
+const differenceInMinutes = require('date-fns/differenceInMinutes');
 const BaseModel = require('./BaseModel');
-
 
 module.exports = class User extends Password(BaseModel) {
   static get tableName() {
-    return 'users'
-  };
+    return 'users';
+  }
 
   static get jsonSchema() {
     return {
@@ -38,7 +37,7 @@ module.exports = class User extends Password(BaseModel) {
           enum: ROLES
         }
       }
-    }
+    };
   }
 
   $formatJson(json) {
@@ -49,8 +48,8 @@ module.exports = class User extends Password(BaseModel) {
   }
 
   /**
-   * 
-   * @param {string} password 
+   *
+   * @param {string} password
    * @returns {Promise}
    */
   checkPassword(password) {
@@ -59,18 +58,19 @@ module.exports = class User extends Password(BaseModel) {
   }
 
   getAuthToken() {
-    return jwt.sign({
+    return jwt.sign(
+      {
         id: this.id,
         role: this.role,
         timestamp: new Date()
       },
-      config.get("jwtPrivateKey")
+      config.get('jwtPrivateKey')
     );
   }
 
   /**
    * determines whether timestamp is older than 60 minutes
-   * @param {*} timestamp 
+   * @param {*} timestamp
    */
   tokenExpired(timestamp) {
     return differenceInMinutes(new Date(), new Date(timestamp)) >= 60;
@@ -78,51 +78,46 @@ module.exports = class User extends Password(BaseModel) {
 
   getEditLink() {
     return (
-      config.get('server.url') +
-      "/forgotten/" +
-      this.id +
-      "/" +
-      this.getHash()
+      config.get('server.url') + '/forgotten/' + this.id + '/' + this.getHash()
     );
   }
 
   getHash() {
     return (
       crypto
-      .createHash("sha1")
-      .update("" + this.id) // convert to string
-      .update(this.email)
-      // .update(this.password)
-      .digest("hex")
+        .createHash('sha1')
+        .update('' + this.id) // convert to string
+        .update(this.email)
+        // .update(this.password)
+        .digest('hex')
     );
   }
 
   isAdministrator() {
-    return this.role === "admin";
+    return this.role === 'admin';
   }
 
   isSpeler() {
-    return this.role === "speler" || this.isAdministrator();
+    return this.role === 'speler' || this.isAdministrator();
   }
 
   isKassa() {
-    return this.role === "kassa";
+    return this.role === 'kassa';
   }
 
   isAuthorized(authorizationRequired) {
     switch (authorizationRequired) {
       case true:
         return true;
-      case "admin":
+      case 'admin':
         return this.isAdministrator();
-      case "speler":
+      case 'speler':
         return this.isSpeler();
-      case "kassa":
+      case 'kassa':
         return this.isKassa();
     }
   }
-
-}
+};
 
 // let User = sequelize.define(
 //   "User", {
