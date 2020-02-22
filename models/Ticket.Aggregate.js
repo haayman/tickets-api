@@ -6,7 +6,7 @@ module.exports = class TicketAggregate {
     this.reservering = reservering;
     this.prijs = prijs;
     this.tickets = tickets;
-    this.trx = reservering.$transaction();
+    this.trx = reservering.$knex();
   }
 
   get aantal() {
@@ -128,8 +128,9 @@ module.exports = class TicketAggregate {
   }
 
   get validTickets() {
-    return this.tickets ?
-      this.tickets.filter((t) => !(t.geannuleerd || t.verkocht)) : [];
+    return this.tickets
+      ? this.tickets.filter((t) => !(t.geannuleerd || t.verkocht))
+      : [];
   }
 
   get aantalBetaald() {

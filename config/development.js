@@ -16,7 +16,7 @@ module.exports = {
       password: 'lekker grote database'
 
     },
-    debug: true
+    debug: false
   },
 
   server: {
