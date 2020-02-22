@@ -3,13 +3,18 @@ const path = require("path");
 module.exports = {
   name: "PlusLeo tickets",
   database: {
-    client: "sqlite3",
+    client: 'mysql',
     connection: {
-      filename: path.resolve(__dirname, "..", "..", "data", "knex.sqlite")
+      host: 'linux',
+      user: 'plusleo',
+      database: 'plusleo_tickets',
+      password: 'lekker grote database'
+
     },
-    useNullAsDefault: true
+    debug: false
   },
-  namespace: "PlusLeoDbNamespace", // t.b.v transacties
+
+    namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
     url: "https://kaarten.plusleo.nl",
