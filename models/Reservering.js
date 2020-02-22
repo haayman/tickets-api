@@ -5,7 +5,7 @@ const Payment = require('./Payment');
 
 const ReserveringMail = require('../components/ReserveringMail');
 
-var differenceInCalendarDays = require('date-fns/difference_in_calendar_days');
+var differenceInCalendarDays = require('date-fns/differenceInCalendarDays');
 const globalData = require('../components/globalData');
 const iban = require('iban');
 const BaseModel = require('./BaseModel');
