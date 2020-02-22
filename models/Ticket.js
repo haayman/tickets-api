@@ -23,7 +23,6 @@ const { Model } = require('objection');
 
 let _cache;
 let _dirty = true;
-let latest_trx = null;
 
 module.exports = class Ticket extends BaseModel {
   static get tableName() {
@@ -97,23 +96,31 @@ module.exports = class Ticket extends BaseModel {
   // ========= cache ====================
 
   static async getCache(trx) {
-    // if (!_cache || _dirty) {
-    // _cache = await Ticket.query().withGraphFetched('[prijs,reservering,payment]')
-    // console.log('refresh Ticket cache');
-    _cache = await Ticket.query(trx)
-      .withGraphFetched('[prijs,payment,reservering]')
-      .where({
-        geannuleerd: false,
-        verkocht: false,
-        deletedAt: null
-      });
-    _dirty = false;
-    // }
+    if (!trx) {
+      debugger;
+      console.log('geen transactie');
+    }
+    if (!_cache || _dirty) {
+      // _cache = await Ticket.query().withGraphFetched(
+      //   '[prijs,reservering,payment]'
+      // );
+      // console.log('refresh Ticket cache');
+      _cache = await Ticket.query(trx)
+        .withGraphFetched('[prijs,payment,reservering]')
+        .where({
+          geannuleerd: false,
+          verkocht: false,
+          deletedAt: null
+        });
+      _dirty = false;
+    } else {
+      // console.log('cache is clean');
+    }
 
     return _cache;
   }
 
-  async $afterGet(queryContext) {
+  async $afterFind(queryContext) {
     if (!this.payment) {
       this.payment = await this.$relatedQuery('payment');
     }
@@ -125,19 +132,19 @@ module.exports = class Ticket extends BaseModel {
     // }
   }
 
-  $afterDelete() {
+  $afterDelete(queryContext) {
     _dirty = true;
-    // Ticket.getCache();
+    // Ticket.getCache(queryContext.transaction);
   }
 
-  $afterInsert() {
+  $afterInsert(queryContext) {
     _dirty = true;
-    // Ticket.getCache();
+    // Ticket.getCache(queryContext.transaction);
   }
 
-  $afterUpdate() {
+  $afterUpdate(queryContext) {
     _dirty = true;
-    // Ticket.getCache();
+    // Ticket.getCache(queryContext.transaction);
   }
   // /========= cache ====================
 

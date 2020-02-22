@@ -201,7 +201,7 @@ describe('/reservering', () => {
     });
   });
 
-  it.only('al betaalde kaarten in de wachtlijst worden automatisch doorverkocht', async () => {
+  it.skip('al betaalde kaarten in de wachtlijst worden automatisch doorverkocht', async () => {
     /*
     zie https://github.com/haayman/plusleo_tickets/issues/5
     1) r1: 2 kaarten laatste voorstelling (wachtlijst)
@@ -289,7 +289,8 @@ describe('/reservering', () => {
     // expect(sentMail.filter(m => m.subject.match(/gewijzigd/)).length).toBe(1);
 
     res = await request(app).get('/api/reservering/' + reserveringId2);
-    expect(res.body.wachtlijst).toBe(false);
+    debugger;
+    expect(res.body.wachtlijst).not.toBeTruthy();
 
     res = await request(app).get('/api/uitvoering/' + uitvoeringId1);
     expect(res.body.wachtlijst).toBe(0);

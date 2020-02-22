@@ -74,8 +74,8 @@ module.exports = class Uitvoering extends BaseModel {
   /**
    * na het lezen lijst met tickets uit de cache
    */
-  async $afterGet() {
-    await this.getTickets();
+  async $afterGet(queryContext) {
+    await this.getTickets(queryContext.transaction);
   }
 
   gereserveerd(reservering_id = 0) {

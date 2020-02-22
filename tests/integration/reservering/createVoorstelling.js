@@ -1,6 +1,6 @@
 const { Voorstelling } = require('../../../models');
 
-const addDays = require('date-fns/add_days');
+const addDays = require('date-fns/addDays');
 
 module.exports = async function() {
   const voorstelling = await Voorstelling.query()
