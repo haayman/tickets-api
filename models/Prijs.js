@@ -44,6 +44,19 @@ module.exports = class Prijs extends BaseModel {
     return this.description;
   }
 
+    /**
+   * zorg er voor dat prijs numeriek is
+   * @param {*} json
+   * @param {*} opt
+   */
+  $parseJson(json, opt) {
+    json = super.$parseJson(json, opt);
+    json.prijs = +json.prijs;
+
+   return json;
+  }
+
+
   static get relationMappings() {
     const Voorstelling = require('./Voorstelling');
     return {

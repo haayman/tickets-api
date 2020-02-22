@@ -8,7 +8,7 @@ const {
   User
 } = require('../models');
 
-module.exports = function (req, res, next) {
+module.exports = async function (req, res, next) {
   const token = req.get("x-auth-token");
   let user = null;
   if (token) {
@@ -16,6 +16,6 @@ module.exports = function (req, res, next) {
       user = jwt.verify(token, config.get("jwtPrivateKey"));
     } catch (e) {}
   }
-  res.locals.user = user; // ? User.fromJson(user) : user;
+  res.locals.user = User.fromJson(user,{skipValidation:true})
   next();
 };

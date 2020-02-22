@@ -1,32 +1,32 @@
 /**
- * 
- * @param {QueryBuilder} query 
- * @param {{include:[table,...],order:['column']}} params 
+ *
+ * @param {QueryBuilder} query
+ * @param {{include:[table,...],order:['column']}} params
  */
 function parseQuery(query, params) {
   if (params.include) {
-    const eager = JSON.stringify(params.include).replace(/\"/g, '');
+    const withGraphFetched = JSON.stringify(params.include).replace(/\"/g, '');
 
-    query.eager(eager);
+    query.withGraphJoined(withGraphFetched);
   }
 
   if (params.order) {
     if (!Array.isArray(params.order)) {
       params.order = [params.order];
     }
-    params.order.forEach(p => {
+    params.order.forEach((p) => {
       const matches = p.match(/^-(.+$)/);
       if (matches) {
-        query.orderBy(matches[1], 'desc')
+        query.orderBy(matches[1], 'desc');
       } else {
         query.orderBy(p);
       }
-    })
+    });
   }
   if (params.limit) {
-    query.page(+(params.offset) || 0, +(params.limit));
+    query.page(+params.offset || 0, +params.limit);
   }
-  return query
+  return query;
 }
 
 module.exports = parseQuery;

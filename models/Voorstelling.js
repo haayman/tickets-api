@@ -49,8 +49,9 @@ module.exports = class Voorstelling extends BaseModel {
 
   $formatJson(json) {
     json = super.$formatJson(json);
+
     if (json.prijzen) {
-			// aflopende volgorde
+      // aflopende volgorde
       json.prijzen = json.prijzen.sort((a, b) => b.prijs - a.prijs);
     }
 

@@ -1,8 +1,4 @@
-const {
-  Reservering,
-  Ticket,
-  Log
-} = require('.');
+const { Reservering, Ticket, Log } = require('.');
 const ReserveringMail = require('../components/ReserveringMail');
 const config = require('config');
 
@@ -88,7 +84,8 @@ module.exports = class RefundHandler {
             await ReserveringMail.send(
               this.reservering,
               'teruggestort',
-              `${paymentDescription} teruggestort`, {
+              `${paymentDescription} teruggestort`,
+              {
                 bedrag: amount
               }
             );
@@ -124,7 +121,8 @@ module.exports = class RefundHandler {
         await ReserveringMail.send(
           this.reservering,
           'terugbetalen_penningmeester',
-          'Verzoek tot terugstorting', {
+          'Verzoek tot terugstorting',
+          {
             to: config.get('penningmeester')
           }
         );
@@ -170,12 +168,12 @@ module.exports = class RefundHandler {
 
   static async verwerkRefunds(Reservering, Ticket) {
     const reserveringen = await Reservering.query()
-      .eager(Reservering.getStandardEager())
+      .withGraphFetched(Reservering.getStandardGraph())
       .whereIn(
         'id',
         Ticket.query()
-        .select('reserveringId')
-        .where('terugbetalen', true)
+          .select('reserveringId')
+          .where('terugbetalen', true)
       );
 
     await Promise.all(

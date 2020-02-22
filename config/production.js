@@ -11,4 +11,7 @@ module.exports = {
     url: "https://kaarten.plusleo.nl",
     port: 3000
   },
+    email: {
+	bcc: "info@plusleo.nl"
+    }
 };

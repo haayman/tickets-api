@@ -1,16 +1,9 @@
 'use strict';
 const auth = require('../middleware/auth');
 const express = require('express');
-const {
-  transaction
-} = require('objection');
+const { transaction } = require('objection');
 
-const {
-  Reservering,
-  Prijs,
-  Ticket,
-  Log
-} = require('../models');
+const { Reservering, Prijs, Ticket, Log } = require('../models');
 const TicketAggregate = require('../models/Ticket.Aggregate');
 const ReserveringMail = require('../components/ReserveringMail');
 const RefundHandler = require('../models/RefundHandler');
@@ -18,20 +11,16 @@ const parseQuery = require('./helpers/parseReserveringQuery');
 
 const router = express.Router();
 
-router.get(
-  '/',
-  auth(true),
-  async (req, res) => {
-    let query = parseQuery(req.query);
-    if (req.query.uitvoeringId) {
-      query.where('uitvoeringId', req.query.uitvoeringId);
-    }
-
-    let reserveringen = await query;
-
-    res.send(reserveringen);
+router.get('/', auth(true), async (req, res) => {
+  let query = parseQuery(req.query);
+  if (req.query.uitvoeringId) {
+    query.where('uitvoeringId', req.query.uitvoeringId);
   }
-);
+
+  let reserveringen = await query;
+
+  res.send(reserveringen);
+});
 
 router.get('/:id', async (req, res) => {
   const query = parseQuery(req.query);
@@ -49,65 +38,74 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  await transaction(Reservering, Prijs, Ticket, async (Reservering, Prijs, Ticket, trx) => {
-    /** @type {Reservering} */
-    let data = Reservering.cleanProperties(req.body);
-    // data.id = uuid();
-    let reservering = await Reservering.query().insertAndFetch(data);
-    reservering.uitvoering = await reservering.$relatedQuery('uitvoering');
-    reservering.ticketAggregates = [];
-    await Promise.all(
-      req.body.tickets.map(async (t) => {
-        const prijs = await Prijs.query().findById(t.prijs.id);
-        const ta = new TicketAggregate(reservering, prijs);
-        await ta.setAantal(Ticket, t.aantal);
-        reservering.ticketAggregates.push(ta);
-      })
-    );
-
-    const refetched = await reservering
-      .$query()
-      .eager(Reservering.getStandardEager());
-    reservering.$set(refetched);
-
-    // kassa-betaling
-    if (res.locals.user && req.body.betaald === true) {
+  await transaction(
+    Reservering,
+    Prijs,
+    Ticket,
+    async (Reservering, Prijs, Ticket, trx) => {
+      /** @type {Reservering} */
+      let data = Reservering.cleanProperties(req.body);
+      // data.id = uuid();
+      let reservering = await Reservering.query().insertAndFetch(data);
+      reservering.uitvoering = await reservering.$relatedQuery('uitvoering');
+      reservering.ticketAggregates = [];
       await Promise.all(
-        reservering.onbetaaldeTickets.map(async (ticket) => {
-          ticket.betaald = true;
-          await ticket.save();
+        req.body.tickets.map(async (t) => {
+          const prijs = await Prijs.query().findById(t.prijs.id);
+          const ta = new TicketAggregate(reservering, prijs);
+          await ta.setAantal(Ticket, t.aantal);
+          reservering.ticketAggregates.push(ta);
         })
       );
+
+      const refetched = await reservering
+        .$query()
+        .withGraphFetched(Reservering.getStandardGraph());
+      reservering.$set(refetched);
+
+      // kassa-betaling
+      if (res.locals.user && req.body.betaald === true) {
+        await Promise.all(
+          reservering.onbetaaldeTickets.map(async (ticket) => {
+            ticket.betaald = true;
+            await ticket.save();
+          })
+        );
+      }
+
+      reservering.wachtlijst = reservering.moetInWachtrij;
+      if (reservering.wachtlijst) {
+        await reservering.$query().patch({
+          wachtlijst: reservering.wachtlijst
+        });
+      }
+
+      await reservering.createPaymentIfNeeded();
+      //await reservering.save();
+
+      const saldo = reservering.saldo;
+      const strReservering = reservering.toString();
+      if (!saldo) {
+        // vrijkaartjes
+        await ReserveringMail.send(reservering, 'ticket', strReservering);
+      } else if (reservering.wachtlijst) {
+        await ReserveringMail.send(
+          reservering,
+          'wachtlijst',
+          'Je staat op de wachtlijst'
+        );
+      } else {
+        await ReserveringMail.send(
+          reservering,
+          'aangevraagd',
+          'kaarten besteld'
+        );
+      }
+
+      await RefundHandler.verwerkRefunds(Reservering, Ticket);
+      res.send(reservering);
     }
-
-    reservering.wachtlijst = reservering.moetInWachtrij;
-    if (reservering.wachtlijst) {
-      await reservering.$query().patch({
-        wachtlijst: reservering.wachtlijst
-      });
-    }
-
-    await reservering.createPaymentIfNeeded();
-    //await reservering.save();
-
-    const saldo = reservering.saldo;
-    const strReservering = reservering.toString();
-    if (!saldo) {
-      // vrijkaartjes
-      await ReserveringMail.send(reservering, 'ticket', strReservering);
-    } else if (reservering.wachtlijst) {
-      await ReserveringMail.send(
-        reservering,
-        'wachtlijst',
-        'Je staat op de wachtlijst'
-      );
-    } else {
-      await ReserveringMail.send(reservering, 'aangevraagd', 'kaarten besteld');
-    }
-
-    await RefundHandler.verwerkRefunds(Reservering, Ticket);
-    res.send(reservering);
-  });
+  );
 });
 
 router.put('/:id', async (req, res) => {
@@ -118,10 +116,13 @@ router.put('/:id', async (req, res) => {
       return res.status(400).send('no id');
     }
 
-    const query = parseQuery({
-      include: ['tickets', 'payments']
-    }, Reservering);
-    const eagerObject = query.eagerObject();
+    const query = parseQuery(
+      {
+        include: ['tickets']
+      },
+      Reservering
+    );
+    const graphExpressionObject = query.graphExpressionObject();
 
     let reservering = await query.findById(id);
     if (!reservering) {
@@ -134,9 +135,15 @@ router.put('/:id', async (req, res) => {
     }
 
     let data = Reservering.cleanProperties(req.body);
-    reservering = await query.eager(eagerObject).patchAndFetchById(id, data);
+    reservering = await query
+      .withGraphFetched(graphExpressionObject)
+      .patchAndFetchById(id, data);
     if (!reservering.ticketAggregates) {
-      reservering.ticketAggregates = TicketAggregate.factory(reservering, reservering.uitvoering, reservering.tickets);
+      reservering.ticketAggregates = TicketAggregate.factory(
+        reservering,
+        reservering.uitvoering,
+        reservering.tickets
+      );
     }
 
     if (req.body.tickets) {
@@ -176,7 +183,7 @@ router.put('/:id', async (req, res) => {
 
     const refetched = await reservering
       .$query()
-      .eager(Reservering.getStandardEager());
+      .withGraphFetched(Reservering.getStandardGraph());
     reservering.$set(refetched);
 
     if (saldo >= 0) {
@@ -193,10 +200,12 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   await transaction(Reservering, Ticket, async (Reservering, Ticket, trx) => {
-
-    const query = parseQuery({
-      include: ['tickets', 'payments']
-    }, Reservering);
+    const query = parseQuery(
+      {
+        include: ['tickets', 'payments']
+      },
+      Reservering
+    );
 
     const reservering = await query.findById(req.params.id);
     if (!reservering) {
@@ -223,7 +232,7 @@ router.delete('/:id', async (req, res) => {
 
     const refetched = await reservering
       .$query()
-      .eager(Reservering.getStandardEager());
+      .withGraphFetched(Reservering.getStandardGraph());
     reservering.$set(refetched);
 
     if (reservering.validTickets.length === 0) {
@@ -240,7 +249,6 @@ router.delete('/:id', async (req, res) => {
     res.send('OK');
   });
 });
-
 
 router.put('/:id/ingenomen', auth(['kassa']), async (req, res) => {
   let id = req.params.id;
@@ -344,7 +352,8 @@ router.post('/:id/terugbetaald', auth(['admin']), async (req, res) => {
     await ReserveringMail.send(
       reservering,
       'terugbetaald',
-      `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`, {
+      `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`,
+      {
         bedrag: bedrag
       }
     );
@@ -413,6 +422,5 @@ router.get('/:id/qr', async (req, res) => {
 //   });
 //   res.type('png').send(png);
 // });
-
 
 module.exports = router;
