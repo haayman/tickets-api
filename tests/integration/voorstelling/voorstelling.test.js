@@ -9,11 +9,7 @@ beforeAll(async () => {
   authToken = getAuthToken();
 });
 
-afterAll(async () => {
-  Voorstelling.knex().destroy();
-});
-
-afterEach(async () => {
+beforeEach(async () => {
   await Voorstelling.query().delete();
 });
 

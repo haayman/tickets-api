@@ -1,3 +1,4 @@
+jest.setTimeout(3000000);
 const request = require('supertest');
 let app = require('../../app');
 const User = require('../../models/User');
@@ -9,11 +10,7 @@ beforeAll(async () => {
   authToken = getAuthToken();
 });
 
-afterAll(async () => {
-  User.knex().destroy();
-});
-
-afterEach(async () => {
+beforeEach(async () => {
   await User.query().delete();
 });
 
@@ -39,7 +36,7 @@ describe('/api/user', () => {
         ];
         await Promise.all(
           users.map(async (user) => {
-            user = await User.query().insertGraphAndFetch(user);
+            user = await User.query().insertAndFetch(user);
           })
         );
       } catch (ex) {
@@ -56,7 +53,7 @@ describe('/api/user', () => {
 
     describe('/GET/id', () => {
       it('should return specific user', async () => {
-        let user = await User.query().insertGraphAndFetch({
+        let user = await User.query().insertAndFetch({
           username: 'user1',
           name: 'User 1',
           email: 'user@plusleo.nl',
@@ -64,6 +61,7 @@ describe('/api/user', () => {
           role: 'speler'
         });
 
+        debugger;
         const id = user.id;
         const res = await request(app)
           .get('/api/user/' + id)
