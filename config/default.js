@@ -1,7 +1,7 @@
-const path = require("path");
+const path = require('path');
 
 module.exports = {
-  name: "PlusLeo tickets",
+  name: 'PlusLeo tickets',
   database: {
     client: 'mysql',
     connection: {
@@ -17,20 +17,20 @@ module.exports = {
     namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
-    url: "https://kaarten.plusleo.nl",
+    url: 'https://kaarten.plusleo.nl',
     port: 3000
   },
   mail_transport: {
     debug: false,
-    logger: true,
+    // logger: true,
     sendmail: true,
-    path: "/usr/sbin/sendmail"
+    path: '/usr/sbin/sendmail'
   },
   email: {
-    afzender: "PlusLeo",
-    afzender_email: "info@plusleo.nl",
+    afzender: 'PlusLeo',
+    afzender_email: 'info@plusleo.nl',
     //    alwaysTo: "arjen.haayman@gmail.com",
-    subject_prefix: "[PlusLeo]",
+    subject_prefix: '[PlusLeo]'
   },
 
   // mail-adres voor teruggave-verzoeken

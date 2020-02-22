@@ -11,7 +11,8 @@ function convertDate(date) {
   } else if (!date) {
     strDate = new Date().toISOString();
   } else {
-    strDate = date;
+    // convert the string to a date and then to isostring
+    strDate = new Date(date).toISOString();
   }
   return strDate.slice(0, 19).replace('T', ' ');
 }
