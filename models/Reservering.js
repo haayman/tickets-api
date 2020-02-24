@@ -1,6 +1,6 @@
 const config = require('config');
 
-const TicketAggregate = require('./Ticket.Aggregate');
+const TicketAggregator = require('../helpers/TicketAggregator');
 const Payment = require('./Payment');
 
 const ReserveringMail = require('../components/ReserveringMail');
@@ -11,6 +11,7 @@ const iban = require('iban');
 const BaseModel = require('./BaseModel');
 const { Model } = require('objection');
 const uuid = require('uuid/v4');
+const assert = require('assert');
 
 module.exports = class Reservering extends BaseModel {
   static get tableName() {
@@ -82,14 +83,6 @@ module.exports = class Reservering extends BaseModel {
     this.id = uuid();
   }
 
-  // set id(value) {
-  //   console.log('SETID ==> ', value)
-  //   this._id = value;
-  // }
-  // get id() {
-  //   return this._id;
-  // }
-
   toString() {
     return `${this.aantal}x ${this.uitvoering}`;
   }
@@ -106,14 +99,14 @@ module.exports = class Reservering extends BaseModel {
       'aantal',
       'paymentUrl',
       'teruggeefbaar',
-      'onbetaaldeTickets'
+      'onbetaaldeTickets',
+      'ticketAggregates'
     ];
   }
 
   get bedrag() {
-    // this.ticketAggregates: ticketAggregates
-    return this.ticketAggregates
-      ? this.ticketAggregates.reduce((bedrag, t) => bedrag + t.getBedrag(), 0)
+    return this.tickets
+      ? this.validTickets.reduce((bedrag, t) => bedrag + t.bedrag, 0)
       : undefined;
   }
 
@@ -142,9 +135,12 @@ module.exports = class Reservering extends BaseModel {
     }, 0);
 
     // bereken kosten van alle te betalen tickets
-    saldo = this.ticketAggregates.reduce((saldo, ta) => {
-      return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
-    }, saldo);
+    saldo = this.validTickets
+      .filter((t) => !t.tekoop)
+      .reduce((saldo, t) => saldo - t.bedrag, saldo);
+    // saldo = this.TicketHandlers.reduce((saldo, ta) => {
+    //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
+    // }, saldo);
 
     return saldo;
   }
@@ -156,28 +152,28 @@ module.exports = class Reservering extends BaseModel {
   get validTickets() {
     return this.tickets
       ? this.tickets.filter((t) => !(t.geannuleerd || t.verkocht))
-      : undefined;
+      : [];
+  }
+
+  /**
+   * alle tickets die te koop staan
+   */
+  get tekoop() {
+    return this.validTickets.filter((t) => t.tekoop);
   }
 
   /**
    * het bedrag dat teveel is betaald
    */
   get tegoed() {
-    if (!this.validTickets) return undefined;
-
-    return this.validTickets.reduce(
-      (tegoed, ticket) => tegoed + ticket.tegoed,
-      0
-    );
+    return this.tekoop.reduce((tegoed, t) => tegoed + t.bedrag, 0);
   }
 
   /**
    * aantal gereserveerde plaatsen
    */
   get aantal() {
-    return this.validTickets === undefined
-      ? undefined
-      : this.validTickets.length;
+    return this.validTickets.length;
   }
 
   /**
@@ -195,15 +191,11 @@ module.exports = class Reservering extends BaseModel {
   }
 
   get onbetaaldeTickets() {
-    return this.validTickets !== undefined
-      ? this.validTickets.filter((t) => !t.betaald)
-      : undefined;
+    return this.validTickets.filter((t) => !t.betaald);
   }
 
   get moetInWachtrij() {
-    if (!this.uitvoering) {
-      return undefined;
-    }
+    assert.ok(this.uitvoering);
     const vrije_plaatsen = this.uitvoering.vrije_plaatsen(this.id);
     return vrije_plaatsen < this.aantal;
   }
@@ -212,10 +204,17 @@ module.exports = class Reservering extends BaseModel {
     if (!this.payments) {
       return undefined;
     }
+
     return this.payments.find((p) => p.refunds).length;
   }
 
+  get ticketAggregates() {
+    const ta = new TicketAggregator(this);
+    return Object.values(ta.aggregates);
+  }
+
   async haalUitWachtrij(trx) {
+    assert.ok(trx);
     this.wachtlijst = false;
     await this.$query(trx).patch({
       wachtlijst: false
@@ -228,8 +227,7 @@ module.exports = class Reservering extends BaseModel {
   }
 
   get paymentUrl() {
-    let url;
-    if (this.payments === undefined) {
+    if (!this.payments) {
       return undefined;
     }
     let payment;
@@ -248,8 +246,8 @@ module.exports = class Reservering extends BaseModel {
   }
 
   async createPaymentIfNeeded() {
-    console.assert(this.tickets);
-    console.assert(this.payments);
+    assert.ok(this.tickets);
+    assert.ok(this.payments);
 
     if (this.newPaymentNeeded) {
       const payment = await Payment.newPayment(this);
@@ -275,7 +273,6 @@ module.exports = class Reservering extends BaseModel {
     if (!this.payments) {
       return undefined;
     }
-
     return this.payments.every((p) => p.isPaid);
   }
 
@@ -342,36 +339,9 @@ module.exports = class Reservering extends BaseModel {
     this.status = status;
   }
 
-  // /---------- virtual attributes --------------------------
-
-  $afterGet(queryContext) {
-    // niet achteraf doen. Zorg er voor dat 't in de route allemaal geladen is
-    // await this.$loadRelated('[uitvoering.voorstelling.prijzen,payments,tickets]');
-
-    // dit zou toch allemaal overbodig moeten zijn?
-
-    // let payments = {};
-    // this.payments.forEach((p) => payments[p.id] = p);
-
-    // if (!this.ticketAggregates) {
-    //   this.tickets.forEach(t => {
-    //     t.payment = payments[t.paymentId];
-    //   })
-    // }
-
-    if (this.uitvoering) {
-      this.ticketAggregates = TicketAggregate.factory(
-        this,
-        this.uitvoering,
-        this.tickets
-      );
-    }
-    return this;
-  }
-
   $formatJson(json) {
-    json = super.$formatJson(json);
-    json.tickets = this.ticketAggregates;
+    let ta = new TicketAggregator(this);
+    json.tickets = ta.toJSON();
     delete json.ticketAggregates;
     delete json.validTickets;
     // json.paymentUrl = this.paymentUrl

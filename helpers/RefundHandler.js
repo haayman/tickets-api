@@ -1,4 +1,4 @@
-const { Reservering, Ticket, Log } = require('.');
+const { Ticket, Log } = require('../models');
 const ReserveringMail = require('../components/ReserveringMail');
 const config = require('config');
 
@@ -52,6 +52,7 @@ module.exports = class RefundHandler {
     //* @var [{paymentId: amount}]
     const payments = this.payments;
 
+    debugger;
     let nonRefundable = [];
     await Promise.all(
       Object.keys(payments).map(async (paymentId) => {

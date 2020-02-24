@@ -72,6 +72,13 @@ module.exports = class Ticket extends BaseModel {
     return this.payment && this.payment.isPaid;
   }
 
+  get bedrag() {
+    if (!this.prijs) {
+      throw new Error('geen prijs');
+    }
+    return this.prijs.prijs;
+  }
+
   /**
    * virtual attributes negeren
    * @param {*} json
@@ -165,9 +172,10 @@ module.exports = class Ticket extends BaseModel {
 
   /**
    * Maak een beschrijving van een groep tickets
-   * @param {*} tickets
+   * @param {Ticket[]} tickets
+   * @returns {string}
    */
-  static description(tickets) {
+  static description(tickets, separator = '\n') {
     // Tel aantal tickets per prijs
     const counter = {};
     // await Promise.all(tickets.map(async t => {
@@ -189,7 +197,7 @@ module.exports = class Ticket extends BaseModel {
         const count = c.count;
         return `${count}x ${c.prijs}: €${totaal}`;
       })
-      .join('\n');
+      .join(separator);
   }
 
   /**
