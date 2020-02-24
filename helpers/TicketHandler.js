@@ -104,7 +104,9 @@ module.exports = class TicketHandler {
       const deletable = this.cancelled.filter(
         (t) => !t.paymentId || t.payment.status !== 'paid'
       );
-      const paid = this.cancelled.filter((t) => t.payment.status == 'paid');
+      const paid = this.cancelled.filter(
+        (t) => t.payment && t.payment.status == 'paid'
+      );
 
       // just delete
       if (deletable.length) {
