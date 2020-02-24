@@ -1,111 +1,119 @@
 <!DOCTYPE html>
 <html lang="nl">
+  <head>
+    <title>PlusLeo Kaarten</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
+    <link rel="stylesheet" type="text/css" href="/css/iframe.css" />
+    <style>
+      label {
+        min-width: 10em;
+      }
 
-<head>
-  <title>PlusLeo Kaarten</title>
-  <!-- Required meta tags -->
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-  <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
-  <link rel="stylesheet" type="text/css" href="/css/iframe.css" />
-  <style>
-    label {
-      min-width: 10em;
-    }
+      .row {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 1em;
+      }
+    </style>
+    <script>
+      // zet main domain
+      var domain = window.location.hostname;
+      var parts = domain.split('.');
+      // remove all but the last two elements
+      parts.splice(0, parts.length - 2);
+      document.domain = parts.join('.');
+    </script>
+  </head>
 
-    .row {
-      margin-left: 0;
-      margin-right: 0;
-      padding: 1em;
-    }
-
-  </style>
-  <script>
-    // zet main domain
-    var domain = window.location.hostname;
-    var parts = domain.split('.');
-    // remove all but the last two elements
-    parts.splice(0, parts.length - 2);
-    document.domain = parts.join('.');
-
-  </script>
-
-</head>
-
-<body>
-  <div>
-    <% if( env.NODE_ENV !== 'production') { %>
-    <div class="alert alert-warning rounded-0 mb-0">Dit is een test omgeving</div>
-    <%}%>
-    <div class="card ml-0 rounded-0">
-      <div class="row">
-        <label>Locatie</label>
-        <div><%-voorstelling.locatie%></div>
-  </div>
-
-  <div class="row">
-    <label>Prij<%= voorstelling.prijzen.length > 1? 'zen':'s'%></label>
-    <div class="d-flex flex-column">
-      <% voorstelling.prijzen.forEach(function(prijs){ %>
-      <% if( prijs.prijs ) { %>
-      <span><%= prijs %>: € <%=prijs.prijs.toFixed(2)%></span>
+  <body>
+    <div>
+      <% if( env.NODE_ENV !== 'production') { %>
+      <div class="alert alert-warning rounded-0 mb-0">
+        Dit is een test omgeving
+      </div>
       <%}%>
-            <%})%>
+      <div class="card ml-0 rounded-0">
+        <div class="row">
+          <label>Locatie</label>
+          <div><%-voorstelling.locatie%></div>
+        </div>
+
+        <div class="row">
+          <label>Prij<%= voorstelling.prijzen.length > 1? 'zen':'s'%></label>
+          <div class="d-flex flex-column">
+            <% voorstelling.prijzen.forEach(function(prijs){ %> <% if(
+            prijs.prijs ) { %>
+            <span><%= prijs %>: € <%=prijs.prijs.toFixed(2)%></span>
+            <%}%> <%})%>
+          </div>
+        </div>
+
+        <%if( voorstelling.opmerkingen ){%>
+        <div class="row">
+          <label>Opmerkingen</label>
+          <div><%-voorstelling.opmerkingen%></div>
+        </div>
+        <%}%>
+
+        <div class="row">
+          <label>Wachtlijst</label>
+          <div>
+            Aarzel niet om een plaats op de wachtlijst te nemen. <br />
+            De ervaring leert dat er op het laatst nog veel plaatsen vrij kunnen
+            komen
+          </div>
+        </div>
+
+        <div class="row">
+          <table class="table ml-0">
+            <thead>
+              <tr>
+                <th>datum</th>
+                <th></th>
+                <th>aanvang</th>
+                <th>ontvangst</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% voorstelling.uitvoeringen .filter(u => u.aanvang > new Date())
+              .sort((a,b) => a.aanvang - b.aanvang) .forEach( function(
+              uitvoering ) {%>
+              <tr>
+                <td>
+                  <a
+                    href="/reserveren/?uitvoeringId=<%=uitvoering.id%>"
+                    target="_top"
+                  >
+                    <%=format(uitvoering.aanvang, "EEEE d MMMM yyyy",
+                    {locale:nl})%>
+                  </a>
+                </td>
+                <td>
+                  <%=uitvoering.extra_text%>
+                </td>
+                <td>
+                  <a
+                    href="/reserveren/?uitvoeringId=<%=uitvoering.id%>"
+                    target="_top"
+                  >
+                    <%=format(uitvoering.aanvang, "HH:mm", {locale:nl})%>
+                  </a>
+                </td>
+                <td><%=format(uitvoering.deur_open, "HH:mm", {locale:nl})%></td>
+                <td><%- uitvoering.status %></td>
+              </tr>
+              <%})%>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
-
-  <%if( voorstelling.opmerkingen ){%>
-  <div class="row">
-    <label>Opmerkingen</label>
-    <div><%-voorstelling.opmerkingen%></div>
-  </div>
-  <%}%>
-
-    <div class="row">
-      <label>Wachtlijst</label>
-      <div>Aarzel niet om een plaats op de wachtlijst te nemen. <br>
-        De ervaring leert dat er op het laatst nog veel plaatsen vrij kunnen komen</div>
-    </div>
-
-    <div class="row">
-      <table class="table ml-0">
-        <thead>
-          <tr>
-            <th>datum</th>
-            <th></th>
-            <th>aanvang</th>
-            <th>ontvangst</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-        <% voorstelling.uitvoeringen
-          .filter(u => u.aanvang > new Date()) // geen uitvoeringen in het verleden
-          .sort((a,b) => a.aanvang - b.aanvang)
-          .forEach( function( uitvoering ) {%>
-  <tr>
-    <td>
-      <a href="/reserveren/?uitvoeringId=<%=uitvoering.id%>" target="_top">
-        <%=format(uitvoering.aanvang, "dddd D MMMM YYYY", {locale:nl})%>
-      </a>
-    </td>
-    <td>
-      <%=uitvoering.extra_text%>
-    </td>
-    <td>
-      <a href="/reserveren/?uitvoeringId=<%=uitvoering.id%>" target="_top">
-        <%=format(uitvoering.aanvang, "HH:mm", {locale:nl})%>
-      </a>
-    </td>
-    <td><%=format(uitvoering.deur_open, "HH:mm", {locale:nl})%></td>
-    <td><%- uitvoering.status %></td>
-  </tr>
-  <%})%>
-  </tbody>
-  </table>
-  </div>
-  </div>
-  </div>
-</body>
-
+  </body>
 </html>
