@@ -27,6 +27,9 @@ router.post('/bank/:id', async (req, res) => {
   const payment = reservering.payments.find(
     (p) => p.paymentId == mollie_payment.id
   );
+  if (!mollie_payment) {
+    throw new Error(`unknown mollie_payment ${mollie_payment}`);
+  }
   if (payment.betaalstatus == mollie_payment.status) {
     // dubbele melding
     return res.send('OK');

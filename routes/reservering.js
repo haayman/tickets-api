@@ -4,9 +4,10 @@ const express = require('express');
 const { transaction } = require('objection');
 
 const { Reservering, Prijs, Ticket, Log } = require('../models');
-const TicketAggregate = require('../models/Ticket.Aggregate');
+const TicketAggregate = require('../helpers/TicketAggregator');
+const TicketHandler = require('../helpers/TicketHandler');
 const ReserveringMail = require('../components/ReserveringMail');
-const RefundHandler = require('../models/RefundHandler');
+const RefundHandler = require('../helpers/RefundHandler');
 const parseQuery = require('./helpers/parseReserveringQuery');
 
 const router = express.Router();
@@ -47,16 +48,11 @@ router.post('/', async (req, res) => {
       let data = Reservering.cleanProperties(req.body);
       // data.id = uuid();
       let reservering = await Reservering.query().insertAndFetch(data);
-      reservering.uitvoering = await reservering.$relatedQuery('uitvoering');
-      reservering.ticketAggregates = [];
-      await Promise.all(
-        req.body.tickets.map(async (t) => {
-          const prijs = await Prijs.query().findById(t.prijs.id);
-          const ta = new TicketAggregate(reservering, prijs);
-          await ta.setAantal(Ticket, t.aantal);
-          reservering.ticketAggregates.push(ta);
-        })
-      );
+      reservering.uitvoering = await reservering
+        .$relatedQuery('uitvoering')
+        .withGraphJoined('[voorstelling.prijzen]');
+      const ticketHandler = new TicketHandler(reservering);
+      await ticketHandler.update(req.body.tickets);
 
       const refetched = await reservering
         .$query()
@@ -138,26 +134,10 @@ router.put('/:id', async (req, res) => {
     reservering = await query
       .withGraphFetched(graphExpressionObject)
       .patchAndFetchById(id, data);
-    if (!reservering.ticketAggregates) {
-      reservering.ticketAggregates = TicketAggregate.factory(
-        reservering,
-        reservering.uitvoering,
-        reservering.tickets
-      );
-    }
+    const ticketHandler = new TicketHandler(reservering);
 
     if (req.body.tickets) {
-      await Promise.all(
-        req.body.tickets.map(async (t) => {
-          // const prijs = await Prijs.findByPk(t.prijs.id);
-          // const ta = new TicketAggregate(reservering, prijs);
-          const ta = reservering.ticketAggregates.find(
-            (ticket) => ticket.prijs.id == t.prijs.id
-          );
-          await ta.setAantal(Ticket, t.aantal);
-          // reservering.tickets.push(ta);
-        })
-      );
+      await ticketHandler.update(req.body.tickets);
     }
 
     reservering.wachtlijst = await reservering.moetInWachtrij;
@@ -212,11 +192,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).send('niet gevonden');
     }
 
-    await Promise.all(
-      reservering.ticketAggregates.map(async (ta) => {
-        await ta.setAantal(Ticket, 0);
-      })
-    );
+    const ticketHandler = new TicketHandler(reservering);
+    await ticketHandler.update([]);
 
     // const strReservering = await reservering.toString();
     await Log.addMessage(reservering, `${reservering} geannuleerd`);
@@ -251,23 +228,22 @@ router.delete('/:id', async (req, res) => {
 });
 
 router.put('/:id/ingenomen', auth(['kassa']), async (req, res) => {
-  let id = req.params.id;
-  if (!req.params.id) {
-    return res.status(400).send('no id');
-  }
+  await transaction(Reservering, trx, async (Reservering) => {
+    let id = req.params.id;
+    if (!req.params.id) {
+      return res.status(400).send('no id');
+    }
 
-  let reservering = await Reservering.findByPk(id);
-  if (!reservering) {
-    return res.status(404).send(`not found: ${id}`);
-  }
+    let reservering = await Reservering.findByPk(id);
+    if (!reservering) {
+      return res.status(404).send(`not found: ${id}`);
+    }
 
-  // geen wijzigingen meer toestaan nadat de reservering is ingenomen
-  if (reservering.ingenomen) {
-    return res.status('405').send('reservering is al ingenomen');
-  }
-
-  Reservering.sequelize.transaction(async (transaction) => {
-    await reservering.update(req.body);
+    // geen wijzigingen meer toestaan nadat de reservering is ingenomen
+    if (reservering.ingenomen) {
+      return res.status('405').send('reservering is al ingenomen');
+    }
+    await reservering.patch({ ingenomen: new Date() });
 
     res.send(reservering);
   });
@@ -286,11 +262,10 @@ router.get('/:id/resend', async (req, res) => {
     const saldo = reservering.saldo;
 
     if (saldo >= 0) {
-      const strReservering = await reservering.asString();
       ReserveringMail.send(
         reservering,
         'ticket',
-        `Kaarten voor ${strReservering}`
+        `Kaarten voor ${reservering}`
       );
     } else {
       ReserveringMail.send(
