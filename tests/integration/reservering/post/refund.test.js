@@ -112,6 +112,51 @@ describe('/reservering', () => {
       ).toBeTruthy();
     });
 
+    it.skip('should not refund vrijkaartje ', async () => {
+      const uitvoeringId = voorstelling.uitvoeringen[0].id;
+
+      let res = await createReservering(request(app), {
+        naam: 'friend',
+        email: 'friend@mail.example',
+        uitvoeringId: uitvoeringId,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[2],
+            aantal: 2
+          }
+        ]
+      });
+
+      const reserveringId1 = res.reservering.body.id;
+
+      nodemailerMock.mock.reset();
+
+      // zet aantal op 1
+      res = await request(app)
+        .put('/api/reservering/' + reserveringId1)
+        .send({
+          id: reserveringId1,
+          uitvoeringId: uitvoeringId,
+          tickets: [
+            {
+              prijs: voorstelling.prijzen[2],
+              aantal: 1
+            }
+          ]
+        });
+
+      let sentMail = nodemailerMock.mock.sentMail();
+      expect(res.body.aantal).toBe(1);
+      expect(res.body.onbetaaldeTickets.length).toBe(0);
+      expect(res.body.bedrag).toBe(0);
+      expect(
+        sentMail.find((m) => m.subject.match(/Gewijzigde bestelling/))
+      ).toBeTruthy();
+      expect(
+        sentMail.find((m) => m.subject.match(/€10.00 teruggestort/))
+      ).not.toBeTruthy();
+    });
+
     // ===============================================================================================
 
     it('should completely refund if deleted', async () => {
