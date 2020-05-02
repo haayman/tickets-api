@@ -15,6 +15,7 @@
     "config": "^3.2.5",
     "connect-history-api-fallback": "^1.6.0",
     "continuation-local-storage": "^3.2.1",
+    "cors": "^2.8.5",
     "date-fns": "^2.9.0",
     "ejs": "^3.0.1",
     "email-templates": "^7.0.2",

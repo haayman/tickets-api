@@ -1,13 +1,13 @@
 const auth = require("../middleware/auth");
 const express = require("express");
-const User = require('../models/User');
+const User = require("../models/User");
 const Mailer = require("../components/Mailer");
 
 const router = express.Router();
 
 router.get("/", auth(["admin"]), async (req, res) => {
-  let users = await User.query().orderBy('username')
-  res.send(users.map(u => u.$omit('password')));
+  let users = await User.query().orderBy("username");
+  res.send(users.map(u => u.$omit("password")));
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
@@ -20,7 +20,7 @@ router.post("/", auth(["admin"]), async (req, res) => {
     }
 
     user = await User.query().insert(req.body);
-    res.header("x-auth-token", user.getAuthToken()).send(user);
+    res.send(user);
   } catch (e) {
     // console.error(e);
     res.status(400).send(e);
@@ -53,11 +53,19 @@ router.put("/:id", async (req, res) => {
   res.send(user);
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", auth(["admin", "speler"]), async (req, res) => {
+  debugger;
+  const me = res.locals.user;
+  console.log(me);
+  if (!me.isAdmin() && me.id !== req.params.id) {
+    return res.status(403).send("Access denied");
+  }
+
   const user = await User.query().findById(req.params.id);
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
+
   // if (!res.locals.user) {
   //   // not logged in
   //   const hash = req.query.hash;
@@ -67,7 +75,7 @@ router.get("/:id", async (req, res) => {
   //     return res.status(403).send("invalid hash");
   //   }
   // }
-  res.send(user.$omit('password'));
+  res.send(user.$omit("password"));
 });
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
@@ -77,7 +85,7 @@ router.delete("/:id", auth(["admin"]), async (req, res) => {
   }
   await User.query().deleteById(user.id);
 
-  res.send(user);
+  res.send("");
 });
 
 router.post("/forgotten", async (req, res) => {
