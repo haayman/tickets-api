@@ -1,40 +1,40 @@
-const jwt = require('jsonwebtoken');
-const config = require('config');
-const Password = require('objection-password')();
-const ROLES = ['admin', 'speler', 'kassa'];
-const crypto = require('crypto');
-const differenceInMinutes = require('date-fns/differenceInMinutes');
-const BaseModel = require('./BaseModel');
-const uuid = require('uuid/v4');
+const jwt = require("jsonwebtoken");
+const config = require("config");
+const Password = require("objection-password")();
+const ROLES = ["admin", "speler", "kassa"];
+const crypto = require("crypto");
+const differenceInMinutes = require("date-fns/differenceInMinutes");
+const BaseModel = require("./BaseModel");
+const uuid = require("uuid/v4");
 
 module.exports = class User extends Password(BaseModel) {
   static get tableName() {
-    return 'users';
+    return "users";
   }
 
   static get jsonSchema() {
     return {
-      type: 'object',
-      required: ['username', 'name', 'email', 'password', 'role'],
+      type: "object",
+      required: ["username", "name", "email", "password", "role"],
       properties: {
         id: {
-          type: 'uuid'
+          type: "uuid"
         },
         username: {
-          type: 'string'
+          type: "string"
         },
         name: {
-          type: 'string'
+          type: "string"
         },
         email: {
-          type: 'email',
-          format: 'email'
+          type: "email",
+          format: "email"
         },
         password: {
-          type: 'string'
+          type: "string"
         },
         role: {
-          type: 'string',
+          type: "string",
           enum: ROLES
         }
       }
@@ -47,7 +47,7 @@ module.exports = class User extends Password(BaseModel) {
 
   $formatJson(json) {
     let retval = super.$formatJson(json);
-    // delete retval.password;
+    delete retval.password;
 
     return retval;
   }
@@ -69,7 +69,7 @@ module.exports = class User extends Password(BaseModel) {
         role: this.role,
         timestamp: new Date()
       },
-      config.get('jwtPrivateKey')
+      config.get("jwtPrivateKey")
     );
   }
 
@@ -83,42 +83,42 @@ module.exports = class User extends Password(BaseModel) {
 
   getEditLink() {
     return (
-      config.get('server.url') + '/forgotten/' + this.id + '/' + this.getHash()
+      config.get("server.url") + "/forgotten/" + this.id + "/" + this.getHash()
     );
   }
 
   getHash() {
     return (
       crypto
-        .createHash('sha1')
-        .update('' + this.id) // convert to string
+        .createHash("sha1")
+        .update("" + this.id) // convert to string
         .update(this.email)
         // .update(this.password)
-        .digest('hex')
+        .digest("hex")
     );
   }
 
   isAdministrator() {
-    return this.role === 'admin';
+    return this.role === "admin";
   }
 
   isSpeler() {
-    return this.role === 'speler' || this.isAdministrator();
+    return this.role === "speler" || this.isAdministrator();
   }
 
   isKassa() {
-    return this.role === 'kassa';
+    return this.role === "kassa";
   }
 
   isAuthorized(authorizationRequired) {
     switch (authorizationRequired) {
       case true:
         return true;
-      case 'admin':
+      case "admin":
         return this.isAdministrator();
-      case 'speler':
+      case "speler":
         return this.isSpeler();
-      case 'kassa':
+      case "kassa":
         return this.isKassa();
     }
   }
