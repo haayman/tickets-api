@@ -1,0 +1,3 @@
+{
+    extends: ["@imagem/eslint-config"],
+}
