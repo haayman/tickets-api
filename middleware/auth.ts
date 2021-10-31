@@ -1,9 +1,8 @@
-const jwt = require("jsonwebtoken");
-const config = require("config");
-const User = require("../models/User");
+import jwt from "jsonwebtoken";
+import config from "config";
 
-module.exports = function(authRequired = true) {
-  return function(req, res, next) {
+export default function (authRequired: boolean | string[] = true) {
+  return function (req, res, next) {
     //@TODO
     //always true
     // next();
@@ -18,7 +17,11 @@ module.exports = function(authRequired = true) {
       if (authRequired === true) {
         // just being logged in is sufficient
         next();
-      } else if (authRequired.length && authRequired.includes(role)) {
+      } else if (
+        Array.isArray(authRequired) &&
+        authRequired.length &&
+        authRequired.includes(role)
+      ) {
         // needs specific role
         next();
       } else {
@@ -28,4 +31,4 @@ module.exports = function(authRequired = true) {
       res.status(400).send("Invalid token");
     }
   };
-};
+}

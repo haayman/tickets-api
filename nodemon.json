@@ -1,6 +1,6 @@
 {
-  "watch": ["src", ".env"],
+  "watch": [".", ".env"],
   "ext": "js,ts,json",
-  "ignore": ["src/**/*.spec.ts"],
+  "ignore": ["src/**/*.spec.ts", "temp/*"],
   "exec": "node -r ts-node/register --inspect=0.0.0.0"
 }

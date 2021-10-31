@@ -1,19 +1,25 @@
 global.DOCUMENT_ROOT = __dirname;
 
 // don't read from the root
-process.env.NODE_CONFIG_DIR = __dirname + '/config/';
+process.env.NODE_CONFIG_DIR = __dirname + "/config/";
 
-const express = require('express');
-const app = express();
+import "reflect-metadata";
+import express from "express";
+import config from "./startup/config";
+import logging from "./startup/logging";
+import database from "./startup/database";
+import routes from "./startup/routes";
 
-//process.env.DEBUG = 'knex:query';
+export default async function () {
+  const app = express();
 
-require('./startup/config')(app);
+  //process.env.DEBUG = 'knex:query';
 
-require('./startup/logging')();
-require('./startup/database')();
-require('./startup/routes')(app);
+  config(app);
 
-// require("./startup/env")();
+  logging();
+  await database();
+  routes(app);
 
-module.exports = app;
+  return app;
+}

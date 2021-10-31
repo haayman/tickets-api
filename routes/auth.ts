@@ -1,18 +1,20 @@
-const express = require("express");
-const User = require("../models/User");
-const config = require("config");
-const jwt = require("jsonwebtoken");
-const checker = require("zxcvbn");
+import express from "express";
+import { User } from "../models/User";
+import config from "config";
+import jwt from "jsonwebtoken";
+import checker from "zxcvbn";
+import { getRepository } from "../models/Repository";
 const router = express.Router();
 
 router.post("/", async (req, res) => {
-  const sendError = function(message = "Onbekende gebruiker of wachtwoord") {
+  const userRepository = getRepository<User>("User");
+  const sendError = function (message = "Onbekende gebruiker of wachtwoord") {
     return res.status(400).send(message);
   };
 
   // standaard wordt password niet opgehaald. Doe nu maar wel
-  let user = await User.query().findOne({
-    username: req.body.username
+  let user = await userRepository.findOne({
+    username: req.body.username,
   });
   if (!user) return sendError();
 
@@ -20,11 +22,11 @@ router.post("/", async (req, res) => {
   if (!verified) return sendError();
 
   const token = user.getAuthToken();
-  // voor de debugger: voorheen werd hier de user teruggegeven, nu alleen het token
   res.send({ token });
 });
 
 router.get("/me", async (req, res) => {
+  const userRepository = getRepository<User>("User");
   let user = null,
     error = null;
   let token = (req.header("Authorization") || "").replace("Bearer ", "");
@@ -32,7 +34,7 @@ router.get("/me", async (req, res) => {
     try {
       const data = jwt.verify(token, config.get("jwtPrivateKey"));
       // console.log('checkLoggedIn', data);
-      user = await User.query().findById(data.id);
+      user = await userRepository.findOne(data.id);
       if (user.tokenExpired(data.timestamp)) {
         user = token = null;
         error = "token expired";
@@ -59,7 +61,7 @@ router.get("/me", async (req, res) => {
       error: error,
       loggedIn: !!user,
       user: user,
-      token: token
+      token: token,
     });
 });
 
@@ -69,4 +71,4 @@ router.post("/checkPassword", async (req, res) => {
   return res.send(result);
 });
 
-module.exports = router;
+export default router;

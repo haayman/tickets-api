@@ -38,7 +38,15 @@ module.exports = class Payment extends BaseModel {
   }
 
   static get virtualAttributes() {
-    return ["isPaid", "amount", "paymentUrl", "amountRefunded", "paidAt", "status", "refundable"];
+    return [
+      "isPaid",
+      "amount",
+      "paymentUrl",
+      "amountRefunded",
+      "paidAt",
+      "status",
+      "refundable",
+    ];
   }
 
   // --------- virtual attributes -----------
@@ -79,7 +87,8 @@ module.exports = class Payment extends BaseModel {
   }
 
   async getReservering() {
-    const reservering = this.reservering || (await this.$relatedQuery("reservering"));
+    const reservering =
+      this.reservering || (await this.$relatedQuery("reservering"));
     return reservering;
   }
 
@@ -117,7 +126,7 @@ module.exports = class Payment extends BaseModel {
         tickets.map(async (ticket) => {
           ticket.betaald = true;
           await ticket.save();
-        }),
+        })
       );
     }
   }
@@ -135,7 +144,7 @@ module.exports = class Payment extends BaseModel {
   // }
 
   async asString() {
-    const Ticket = require("./Ticket");
+    const Ticket = require("../models/Ticket");
     if (!this.tickets) {
       this.tickets = await this.getTickets();
     }
@@ -176,7 +185,7 @@ module.exports = class Payment extends BaseModel {
   // PaymentFactory
   // wordt aangeroepen vanuit Reservering.createPaymentIfNeeded()
   static async newPayment(reservering) {
-    const Ticket = require("./Ticket");
+    const Ticket = require("../models/Ticket");
 
     const tickets = reservering.onbetaaldeTickets;
 
@@ -213,7 +222,7 @@ module.exports = class Payment extends BaseModel {
         ticket.PaymentId = newPayment.id;
         // ticket.setPayment(this);
         await ticket.$query().update(ticket);
-      }),
+      })
     );
 
     return newPayment;
@@ -242,8 +251,8 @@ module.exports = class Payment extends BaseModel {
   // };
 
   static get relationMappings() {
-    const Reservering = require("./Reservering");
-    const Ticket = require("./Ticket");
+    const Reservering = require("../models/Reservering");
+    const Ticket = require("../models/Ticket");
 
     return {
       reservering: {

@@ -1,86 +1,86 @@
-const config = require('config');
+const config = require("config");
 
-const TicketAggregator = require('../helpers/TicketAggregator');
-const Payment = require('./Payment');
+const TicketAggregator = require("../helpers/TicketAggregator");
+const Payment = require("./Payment");
 
-const ReserveringMail = require('../components/ReserveringMail');
+const ReserveringMail = require("../components/ReserveringMail");
 
-var differenceInCalendarDays = require('date-fns/differenceInCalendarDays');
-const globalData = require('../components/globalData');
-const iban = require('iban');
-const BaseModel = require('./BaseModel');
-const { Model } = require('objection');
-const uuid = require('uuid/v4');
-const assert = require('assert');
+var differenceInCalendarDays = require("date-fns/differenceInCalendarDays");
+const globalData = require("../components/globalData");
+const iban = require("iban");
+const BaseModel = require("./BaseModel");
+const { Model } = require("objection");
+const { v4 } = require("uuid");
+const assert = require("assert");
 
 module.exports = class Reservering extends BaseModel {
   static get tableName() {
-    return 'reserveringen';
+    return "reserveringen";
   }
 
   static get jsonSchema() {
     return {
-      type: 'object',
-      required: ['naam', 'email'],
+      type: "object",
+      required: ["naam", "email"],
       properties: {
         id: {
-          type: 'uuid'
+          type: "uuid"
         },
         naam: {
-          type: 'string'
+          type: "string"
         },
         email: {
-          type: 'string',
-          format: 'email'
+          type: "string",
+          format: "email"
         },
         opmerking: {
-          type: 'string'
+          type: "string"
         },
         opmerking_gebruiker: {
-          type: 'string'
+          type: "string"
         },
         // status: {
         //   type: 'string'
         // },
         wachtlijst: {
-          type: 'boolean'
+          type: "boolean"
         },
         ingenomen: {
-          type: 'date-time'
+          type: "date-time"
         },
         bedrag: {
-          type: 'number'
+          type: "number"
         },
         iban: {
           // @todo: validatie
           anyOf: [
             {
-              type: 'string'
+              type: "string"
             },
             {
-              type: 'null'
+              type: "null"
             }
           ]
         },
         tennamevan: {
           anyOf: [
             {
-              type: 'string'
+              type: "string"
             },
             {
-              type: 'null'
+              type: "null"
             }
           ]
         },
         uitvoeringId: {
-          type: 'integer'
+          type: "integer"
         }
       }
     };
   }
 
   $beforeInsert() {
-    this.id = uuid();
+    this.id = v4();
   }
 
   toString() {
@@ -91,16 +91,16 @@ module.exports = class Reservering extends BaseModel {
 
   static get virtualAttributes() {
     return [
-      'bedrag',
-      'saldo',
-      'openstaandBedrag',
-      'validTickets',
-      'tegoed',
-      'aantal',
-      'paymentUrl',
-      'teruggeefbaar',
-      'onbetaaldeTickets',
-      'ticketAggregates'
+      "bedrag",
+      "saldo",
+      "openstaandBedrag",
+      "validTickets",
+      "tegoed",
+      "aantal",
+      "paymentUrl",
+      "teruggeefbaar",
+      "onbetaaldeTickets",
+      "ticketAggregates"
     ];
   }
 
@@ -125,7 +125,7 @@ module.exports = class Reservering extends BaseModel {
     let saldo = this.payments.reduce((saldo, payment) => {
       if (!payment.payment && payment.paymentId) {
         debugger;
-        throw new Error('payment not initialized');
+        throw new Error("payment not initialized");
       }
       if (payment.isPaid) {
         return saldo + (+payment.amount - (payment.amountRefunded || 0));
@@ -136,7 +136,7 @@ module.exports = class Reservering extends BaseModel {
 
     // bereken kosten van alle te betalen tickets
     saldo = this.validTickets
-      .filter((t) => !t.tekoop)
+      .filter(t => !t.tekoop)
       .reduce((saldo, t) => saldo - t.bedrag, saldo);
     // saldo = this.TicketHandlers.reduce((saldo, ta) => {
     //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
@@ -151,7 +151,7 @@ module.exports = class Reservering extends BaseModel {
 
   get validTickets() {
     return this.tickets
-      ? this.tickets.filter((t) => !(t.geannuleerd || t.verkocht))
+      ? this.tickets.filter(t => !(t.geannuleerd || t.verkocht))
       : [];
   }
 
@@ -159,7 +159,7 @@ module.exports = class Reservering extends BaseModel {
    * alle tickets die te koop staan
    */
   get tekoop() {
-    return this.validTickets.filter((t) => t.tekoop);
+    return this.validTickets.filter(t => t.tekoop);
   }
 
   /**
@@ -184,14 +184,14 @@ module.exports = class Reservering extends BaseModel {
       return undefined;
     }
     const today = new Date();
-    const days = config.get('teruggave_termijn');
+    const days = config.get("teruggave_termijn");
     const diff = differenceInCalendarDays(this.uitvoering.aanvang, today);
 
     return diff > days;
   }
 
   get onbetaaldeTickets() {
-    return this.validTickets.filter((t) => !t.betaald);
+    return this.validTickets.filter(t => !t.betaald);
   }
 
   get moetInWachtrij() {
@@ -205,7 +205,7 @@ module.exports = class Reservering extends BaseModel {
       return undefined;
     }
 
-    return this.payments.find((p) => p.refunds).length;
+    return this.payments.find(p => p.refunds).length;
   }
 
   get ticketAggregates() {
@@ -219,11 +219,11 @@ module.exports = class Reservering extends BaseModel {
     await this.$query(trx).patch({
       wachtlijst: false
     });
-    await ReserveringMail.send(this, 'uit_wachtlijst', `uit wachtlijst`);
+    await ReserveringMail.send(this, "uit_wachtlijst", `uit wachtlijst`);
   }
 
   async logMessage(message) {
-    throw new Error('deprecated. Gebruik Log.addMessage()');
+    throw new Error("deprecated. Gebruik Log.addMessage()");
   }
 
   get paymentUrl() {
@@ -231,7 +231,7 @@ module.exports = class Reservering extends BaseModel {
       return undefined;
     }
     let payment;
-    if ((payment = this.payments.find((p) => p.paymentUrl))) {
+    if ((payment = this.payments.find(p => p.paymentUrl))) {
       return payment.paymentUrl;
     }
     return undefined;
@@ -241,7 +241,7 @@ module.exports = class Reservering extends BaseModel {
     return (
       !this.wachtlijst &&
       this.onbetaaldeTickets.length &&
-      this.payments.filter((p) => p.status == 'open').length == 0
+      this.payments.filter(p => p.status == "open").length == 0
     );
   }
 
@@ -273,7 +273,7 @@ module.exports = class Reservering extends BaseModel {
     if (!this.payments) {
       return undefined;
     }
-    return this.payments.every((p) => p.isPaid);
+    return this.payments.every(p => p.isPaid);
   }
 
   getBetalingUrl() {
@@ -305,22 +305,22 @@ module.exports = class Reservering extends BaseModel {
   }
 
   get redirectUrl() {
-    return this.getRoot() + '/api/payment/done/' + this.id;
+    return this.getRoot() + "/api/payment/done/" + this.id;
   }
 
   get webhookUrl() {
-    return this.getWebhookRoot() + '/api/payment/bank/' + this.id;
+    return this.getWebhookRoot() + "/api/payment/bank/" + this.id;
   }
 
   getRoot() {
     //return globalData.get("server");
-    return config.get('server.url');
+    return config.get("server.url");
   }
 
   getWebhookRoot() {
-    const root = globalData.get('localtunnel')
-      ? globalData.get('localtunnel')
-      : config.get('server.url');
+    const root = globalData.get("localtunnel")
+      ? globalData.get("localtunnel")
+      : config.get("server.url");
     return root;
   }
 
@@ -331,7 +331,7 @@ module.exports = class Reservering extends BaseModel {
     await this.$query().patch({
       status: status
     });
-    await this.$relatedQuery('statusupdates').insert({
+    await this.$relatedQuery("statusupdates").insert({
       status: status,
       betaalstatus: betaalstatus,
       reserveringId: this.id
@@ -349,57 +349,57 @@ module.exports = class Reservering extends BaseModel {
   }
 
   static get relationMappings() {
-    const Uitvoering = require('./Uitvoering');
-    const Ticket = require('./Ticket');
-    const Payment = require('./Payment');
-    const Log = require('./Log');
-    const StatusUpdate = require('./StatusUpdate');
+    const Uitvoering = require("./Uitvoering");
+    const Ticket = require("./Ticket");
+    const Payment = require("./Payment");
+    const Log = require("./Log");
+    const StatusUpdate = require("./StatusUpdate");
 
     return {
       uitvoering: {
         relation: Model.BelongsToOneRelation,
         modelClass: Uitvoering,
         join: {
-          from: 'reserveringen.uitvoeringId',
-          to: 'uitvoeringen.id'
+          from: "reserveringen.uitvoeringId",
+          to: "uitvoeringen.id"
         }
       },
       tickets: {
         relation: Model.HasManyRelation,
         modelClass: Ticket,
         join: {
-          from: 'tickets.reserveringId',
-          to: 'reserveringen.id'
+          from: "tickets.reserveringId",
+          to: "reserveringen.id"
         }
       },
       logs: {
         relation: Model.HasManyRelation,
         modelClass: Log,
         join: {
-          from: 'logs.reserveringId',
-          to: 'reserveringen.id'
+          from: "logs.reserveringId",
+          to: "reserveringen.id"
         }
       },
       payments: {
         relation: Model.HasManyRelation,
         modelClass: Payment,
         join: {
-          from: 'payments.reserveringId',
-          to: 'reserveringen.id'
+          from: "payments.reserveringId",
+          to: "reserveringen.id"
         }
       },
       statusupdates: {
         relation: Model.HasManyRelation,
         modelClass: StatusUpdate,
         join: {
-          from: 'statusupdates.reserveringId',
-          to: 'reserveringen.id'
+          from: "statusupdates.reserveringId",
+          to: "reserveringen.id"
         }
       }
     };
   }
 
   static getStandardGraph() {
-    return '[uitvoering.voorstelling.prijzen,tickets.[payment,prijs],payments]';
+    return "[uitvoering.voorstelling.prijzen,tickets.[payment,prijs],payments]";
   }
 };

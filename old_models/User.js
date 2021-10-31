@@ -5,7 +5,7 @@ const ROLES = ["admin", "speler", "kassa"];
 const crypto = require("crypto");
 const differenceInMinutes = require("date-fns/differenceInMinutes");
 const BaseModel = require("./BaseModel");
-const uuid = require("uuid/v4");
+const { v4 } = require("uuid");
 
 module.exports = class User extends Password(BaseModel) {
   static get tableName() {
@@ -42,7 +42,7 @@ module.exports = class User extends Password(BaseModel) {
   }
 
   $beforeInsert() {
-    this.id = uuid();
+    this.id = v4();
   }
 
   $formatJson(json) {
