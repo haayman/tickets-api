@@ -1,6 +1,6 @@
-const winston = require("winston");
+import winston from "winston";
 
-module.exports = function (err, req, res, next) {
+export default function (err, req, res, next) {
   winston.error(err.stack);
   if (res.headersSent) {
     return next(err);
@@ -10,4 +10,4 @@ module.exports = function (err, req, res, next) {
   } else {
     res.status(500).send("Er ging iets goed fout helaas");
   }
-};
+}

@@ -1,11 +1,11 @@
-const config = require("config");
+import config from "config";
 
-const helmet = require("helmet");
-const morgan = require("morgan");
+import helmet from "helmet";
+import morgan from "morgan";
 
-module.exports = function(app) {
+export default function (app) {
   app.use(helmet({ frameguard: false }));
   if (config.has("useMorgan") && config.get("useMorgan")) {
     app.use(morgan("combined"));
   }
-};
+}

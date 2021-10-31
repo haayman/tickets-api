@@ -1,50 +1,48 @@
-const BaseModel = require('./BaseModel')
-const {
-  Model
-} = require('objection');
+const BaseModel = require("./BaseModel");
+const { Model } = require("objection");
 
 module.exports = class Prijs extends BaseModel {
   static get tableName() {
-    return 'prijzen'
+    return "prijzen";
   }
 
   static get jsonSchema() {
     return {
-      type: 'object',
-      required: ['description', 'prijs'],
+      type: "object",
+      required: ["description", "prijs"],
       properties: {
         id: {
-          type: 'integer'
+          type: "integer"
         },
         description: {
-          type: 'string'
+          type: "string"
         },
         prijs: {
-          type: 'number',
-          minimum: 0,
+          type: "number",
+          minimum: 0
         },
         role: {
-          anyOf: [{
-              type: 'string'
+          anyOf: [
+            {
+              type: "string"
             },
             {
-              type: 'null'
+              type: "null"
             }
           ]
-
         },
         voorstellingId: {
-          type: 'integer'
+          type: "integer"
         }
       }
-    }
+    };
   }
 
   toString() {
     return this.description;
   }
 
-    /**
+  /**
    * zorg er voor dat prijs numeriek is
    * @param {*} json
    * @param {*} opt
@@ -53,21 +51,20 @@ module.exports = class Prijs extends BaseModel {
     json = super.$parseJson(json, opt);
     json.prijs = +json.prijs;
 
-   return json;
+    return json;
   }
 
-
   static get relationMappings() {
-    const Voorstelling = require('./Voorstelling');
+    const Voorstelling = require("./Voorstelling");
     return {
       voorstelling: {
         relation: Model.BelongsToOneRelation,
         modelClass: Voorstelling,
         join: {
-          from: 'prijzen.voorstellingId',
-          to: 'voorstellingen.id'
+          from: "prijzen.voorstellingId",
+          to: "voorstellingen.id"
         }
       }
-    }
+    };
   }
-}
+};
