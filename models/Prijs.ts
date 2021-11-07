@@ -15,9 +15,6 @@ export class Prijs {
   public id!: number;
 
   @Property()
-  title!: string;
-
-  @Property()
   description!: string;
 
   @Property()
