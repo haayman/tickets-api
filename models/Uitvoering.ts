@@ -39,7 +39,7 @@ export class Uitvoering {
   wachtlijst: number = 0;
 
   @Property()
-  tekoop: number = 0;
+  te_koop: number = 0;
 
   @Property()
   vrije_plaatsen: number = 0;
@@ -54,9 +54,11 @@ export class Uitvoering {
 
   @Property({ persist: false })
   get tickets(): Ticket[] {
-    return this.reserveringen.getItems().reduce((tickets, reservering) => {
-      return tickets.concat(reservering.tickets);
-    }, []);
+    return this.reserveringen.isInitialized()
+      ? this.reserveringen.getItems().reduce((tickets, reservering) => {
+          return tickets.concat(reservering.tickets);
+        }, [])
+      : undefined;
   }
 
   // toJSON(strict = true, strip = [], ...args: any[]): { [p: string]: any } {
@@ -108,7 +110,7 @@ export class Uitvoering {
   get status(): string {
     const wachtlijst = this.wachtlijst;
     const vrije_plaatsen = this.vrije_plaatsen;
-    const tekoop = this.tekoop;
+    const tekoop = this.te_koop;
     let retval: string;
 
     if (vrije_plaatsen) {
