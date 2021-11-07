@@ -86,7 +86,7 @@ router.delete("/:id", auth(["admin"]), async (req, res) => {
   }
   await userRepository.removeAndFlush(user);
 
-  res.send("");
+  res.send({ status: "OK" });
 });
 
 router.post("/forgotten", async (req, res) => {
