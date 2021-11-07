@@ -31,6 +31,21 @@ export class Uitvoering {
   @Property()
   aantal_plaatsen!: number;
 
+  // ------------------- updated by triggers ----------
+  @Property()
+  gereserveerd: number = 0;
+
+  @Property()
+  wachtlijst: number = 0;
+
+  @Property()
+  tekoop: number = 0;
+
+  @Property()
+  vrije_plaatsen: number = 0;
+
+  // /------------------- updated by triggers ----------
+
   @ManyToOne()
   voorstelling!: Voorstelling;
 
@@ -44,56 +59,56 @@ export class Uitvoering {
     }, []);
   }
 
-  toJSON(strict = true, strip = [], ...args: any[]): { [p: string]: any } {
-    const o = wrap(this, true).toObject(...args);
+  // toJSON(strict = true, strip = [], ...args: any[]): { [p: string]: any } {
+  //   const o = wrap(this, true).toObject(...args);
 
-    o.gereserveerd = this.gereserveerd();
-    o.wachtlijst = this.wachtlijst();
-    o.tekoop = this.tekoop();
-    o.vrije_plaatsen = this.vrije_plaatsen();
+  //   o.gereserveerd = this.gereserveerd();
+  //   o.wachtlijst = this.wachtlijst();
+  //   o.tekoop = this.tekoop();
+  //   o.vrije_plaatsen = this.vrije_plaatsen();
 
-    if (strict) {
-      strip.forEach((k) => delete o[k]);
-    }
+  //   if (strict) {
+  //     strip.forEach((k) => delete o[k]);
+  //   }
 
-    return o;
-  }
+  //   return o;
+  // }
 
-  gereserveerd(reservering_id?: string) {
-    const gereserveerd = this.countTickets({
-      wachtlijst: false,
-      reservering_id: reservering_id,
-    });
-    return gereserveerd;
-  }
+  // gereserveerd(reservering_id?: string) {
+  //   const gereserveerd = this.countTickets({
+  //     wachtlijst: false,
+  //     reservering_id: reservering_id,
+  //   });
+  //   return gereserveerd;
+  // }
 
-  wachtlijst(reservering_id = null) {
-    const wachtlijst = this.countTickets({
-      wachtlijst: true,
-      reservering_id,
-    });
-    return wachtlijst;
-  }
+  // wachtlijst(reservering_id = null) {
+  //   const wachtlijst = this.countTickets({
+  //     wachtlijst: true,
+  //     reservering_id,
+  //   });
+  //   return wachtlijst;
+  // }
 
-  tekoop() {
-    const tekoop = this.countTickets({
-      tekoop: true,
-    });
-    return tekoop;
-  }
+  // tekoop() {
+  //   const tekoop = this.countTickets({
+  //     tekoop: true,
+  //   });
+  //   return tekoop;
+  // }
 
-  vrije_plaatsen(reservering_id = null) {
-    return Math.max(
-      this.aantal_plaatsen - this.gereserveerd(reservering_id) + this.tekoop(),
-      0
-    );
-  }
+  // vrije_plaatsen(reservering_id = null) {
+  //   return Math.max(
+  //     this.aantal_plaatsen - this.gereserveerd(reservering_id) + this.tekoop(),
+  //     0
+  //   );
+  // }
 
   @Property({ persist: false })
   get status(): string {
-    const wachtlijst = this.wachtlijst();
-    const vrije_plaatsen = this.vrije_plaatsen();
-    const tekoop = this.tekoop();
+    const wachtlijst = this.wachtlijst;
+    const vrije_plaatsen = this.vrije_plaatsen;
+    const tekoop = this.tekoop;
     let retval: string;
 
     if (vrije_plaatsen) {
@@ -114,30 +129,30 @@ export class Uitvoering {
     return retval;
   }
 
-  countTickets(options: {
-    tekoop?: boolean;
-    reservering_id?: string;
-    wachtlijst?: boolean;
-  }) {
-    let tickets = this.tickets;
+  // countTickets(options: {
+  //   tekoop?: boolean;
+  //   reservering_id?: string;
+  //   wachtlijst?: boolean;
+  // }) {
+  //   let tickets = this.tickets;
 
-    if (options.tekoop !== undefined) {
-      tickets = tickets.filter((t) => !!t.tekoop == !!options.tekoop);
-    }
+  //   if (options.tekoop !== undefined) {
+  //     tickets = tickets.filter((t) => !!t.tekoop == !!options.tekoop);
+  //   }
 
-    if (options.reservering_id) {
-      tickets = tickets.filter(
-        (t) => t.reservering.id !== options.reservering_id
-      );
-    }
-    if (options.wachtlijst !== undefined) {
-      tickets = tickets.filter(
-        (t) => !!t.reservering.wachtlijst == !!options.wachtlijst
-      );
-    }
+  //   if (options.reservering_id) {
+  //     tickets = tickets.filter(
+  //       (t) => t.reservering.id !== options.reservering_id
+  //     );
+  //   }
+  //   if (options.wachtlijst !== undefined) {
+  //     tickets = tickets.filter(
+  //       (t) => !!t.reservering.wachtlijst == !!options.wachtlijst
+  //     );
+  //   }
 
-    return tickets.length;
-  }
+  //   return tickets.length;
+  // }
 
   toString() {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format
