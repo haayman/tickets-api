@@ -4,7 +4,7 @@ import auth from "../routes/auth";
 import users from "../routes/users";
 import voorstelling from "../routes/voorstelling";
 // import reservering from "../routes/reservering";
-// import uitvoering from "../routes/uitvoering";
+import uitvoering from "../routes/uitvoering";
 // import log from "../routes/log";
 // import payment from "../routes/payment";
 // import iframe from "../routes/iframe";
@@ -40,7 +40,7 @@ export default function (app) {
   app.use("/api/auth", auth);
   app.use("/api/user", users);
   app.use("/api/voorstelling", voorstelling);
-  // app.use("/api/uitvoering", uitvoering);
+  app.use("/api/uitvoering", uitvoering);
   // app.use("/api/reservering", reservering);
   // app.use("/api/log", log);
   // app.use("/api/payment", payment);
