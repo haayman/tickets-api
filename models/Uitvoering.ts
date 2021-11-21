@@ -14,10 +14,32 @@ import { Voorstelling } from "./Voorstelling";
 import { Reservering } from "./Reservering";
 import { Ticket } from "./Ticket";
 
+export type UitvoeringDTO = {
+  aantal_plaatsen: number;
+  aanvang: Date;
+  deur_open: Date;
+  extra_text?: string;
+};
+
 @Entity({ tableName: "uitvoeringen" })
 export class Uitvoering {
+  constructor({
+    aantal_plaatsen,
+    aanvang,
+    deur_open,
+    extra_text,
+  }: UitvoeringDTO) {
+    this.aantal_plaatsen = aantal_plaatsen;
+    this.aanvang = new Date(aanvang);
+    this.deur_open = new Date(deur_open);
+    this.extra_text = extra_text;
+  }
+
   @PrimaryKey()
   public id!: number;
+
+  @Property()
+  aantal_plaatsen!: number;
 
   @Property()
   aanvang = new Date();
@@ -26,10 +48,7 @@ export class Uitvoering {
   deur_open = new Date();
 
   @Property()
-  extra_text: string;
-
-  @Property()
-  aantal_plaatsen!: number;
+  extra_text?: string;
 
   // ------------------- updated by triggers ----------
   @Property()
