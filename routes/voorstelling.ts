@@ -13,11 +13,6 @@ router.get("/", async (req, res) => {
   const voorstellingen = await repository.findAll({
     populate: ["uitvoeringen", "prijzen"],
   });
-  // let query = Voorstelling.query().allowGraph('[uitvoeringen,prijzen]');
-  // query = parseQuery(query, req.query);
-
-  // let voorstellingen = await query;
-  // // const json = await Promise.all(voorstellingen.map(async v => v.toJSONA(res)));
   res.send(voorstellingen);
 });
 
