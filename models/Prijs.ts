@@ -9,6 +9,12 @@ import {
 } from "@mikro-orm/core";
 import { Voorstelling } from "./Voorstelling";
 
+export type PrijsDTO = {
+  description: string;
+  prijs: number;
+  role?: string;
+};
+
 @Entity({ tableName: "prijzen" })
 export class Prijs {
   @PrimaryKey()
@@ -28,5 +34,11 @@ export class Prijs {
 
   toString() {
     return this.description;
+  }
+
+  constructor({ prijs, description, role }: PrijsDTO) {
+    this.description = description;
+    this.prijs = prijs;
+    this.role = role;
   }
 }
