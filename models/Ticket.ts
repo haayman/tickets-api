@@ -35,17 +35,22 @@ import { Reservering } from "./Reservering";
 })
 @Entity({ tableName: "tickets" })
 export class Ticket {
+  constructor(prijs: Prijs, betaald: boolean) {
+    this.prijs = prijs;
+    this.betaald = betaald;
+  }
+
   @PrimaryKey()
   public id!: number;
 
   @Property()
-  createdAt: Date = new Date();
+  created_at: Date = new Date();
 
   @Property({ onUpdate: () => new Date() })
-  updatedAt: Date = new Date();
+  updated_at: Date = new Date();
 
   @Property()
-  deletedAt: Date;
+  deleted_at: Date;
 
   @Property()
   betaald: boolean = false;
@@ -93,7 +98,10 @@ export class Ticket {
    * @param {Ticket[]} tickets
    * @returns {string}
    */
-  static description(tickets: Ticket[], separator = "\n"): string {
+  static description(
+    tickets: Pick<Ticket, "prijs">[],
+    separator = "\n"
+  ): string {
     // Tel aantal tickets per prijs
     const counter: {
       [key: number]: {

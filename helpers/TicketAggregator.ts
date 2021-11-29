@@ -1,16 +1,22 @@
-module.exports = class TicketAggregator {
-  /**
-   *
-   * @param {Reservering} reservering
-   */
-  constructor(reservering) {
+import { Prijs, Reservering, Ticket } from "~/models";
+
+export type TicketDTO = {
+  prijs: Prijs;
+  aantal: number;
+};
+
+export class TicketAggregator {
+  public aggregates: { [key: number]: Aggregate };
+  constructor(public reservering: Reservering) {
     this.aggregates = {};
-    this.reservering = reservering;
 
     if (reservering.uitvoering) {
-      reservering.uitvoering.voorstelling.prijzen.forEach((prijs) => {
-        this.aggregates[prijs.id] = new Aggregate(prijs, reservering.tickets);
-      });
+      for (const prijs of reservering.uitvoering.voorstelling.prijzen) {
+        this.aggregates[prijs.id] = new Aggregate(
+          prijs,
+          reservering.tickets.getItems()
+        );
+      }
     }
   }
 
@@ -24,14 +30,14 @@ module.exports = class TicketAggregator {
    * alle tickets die te koop staan
    */
   get tekoop() {
-    return this.reservering.tekoop;
+    return this.reservering.tickets.getItems().filter((t) => t.tekoop);
   }
-};
+}
 
-class Aggregate {
-  constructor(prijs, tickets = []) {
+export class Aggregate {
+  constructor(public prijs: Prijs, public tickets: Ticket[] = []) {
     this.prijs = prijs;
-    this.tickets = tickets.filter((t) => t.prijsId == prijs.id);
+    this.tickets = tickets.filter((t) => t.prijs.id == prijs.id);
   }
 
   toJSON() {
@@ -42,7 +48,7 @@ class Aggregate {
       aantalBetaald: this.aantalBetaald,
       aantalTekoop: this.aantalTekoop,
       aantalTerugbetalen: this.aantalTerugbetalen,
-      bedrag: this.bedrag
+      bedrag: this.bedrag,
     };
   }
 
@@ -89,7 +95,7 @@ class Aggregate {
     }
     if (aantalTerugbetalen) {
       retval += ` ${
-        aantalTekoop ? 'en' : 'waarvan'
+        aantalTekoop ? "en" : "waarvan"
       } ${aantalTerugbetalen} wacht op terugbetaling`;
     }
     return retval;

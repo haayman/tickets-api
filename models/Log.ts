@@ -15,20 +15,20 @@ import { Reservering } from "./Reservering";
 export class Log {
   constructor(message: string, sourceCode: string) {
     this.message = message;
-    this.sourceCode = sourceCode;
+    this.source_code = sourceCode;
   }
 
   @PrimaryKey()
   id: number;
 
   @Property()
-  createdAt = new Date();
+  created_at = new Date();
 
   @Property()
   message: string;
 
   @Property()
-  sourceCode: string;
+  source_code: string;
 
   @ManyToOne()
   reservering!: Reservering;
@@ -37,7 +37,7 @@ export class Log {
     return this.message;
   }
 
-  static async addMessage(reservering: Reservering, message: string) {
+  static addMessage(reservering: Reservering, message: string) {
     const trace = stackTrace.get();
     const caller = trace[1];
 
@@ -46,6 +46,6 @@ export class Log {
       `${basename(caller.getFileName())}(${caller.getLineNumber()})`
     );
 
-    await reservering.logs.add(log);
+    reservering.logs.add(log);
   }
 }
