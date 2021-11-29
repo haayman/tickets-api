@@ -15,7 +15,7 @@ export class StatusUpdate {
   public id!: number;
 
   @Property()
-  createdAt = new Date();
+  created_at = new Date();
 
   @Property()
   status: string;

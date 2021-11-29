@@ -42,7 +42,7 @@ export default async function (): Promise<void> {
       User,
       Voorstelling,
     ],
-    loadStrategy: LoadStrategy.JOINED,
+    loadStrategy: LoadStrategy.SELECT_IN,
     tsNode: true,
     debug: true,
     options: {

@@ -12,17 +12,18 @@
     </tr>
   </thead>
   <tbody>
-  <% reservering.payments.forEach( function(payment) { %>
+    <% reservering.payments.forEach( function(payment) { %>
     <tr>
-      <td><%= payment.createdAt %></td>
+      <td><%= payment.created_at %></td>
       <td><%= payment.paidDateTime %></td>
-      <td><% url = payment.getPaymentUrl(); 
-        if( url ) {%>
+      <td>
+        <% url = payment.getPaymentUrl(); if( url ) {%>
         <a href="<%= url %>">Nog te betalen</a>
-        <% } else {%>
-          <%= payment.status %>
-        <% } %>
-        </td>
-        <td><%= payment.amount %>
+        <% } else {%> <%= payment.status %> <% } %>
+      </td>
+      <td><%= payment.amount %></td>
     </tr>
-  <% }) %>
+
+    <% }) %>
+  </tbody>
+</table>

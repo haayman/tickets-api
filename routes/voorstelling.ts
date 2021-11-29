@@ -1,10 +1,8 @@
-import winston from "winston";
 import auth from "../middleware/auth";
 import express from "express";
 import { Prijs, Uitvoering, Voorstelling } from "../models";
 import { getRepository } from "../models/Repository";
-import parseQuery from "./helpers/parseQuery";
-import { QueryOrder, wrap } from "@mikro-orm/core";
+import { wrap } from "@mikro-orm/core";
 
 const router = express.Router();
 
