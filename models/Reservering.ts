@@ -70,15 +70,6 @@ export class Reservering {
 
   toJSON(strict = true, strip = [], ...args: any[]) {
     const o = wrap(this, true).toObject(...args);
-    for (const field of [
-      "bedrag",
-      "aantal",
-      "moetInWachtrij",
-      "teruggeefbaar",
-      "paymentUrl",
-    ]) {
-      o[field] = this[field];
-    }
     o.tickets = new TicketAggregator(this).toJSON();
     return o;
   }
@@ -113,6 +104,7 @@ export class Reservering {
   //   return saldo;
   // }
 
+  @Property({ persist: false })
   get bedrag() {
     return this.tickets
       .getItems()
@@ -127,10 +119,12 @@ export class Reservering {
   /**
    * aantal gereserveerde plaatsen
    */
+  @Property({ persist: false })
   get aantal() {
     return this.tickets.length;
   }
 
+  @Property({ persist: false })
   get moetInWachtrij() {
     const vrije_plaatsen = this.uitvoering.vrije_plaatsen;
     return this.id ? vrije_plaatsen < this.aantal : vrije_plaatsen <= 0;
@@ -139,6 +133,7 @@ export class Reservering {
   /**
    * Bepaal of de uitvoering binnen de teruggave_termijn valt
    */
+  @Property({ persist: false })
   get teruggeefbaar() {
     if (!this.uitvoering) {
       return undefined;
