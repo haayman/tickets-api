@@ -43,7 +43,7 @@ export class Aggregate {
   toJSON() {
     return {
       prijs: this.prijs,
-      tickets: this.tickets,
+      // tickets: this.tickets,
       aantal: this.aantal,
       aantalBetaald: this.aantalBetaald,
       aantalTekoop: this.aantalTekoop,

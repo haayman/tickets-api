@@ -72,7 +72,7 @@ export class Ticket {
     if (!this.prijs) {
       throw new Error("geen prijs");
     }
-    return this.prijs.prijs;
+    return +this.prijs.prijs;
   }
 
   @Property({ persist: false })
@@ -137,6 +137,6 @@ export class Ticket {
    * @param {*} tickets
    */
   static totaalBedrag(tickets: Ticket[]): number {
-    return tickets.reduce((totaal, t) => totaal + t.prijs.prijs, 0);
+    return tickets.reduce((totaal, t) => totaal + +t.prijs.prijs, 0);
   }
 }
