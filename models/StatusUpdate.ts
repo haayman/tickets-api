@@ -11,6 +11,10 @@ import { Reservering } from "./Reservering";
 
 @Entity({ tableName: "statusupdates" })
 export class StatusUpdate {
+  constructor(status: string) {
+    this.status = status;
+  }
+
   @PrimaryKey()
   public id!: number;
 

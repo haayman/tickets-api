@@ -7,3 +7,4 @@ export * from "./Ticket";
 export * from "./Uitvoering";
 export * from "./User";
 export * from "./Voorstelling";
+export * from "./Repository";

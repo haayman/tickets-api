@@ -9,6 +9,7 @@ import config from "./startup/config";
 import logging from "./startup/logging";
 import database from "./startup/database";
 import routes from "./startup/routes";
+import queue from "./startup/queue";
 
 export default async function () {
   const app = express();
@@ -19,6 +20,7 @@ export default async function () {
 
   logging();
   await database();
+  await queue();
   routes(app);
 
   return app;

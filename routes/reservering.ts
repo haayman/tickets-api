@@ -9,29 +9,27 @@ import { TicketHandler } from "../helpers/TicketHandler";
 // const ReserveringMail = require("../components/ReserveringMail");
 // const RefundHandler = require("../helpers/RefundHandler");
 // const parseQuery = require("./helpers/parseReserveringQuery");
+import { queue } from "../startup/queue";
 
 const router = express.Router();
 
-router.get(
-  "/",
-  /*auth(true),*/ async (req, res) => {
-    const repository = getRepository<Reservering>("Reservering");
-    const where: FilterQuery<Reservering> = {};
-    if (req.query.uitvoeringId) {
-      where.uitvoering = { id: req.query.uitvoeringId };
-    }
-
-    let reserveringen = await repository.findAll(where);
-    await repository.populate(reserveringen, [
-      "uitvoering.voorstelling.prijzen",
-      "tickets.payment",
-      "tickets.prijs",
-      "payments",
-    ]);
-
-    res.send(reserveringen);
+router.get("/", auth(true), async (req, res) => {
+  const repository = getRepository<Reservering>("Reservering");
+  const where: FilterQuery<Reservering> = {};
+  if (req.query.uitvoeringId) {
+    where.uitvoering = { id: req.query.uitvoeringId };
   }
-);
+
+  let reserveringen = await repository.findAll(where);
+  await repository.populate(reserveringen, [
+    "uitvoering.voorstelling.prijzen",
+    "tickets.payment",
+    "tickets.prijs",
+    "payments",
+  ]);
+
+  res.send(reserveringen);
+});
 
 router.get("/:id", async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
@@ -80,6 +78,8 @@ router.post("/", async (req, res) => {
       // }
 
       reservering.wachtlijst = reservering.moetInWachtrij;
+
+      queue.createJob({ type: "paymentNeeded", data: reservering.id });
 
       // await reservering.createPaymentIfNeeded();
       //await reservering.save();
@@ -133,6 +133,8 @@ router.put("/:id", async (req, res) => {
       ticketHandler.update(tickets);
 
       reservering.wachtlijst = reservering.moetInWachtrij;
+
+      queue.createJob({ type: "paymentNeeded", data: reservering.id });
 
       // await reservering.createPaymentIfNeeded();
       //await reservering.save();

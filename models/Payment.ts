@@ -19,9 +19,16 @@ import { Ticket } from "./Ticket";
 import { Reservering } from "./Reservering";
 import { Payment as MolliePayment } from "@mollie/api-client";
 
-@Entity({ tableName: "tickets" })
+@Entity({ tableName: "payments" })
 export class Payment {
+  constructor(payment: MolliePayment, description: string) {
+    this.paymentId = payment.id;
+    this.description = description;
+  }
+
   private payment: MolliePayment;
+
+  static mollieClient = mollie;
 
   @PrimaryKey()
   public id!: number;
