@@ -74,6 +74,18 @@ export class Reservering {
     return o;
   }
 
+  get onbetaaldeTickets() {
+    return this.tickets.getItems().filter((t) => !t.betaald);
+  }
+
+  get newPaymentNeeded() {
+    return (
+      !this.wachtlijst &&
+      this.onbetaaldeTickets.length &&
+      this.payments.getItems().filter((p) => p.status == "open").length == 0
+    );
+  }
+
   // get saldo() {
   //   // bereken het totaal betaalde bedrag
   //   if (!this.payments) {

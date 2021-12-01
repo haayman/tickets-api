@@ -17,7 +17,7 @@ import {
 } from "../models";
 
 export default async function (): Promise<void> {
-  const type = config.get("database.client");
+  const type: string = config.get("database.client");
   const {
     host,
     user,
@@ -30,7 +30,7 @@ export default async function (): Promise<void> {
     user,
     password,
     dbName,
-    type,
+    type: "mysql",
     entities: [
       Log,
       Payment,
