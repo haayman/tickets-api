@@ -49,7 +49,9 @@ router.get("/:id", async (req, res) => {
     return res.status(404).send("niet gevonden");
   }
 
-  res.json(reservering);
+  await reservering.finishLoading();
+
+  res.json(reservering.toJSON());
 });
 
 router.post("/", async (req, res) => {
@@ -79,7 +81,7 @@ router.post("/", async (req, res) => {
 
       reservering.wachtlijst = reservering.moetInWachtrij;
 
-      queue.createJob({ type: "paymentNeeded", data: reservering.id });
+      queue.emit("paymentNeeded", reservering.id);
 
       // await reservering.createPaymentIfNeeded();
       //await reservering.save();
@@ -133,8 +135,9 @@ router.put("/:id", async (req, res) => {
       ticketHandler.update(tickets);
 
       reservering.wachtlijst = reservering.moetInWachtrij;
+      await reservering.finishLoading();
 
-      queue.createJob({ type: "paymentNeeded", data: reservering.id });
+      queue.emit("paymentNeeded", reservering.id);
 
       // await reservering.createPaymentIfNeeded();
       //await reservering.save();
