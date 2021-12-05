@@ -22,7 +22,7 @@ import { Payment as MolliePayment } from "@mollie/api-client";
 @Entity({ tableName: "payments" })
 export class Payment {
   constructor(payment: MolliePayment, description: string) {
-    this.paymentId = payment.id;
+    this.payment_id = payment.id;
     this.description = description;
   }
 
@@ -34,7 +34,7 @@ export class Payment {
   public id!: number;
 
   @Property()
-  paymentId!: string;
+  payment_id!: string;
 
   @Property()
   betaalstatus: string;
@@ -50,15 +50,6 @@ export class Payment {
 
   @OneToMany(() => Ticket, (ticket) => ticket.payment)
   tickets = new Collection<Ticket>(this);
-
-  @OnInit()
-  async initPayment() {
-    if (!this.payment) {
-      if (this.paymentId) {
-        this.payment = await mollie.payments.get(this.paymentId);
-      }
-    }
-  }
 
   // --------- virtual attributes -----------
   @Property({ persist: false })
@@ -99,5 +90,24 @@ export class Payment {
   @Property({ persist: false })
   get isPaid() {
     return this.payment ? this.payment.isPaid() : undefined;
+  }
+
+  toJSON(strict = true, strip = [], ...args: any[]) {
+    const o = wrap(this, true).toObject(...args);
+    delete o.payment;
+    return o;
+  }
+
+  async finishLoading() {
+    await this.initPayment();
+  }
+
+  async initPayment() {
+    if (!this.payment) {
+      if (this.payment_id) {
+        const payment = await mollie.payments.get(this.payment_id);
+        this.payment = payment;
+      }
+    }
   }
 }

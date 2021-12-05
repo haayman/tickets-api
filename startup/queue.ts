@@ -1,15 +1,21 @@
-import { Queue } from "embedded-queue";
+import NRP from "node-redis-pubsub";
 import { paymentNeeded } from "../handlers/paymentNeeded";
+import config from "config";
+import { Container } from "typedi";
 
-const filename = "./queue.db";
-
-export let queue: Queue;
+let queue: NRP.NodeRedisPubSub;
 
 export default async function () {
-  queue = await Queue.createQueue({
-    filename,
-    autoload: true,
+  queue = NRP({
+    port: 6379, // Redis port
+    host: "linux", // Redis host
+    family: 4, // 4 (IPv4) or 6 (IPv6)
+    db: 0,
   });
 
-  queue.process("paymentNeeded", paymentNeeded, 1);
+  queue.on("paymentNeeded", paymentNeeded);
+
+  Container.set("queue", queue);
 }
+
+export { queue };

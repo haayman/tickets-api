@@ -139,4 +139,8 @@ export class Ticket {
   static totaalBedrag(tickets: Ticket[]): number {
     return tickets.reduce((totaal, t) => totaal + +t.prijs.prijs, 0);
   }
+
+  async finishLoading() {
+    await this.payment.finishLoading();
+  }
 }

@@ -13,13 +13,17 @@ module.exports = {
     },
     debug: false,
   },
+  redis: {
+    url: "linux",
+  },
 
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8",
   },
 
   namespace: "PlusLeoDbNamespace", // t.b.v transacties
-  jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
+  jwtPrivateKey:
+    "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
     url: "https://kaarten.jatheater.nl",
     port: 3000,

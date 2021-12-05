@@ -74,6 +74,15 @@ export class Reservering {
     return o;
   }
 
+  async finishLoading() {
+    for (const payment of this.payments.getItems()) {
+      await payment.finishLoading();
+    }
+    for (const ticket of this.tickets.getItems()) {
+      await ticket.finishLoading();
+    }
+  }
+
   get onbetaaldeTickets() {
     return this.tickets.getItems().filter((t) => !t.betaald);
   }

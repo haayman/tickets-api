@@ -34,12 +34,12 @@ export function redirectUrl(id: string) {
 }
 
 export function webhookUrl(id: string) {
-  return this.getWebhookRoot() + "/api/payment/bank/" + id;
+  return getWebhookRoot() + "/api/payment/bank/" + id;
 }
 
 export function getWebhookRoot() {
-  const root = globalData.get("localtunnel")
-    ? globalData.get("localtunnel")
-    : config.get("server.url");
-  return root;
+  // const root = globalData.get("localtunnel")
+  //   ? globalData.get("localtunnel")
+  return config.get("server.url");
+  // return root;
 }
