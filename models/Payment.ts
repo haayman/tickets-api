@@ -28,7 +28,9 @@ export class Payment {
 
   private payment: MolliePayment;
 
-  static mollieClient = mollie;
+  static mollieClient() {
+    return mollie;
+  }
 
   @PrimaryKey()
   public id!: number;
@@ -109,5 +111,16 @@ export class Payment {
         this.payment = payment;
       }
     }
+  }
+
+  async refund(amount: number) {
+    const refund = await mollie.payments_refunds.create({
+      paymentId: this.payment_id,
+      amount: {
+        currency: "EUR",
+        value: amount.toFixed(2),
+      },
+    });
+    return refund;
   }
 }

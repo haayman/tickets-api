@@ -1,10 +1,15 @@
-const Mailer = require("./Mailer");
-const format = require('date-fns/format');
-const nl = require('date-fns/locale/nl')
-const Log = require('../models/Log');
+import { Mailer } from "./Mailer";
+import format from "date-fns/format";
+import nl from "date-fns/locale/nl";
+import { Log, Reservering } from "../models";
 
-class ReserveringMail {
-  static async send(reservering, templateName, subject, params = {}) {
+export class ReserveringMail {
+  static async send(
+    reservering: Reservering,
+    templateName: string,
+    subject: string,
+    params: any = {}
+  ) {
     // const trx = reservering.$transaction();
     // const r = await Reservering.query(trx).findById(reservering.id, parseQuery(Reservering, {
     //   include: [
@@ -15,21 +20,20 @@ class ReserveringMail {
     const r = reservering;
 
     const mail = new Mailer();
-    mail
-      .setTemplate("index")
-      .setTo(r.email, r.naam)
-      .setSubject(subject);
+    mail.setTemplate("index").setTo(r.email, r.naam).setSubject(subject);
 
     if (params.to) {
-      mail.setTo(params.to)
+      mail.setTo(params.to);
     }
 
-    await mail.send(Object.assign({}, params, {
-      template: templateName,
-      reservering: r,
-      format,
-      nl
-    }));
+    await mail.send(
+      Object.assign({}, params, {
+        template: templateName,
+        reservering: r,
+        format,
+        nl,
+      })
+    );
     // debugger;
     await Log.addMessage(r, `Mail '${subject}' verzonden`);
   }
@@ -41,12 +45,10 @@ class ReserveringMail {
         template: templateName,
         reservering: reservering,
         format,
-        nl
+        nl,
       })
     );
 
     return content;
   }
 }
-
-module.exports = ReserveringMail;

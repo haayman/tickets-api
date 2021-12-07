@@ -14,6 +14,9 @@
   'verkocht'
 */
 import {
+  AfterCreate,
+  AfterDelete,
+  AfterUpdate,
   Entity,
   Filter,
   Index,
@@ -23,6 +26,7 @@ import {
   Property,
   wrap,
 } from "@mikro-orm/core";
+import { queue } from "../startup/queue";
 import { Payment } from "./Payment";
 import { Prijs } from "./Prijs";
 import { Reservering } from "./Reservering";
@@ -141,6 +145,6 @@ export class Ticket {
   }
 
   async finishLoading() {
-    await this.payment.finishLoading();
+    await this.payment?.finishLoading();
   }
 }

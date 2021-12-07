@@ -1,7 +1,7 @@
 import auth from "../middleware/auth";
 import express from "express";
 import { User } from "../models/User";
-import Mailer from "../components/Mailer";
+import { Mailer } from "../components/Mailer";
 import { getRepository } from "../models/Repository";
 import { QueryOrder, wrap } from "@mikro-orm/core";
 
