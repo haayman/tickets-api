@@ -2,6 +2,8 @@ import differenceInCalendarDays from "date-fns/differenceInCalendarDays";
 import config from "config";
 import { v4 } from "uuid";
 import {
+  AfterDelete,
+  AfterUpdate,
   Collection,
   Entity,
   Index,
@@ -16,7 +18,15 @@ import { Log } from "./Log";
 import { Ticket } from "./Ticket";
 import { Payment } from "./Payment";
 import { StatusUpdate } from "./StatusUpdate";
-import { TicketAggregator } from "../helpers/TicketAggregator";
+import { Aggregate, TicketAggregator } from "../helpers/TicketAggregator";
+import {
+  getMailUrl,
+  getBetalingUrl,
+  getEditLink,
+  getQrUrl,
+  getResendUrl,
+  getTicketUrl,
+} from "../components/urls";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -83,6 +93,10 @@ export class Reservering {
     }
   }
 
+  get ticketAggregates() {
+    return Object.values(new TicketAggregator(this).aggregates);
+  }
+
   get onbetaaldeTickets() {
     return this.tickets.getItems().filter((t) => !t.betaald);
   }
@@ -95,35 +109,49 @@ export class Reservering {
     );
   }
 
-  // get saldo() {
-  //   // bereken het totaal betaalde bedrag
-  //   if (!this.payments) {
-  //     return undefined;
-  //   }
+  @AfterUpdate()
+  @AfterDelete()
+  triggerUpdated() {
+    // @ts-ignore
+    queue.emit("reserveringUpdated", this.id);
+  }
 
-  //   // totaal betaald
-  //   let saldo = this.payments.getItems().reduce((saldo, payment) => {
-  //     // if (!payment.payment && payment.paymentId) {
-  //     //   debugger;
-  //     //   throw new Error("payment not initialized");
-  //     // }
-  //     if (payment.isPaid) {
-  //       return saldo + (+payment.amount - (payment.amountRefunded || 0));
-  //     } else {
-  //       return saldo;
-  //     }
-  //   }, 0);
+  @Property({ persist: false })
+  get openstaandBedrag() {
+    return -this.saldo;
+  }
 
-  //   // bereken kosten van alle te betalen tickets
-  //   saldo = this.tickets.getItems()
-  //     .filter((t) => !t.tekoop)
-  //     .reduce((saldo, t) => saldo - t.bedrag, saldo);
-  //   // saldo = this.TicketHandlers.reduce((saldo, ta) => {
-  //   //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
-  //   // }, saldo);
+  @Property({ persist: false })
+  get saldo() {
+    // bereken het totaal betaalde bedrag
+    if (!this.payments) {
+      return undefined;
+    }
 
-  //   return saldo;
-  // }
+    // totaal betaald
+    let saldo = this.payments.getItems().reduce((saldo, payment) => {
+      // if (!payment.payment && payment.paymentId) {
+      //   debugger;
+      //   throw new Error("payment not initialized");
+      // }
+      if (payment.isPaid) {
+        return saldo + (+payment.amount - (payment.amountRefunded || 0));
+      } else {
+        return saldo;
+      }
+    }, 0);
+
+    // bereken kosten van alle te betalen tickets
+    saldo = this.tickets
+      .getItems()
+      .filter((t) => !t.tekoop)
+      .reduce((saldo, t) => saldo - t.bedrag, saldo);
+    // saldo = this.TicketHandlers.reduce((saldo, ta) => {
+    //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
+    // }, saldo);
+
+    return saldo;
+  }
 
   @Property({ persist: false })
   get bedrag() {
@@ -176,5 +204,33 @@ export class Reservering {
       return payment.paymentUrl;
     }
     return undefined;
+  }
+
+  getMailUrl() {
+    return getMailUrl(this.id);
+  }
+  getBetalingUrl() {
+    return getBetalingUrl(this.id);
+  }
+  getEditLink() {
+    getEditLink(this.id);
+  }
+  getQrUrl() {
+    getQrUrl(this.id);
+  }
+  getResendUrl() {
+    getResendUrl(this.id);
+  }
+  getTicketUrl() {
+    getTicketUrl(this.id);
+  }
+
+  static populate() {
+    return [
+      "uitvoering.voorstelling.prijzen",
+      "tickets.payment",
+      "tickets.prijs",
+      "payments",
+    ];
   }
 }

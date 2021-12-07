@@ -1,7 +1,8 @@
 import { TicketAggregator, TicketDTO } from "./TicketAggregator";
 import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
-import { Reservering } from "~/models";
+import { Reservering } from "../models";
+import { queue } from "../startup/queue";
 
 /**
  * @typedef {Object} Prijs
@@ -63,15 +64,12 @@ export class TicketHandler {
       }
     });
 
-    // TRIGGER await this.haalUitVerkoop();
-    // TRIGGER await this.annuleren();
-
-    // kijk of er tickets doorverkocht kunnen worden
-    // TRIGGER
-    // await Ticket.verwerkTekoop(this.trx, this.new.length);
-
     this.annuleren();
     this.bestellen();
+    // @ts-ignore
+    queue.emit("uitvoeringUpdated", this.reservering.uitvoering.id);
+    // @ts-ignore
+    queue.emit("verwerkTekoop", this.new.length);
   }
 
   haalUitVerkoop() {

@@ -1,0 +1,28 @@
+import { EntityManager } from "@mikro-orm/core";
+import Container from "typedi";
+import { ReserveringMail } from "../components/ReserveringMail";
+import { Uitvoering, Reservering } from "../models";
+
+export async function uitvoeringUpdated(uitvoeringId: number) {
+  const em: EntityManager = Container.get("em");
+  await em.transactional(async (em) => {
+    const repository = em.getRepository<Uitvoering>("Uitvoering");
+    const uitvoering = await repository.findOne(uitvoeringId);
+    let vrije_plaatsen = uitvoering.vrije_plaatsen;
+
+    const wachtenden = (
+      await uitvoering.reserveringen.matching({
+        limit: vrije_plaatsen,
+        orderBy: { created_at: "asc" },
+      })
+    ).filter((reservering) => reservering.wachtlijst);
+
+    for (const wachtende of wachtenden) {
+      if (wachtende.aantal <= vrije_plaatsen) {
+        vrije_plaatsen -= wachtende.aantal;
+        wachtende.wachtlijst = false;
+        ReserveringMail.send(wachtende, "uit_wachtlijst", "uit wachtlijst");
+      }
+    }
+  });
+}

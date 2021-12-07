@@ -1,35 +1,41 @@
-'use strict';
+"use strict";
 
-const nodemailer = require('nodemailer');
-const config = require('config');
-const EmailTemplates = require('email-templates');
-const path = require('path');
+import { Transporter, createTransport } from "nodemailer";
+import config from "config";
+import EmailTemplates from "email-templates";
+import path from "path";
 
-module.exports = class Mailer {
+export class Mailer {
+  private transporter: Transporter;
+  private from: string;
+  private to: string;
+  private template: string;
+  private subject: string;
+
   constructor(params = {}) {
     this.transporter = this.createTransport(params);
     this.from = this.getRecipient(
-      config.get('email.afzender_email'),
-      config.get('email.afzender')
+      config.get("email.afzender_email"),
+      config.get("email.afzender")
     );
   }
   createTransport(params = {}) {
-    params = Object.assign({}, config.get('mail_transport'), params);
-    return nodemailer.createTransport(params);
+    params = Object.assign({}, config.get("mail_transport"), params);
+    return createTransport(params);
   }
 
-  setSubject(subject) {
-    const prefix = config.get('email.subject_prefix');
+  setSubject(subject: string) {
+    const prefix = config.get("email.subject_prefix");
     this.subject = prefix ? `${prefix} ${subject}` : subject;
     return this;
   }
 
-  setTo(email, naam) {
+  setTo(email: string, naam?: string) {
     this.to = this.getRecipient(email, naam, true);
     return this;
   }
 
-  setFrom(email, naam) {
+  setFrom(email: string, name?: string) {
     this.from = this.getRecipient(email, name);
     return this;
   }
@@ -41,12 +47,12 @@ module.exports = class Mailer {
 
   initTemplate() {
     return new EmailTemplates({
-      root: path.join(path.resolve(__dirname, '../email/templates')),
       views: {
+        root: path.join(path.resolve(__dirname, "../emails/")),
         options: {
-          extension: 'ejs'
-        }
-      }
+          extension: "ejs",
+        },
+      },
     });
   }
 
@@ -57,10 +63,11 @@ module.exports = class Mailer {
       from: this.from,
       to: this.to,
       subject: this.subject,
-      html: html
+      html: html,
+      bcc: undefined,
     };
-    if (config.has('email.bcc')) {
-      options.bcc = config.get('email.bcc');
+    if (config.has("email.bcc")) {
+      options.bcc = config.get("email.bcc");
     }
     await this.transporter.sendMail(options);
   }
@@ -70,10 +77,9 @@ module.exports = class Mailer {
     return await template.render(this.template, params);
   }
 
-  getRecipient(email, naam, override = true) {
-    let alwaysTo;
-    if (override && (alwaysTo = config.has('email.alwaysTo'))) {
-      email = config.get('email.alwaysTo');
+  getRecipient(email: string, naam?: string, override = true) {
+    if (override && config.has("email.alwaysTo")) {
+      email = config.get("email.alwaysTo");
     }
 
     let emailString;
@@ -85,4 +91,4 @@ module.exports = class Mailer {
 
     return emailString;
   }
-};
+}

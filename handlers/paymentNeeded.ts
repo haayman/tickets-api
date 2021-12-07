@@ -1,5 +1,7 @@
 import { redirectUrl, webhookUrl } from "../components/urls";
 import { Container } from "typedi";
+import config from "config";
+
 import {
   Reservering,
   Payment,
@@ -8,8 +10,13 @@ import {
   getRepository,
 } from "../models";
 import { EntityManager } from "@mikro-orm/mysql";
+import createMollieClient from "@mollie/api-client";
 
 export async function paymentNeeded(id: string) {
+  const mollie_key: string = config.get("payment.mollie_key");
+
+  const mollie = createMollieClient({ apiKey: mollie_key });
+
   const em: EntityManager = Container.get("em");
   await em.transactional(async (em) => {
     const repository = em.getRepository(Reservering);
@@ -18,7 +25,6 @@ export async function paymentNeeded(id: string) {
       "payments",
     ]);
     await reservering.finishLoading();
-    const mollie = Payment.mollieClient;
     if (reservering.newPaymentNeeded) {
       const tickets = reservering.onbetaaldeTickets;
 

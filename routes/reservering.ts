@@ -13,7 +13,7 @@ import { queue } from "../startup/queue";
 
 const router = express.Router();
 
-router.get("/", auth(true), async (req, res) => {
+router.get("/", async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
   const where: FilterQuery<Reservering> = {};
   if (req.query.uitvoeringId) {
@@ -28,7 +28,7 @@ router.get("/", auth(true), async (req, res) => {
     "payments",
   ]);
 
-  res.send(reserveringen);
+  res.json(reserveringen);
 });
 
 router.get("/:id", async (req, res) => {
@@ -125,12 +125,7 @@ router.put("/:id", async (req, res) => {
       let { tickets, ...data } = req.body;
       let reservering = await repository.findOneOrFail({ id: req.params.id });
       wrap(reservering).assign(data);
-      await repository.populate(reservering, [
-        "uitvoering.voorstelling.prijzen",
-        "tickets.payment",
-        "tickets.prijs",
-        "payments",
-      ]);
+      await repository.populate(reservering, Reservering.populate());
       const ticketHandler = new TicketHandler(reservering);
       ticketHandler.update(tickets);
 
@@ -138,30 +133,8 @@ router.put("/:id", async (req, res) => {
       await reservering.finishLoading();
 
       queue.emit("paymentNeeded", reservering.id);
+      queue.emit("reserveringUpdated", reservering.id);
 
-      // await reservering.createPaymentIfNeeded();
-      //await reservering.save();
-
-      // const saldo = reservering.saldo;
-      // const strReservering = reservering.toString();
-      // if (!saldo) {
-      //   // vrijkaartjes
-      //   await ReserveringMail.send(reservering, "ticket", strReservering);
-      // } else if (reservering.wachtlijst) {
-      //   await ReserveringMail.send(
-      //     reservering,
-      //     "wachtlijst",
-      //     "Je staat op de wachtlijst"
-      //   );
-      // } else {
-      //   await ReserveringMail.send(
-      //     reservering,
-      //     "aangevraagd",
-      //     "kaarten besteld"
-      //   );
-      // }
-
-      // await RefundHandler.verwerkRefunds(Reservering, Ticket);
       res.send(reservering);
     });
   } catch (e) {
@@ -415,19 +388,23 @@ router.put("/:id", async (req, res) => {
 //   res.send(html);
 // });
 
-// router.get("/:id/qr", async (req, res) => {
-//   const reservering = await Reservering.query().findById(req.params.id);
-//   if (!reservering) return res.status(404).send("niet gevonden");
+router.get("/:id/qr", async (req, res) => {
+  const repository = getRepository<Reservering>("Reservering");
 
-//   const qr = require("qr-image");
+  const reservering = await repository.findOne({ id: req.params.id });
+  if (!reservering) {
+    return res.status(404).send("niet gevonden");
+  }
 
-//   const png = qr.imageSync(reservering.getTicketUrl(), {
-//     type: "png",
-//     size: 5,
-//     margin: 3,
-//   });
-//   res.type("png").send(png);
-// });
+  const qr = require("qr-image");
+
+  const png = qr.imageSync(reservering.getTicketUrl(), {
+    type: "png",
+    size: 5,
+    margin: 3,
+  });
+  res.type("png").send(png);
+});
 
 // // router.get('/:id/qr_teruggave', async (req, res) => {
 // //   const mixin = require('../models/RefundHandler');

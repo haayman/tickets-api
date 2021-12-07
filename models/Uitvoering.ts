@@ -1,6 +1,7 @@
 import format from "date-fns/format";
 import nl from "date-fns/locale/nl";
 import {
+  AfterUpdate,
   Collection,
   Entity,
   Index,
@@ -13,6 +14,7 @@ import {
 import { Voorstelling } from "./Voorstelling";
 import { Reservering } from "./Reservering";
 import { Ticket } from "./Ticket";
+import { queue } from "../startup/queue";
 
 export type UitvoeringDTO = {
   aantal_plaatsen: number;
@@ -64,6 +66,12 @@ export class Uitvoering {
   vrije_plaatsen: number = 0;
 
   // /------------------- updated by triggers ----------
+
+  @AfterUpdate()
+  triggerUpdated() {
+    // @ts-ignore
+    queue.emit("uitvoeringUpdated", this.id);
+  }
 
   @ManyToOne()
   voorstelling!: Voorstelling;
