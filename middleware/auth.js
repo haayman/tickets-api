@@ -18,7 +18,7 @@ module.exports = function(authRequired = true) {
       if (authRequired === true) {
         // just being logged in is sufficient
         next();
-      } else if (authRequired.length & authRequired.includes(role)) {
+      } else if (authRequired.length && authRequired.includes(role)) {
         // needs specific role
         next();
       } else {

@@ -1,11 +1,19 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true, // For ESLint
-    "editor.action.formatDocument": true // Other files
+    "source.fixAll.eslint": true,
+    "source.fixAll.stylelint": true
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
+  "eslint.enable": true,
+  "eslint.validate": [
+    "javascript",
+    "vue"
+  ],
   "[javascript]": {
-    "editor.formatOnSave": true,
+    "editor.formatOnSave": true
   },
+  "[vue]": {
+    "editor.formatOnSave": true
+  }
 }

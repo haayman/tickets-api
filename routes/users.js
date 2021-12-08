@@ -7,13 +7,13 @@ const router = express.Router();
 
 router.get("/", auth(["admin"]), async (req, res) => {
   let users = await User.query().orderBy("username");
-  res.send(users.map(u => u.$omit("password")));
+  res.send(users.map((u) => u.$omit("password")));
 });
 
 router.post("/", auth(["admin"]), async (req, res) => {
   try {
     let user = await User.query().findOne({
-      name: req.body.name
+      name: req.body.name,
     });
     if (user) {
       return res.status(400).send(`Gebruiker ${user.name} al geregistreerd`);
@@ -54,10 +54,9 @@ router.put("/:id", async (req, res) => {
 });
 
 router.get("/:id", auth(["admin", "speler"]), async (req, res) => {
-  debugger;
   const me = res.locals.user;
   console.log(me);
-  if (!me.isAdmin() && me.id !== req.params.id) {
+  if (!me.isAdministrator() && me.id !== req.params.id) {
     return res.status(403).send("Access denied");
   }
 
@@ -94,7 +93,7 @@ router.post("/forgotten", async (req, res) => {
     return res.status(403).send("geen username");
   }
   const user = await User.query().findOne({
-    username: username
+    username: username,
   });
   if (!user) {
     return res.status(404).send("niet gevonden");
@@ -107,7 +106,7 @@ router.post("/forgotten", async (req, res) => {
     .setTo(user.email, user.naam);
 
   await mailer.send({
-    user: user
+    user: user,
   });
   return res.send("mail verstuurd");
 });

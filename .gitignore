@@ -1,1 +1,5 @@
 node_modules
+config/**/*
+!config/default.js
+!config/example.*.js
+
