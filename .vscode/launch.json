@@ -1,0 +1,110 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "dev",
+      "address": "linux",
+      "port": 9229,
+      "internalConsoleOptions": "neverOpen",
+      "localRoot": "${workspaceFolder}/",
+      "remoteRoot": "/var/www/tickets-api/"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "jest",
+      "address": "linux",
+      "port": 9230,
+      "internalConsoleOptions": "neverOpen",
+      "localRoot": "${workspaceFolder}/",
+      "remoteRoot": "/var/www/tickets-api/"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "npm run test_server",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "test_server"
+      ],
+      "port": 9229
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "fill_reservation",
+      "program": "${workspaceFolder}/server/fill_reservation.js",
+      "cwd": "${workspaceFolder}/server",
+      "env": {
+        "PORT": "3002"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "init_users",
+      "program": "${workspaceFolder}/server/init_users.js",
+      "cwd": "${workspaceFolder}/server"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "nodemon",
+      "runtimeExecutable": "nodemon",
+      "program": "${workspaceFolder}/server/server.js",
+      "restart": true,
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}/server/",
+      "env": {
+        "NODE_ENV": "staging"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest All",
+      "program": "${workspaceFolder}/node_modules/.bin/jest.cmd",
+      "args": [
+        "--runInBand"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Jest Current File",
+      "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+      "args": [
+        "${relativeFile}"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Intergratietest",
+      "program": "${workspaceRoot}/node_modules/jest/bin/jest.js",
+      "args": [
+        "tests/integration/reservering/reservering.test.js"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "cwd": "${workspaceFolder}/server",
+      "env": {
+        "NODE_ENV": "test"
+      }
+    }
+  ]
+}
