@@ -1,53 +1,44 @@
-const { createMollieClient } = require('@mollie/api-client');
-const BaseModel = require('./BaseModel');
-const { Model } = require('objection');
-const config = require('config');
-const mollie_key = config.get('payment.mollie_key');
+const { createMollieClient } = require("@mollie/api-client");
+const BaseModel = require("./BaseModel");
+const { Model } = require("objection");
+const config = require("config");
+const mollie_key = config.get("payment.mollie_key");
 
 const mollie = createMollieClient({ apiKey: mollie_key });
 
-
 module.exports = class Payment extends BaseModel {
   static get tableName() {
-    return 'payments';
+    return "payments";
   }
 
   static get jsonSchema() {
     return {
-      type: 'object',
+      type: "object",
       properties: {
         id: {
-          type: 'integer'
+          type: "integer",
         },
         paymentId: {
-          type: 'string'
+          type: "string",
         },
         betaalstatus: {
-          type: 'string'
+          type: "string",
         },
         description: {
-          type: 'string'
+          type: "string",
         },
         paidBack: {
-          type: 'number'
+          type: "number",
         },
         reserveringId: {
-          type: 'uuid'
-        }
-      }
+          type: "uuid",
+        },
+      },
     };
   }
 
   static get virtualAttributes() {
-    return [
-      'isPaid',
-      'amount',
-      'paymentUrl',
-      'amountRefunded',
-      'paidAt',
-      'status',
-      'refundable'
-    ];
+    return ["isPaid", "amount", "paymentUrl", "amountRefunded", "paidAt", "status", "refundable"];
   }
 
   // --------- virtual attributes -----------
@@ -88,13 +79,12 @@ module.exports = class Payment extends BaseModel {
   }
 
   async getReservering() {
-    const reservering =
-      this.reservering || (await this.$relatedQuery('reservering'));
+    const reservering = this.reservering || (await this.$relatedQuery("reservering"));
     return reservering;
   }
 
   async getTickets() {
-    const tickets = this.tickets || (await this.$relatedQuery('tickets'));
+    const tickets = this.tickets || (await this.$relatedQuery("tickets"));
     return tickets;
   }
 
@@ -115,7 +105,7 @@ module.exports = class Payment extends BaseModel {
   async setStatus() {
     this.betaalstatus = this.payment.status;
     await this.$query().patch({
-      betaalstatus: this.betaalstatus
+      betaalstatus: this.betaalstatus,
     });
 
     let reservering = await this.getReservering();
@@ -127,7 +117,7 @@ module.exports = class Payment extends BaseModel {
         tickets.map(async (ticket) => {
           ticket.betaald = true;
           await ticket.save();
-        })
+        }),
       );
     }
   }
@@ -145,11 +135,15 @@ module.exports = class Payment extends BaseModel {
   // }
 
   async asString() {
-    const Ticket = require('./Ticket');
+    const Ticket = require("./Ticket");
     if (!this.tickets) {
       this.tickets = await this.getTickets();
     }
     return Ticket.description(this.tickets);
+  }
+
+  toString() {
+    return `${this.paymentId} ${this.description}`;
   }
 
   get status() {
@@ -158,18 +152,20 @@ module.exports = class Payment extends BaseModel {
 
   set status(status) {
     // @todo dit werkt niet
-    this.setDataValue('status', status);
+    this.setDataValue("status", status);
 
     switch (status) {
-      case 'refunded':
+      case "refunded":
         {
-          this.tickets.filter((t) => t.tekoop).forEach((t) => {
-            t.verkocht = true;
-            t.save();
-          });
+          this.tickets
+            .filter((t) => t.tekoop)
+            .forEach((t) => {
+              t.verkocht = true;
+              t.save();
+            });
         }
         break;
-      case 'expired': {
+      case "expired": {
         this.tickets.forEach((t) => t.setPayment(null));
         this.setTickets([]);
         break;
@@ -180,7 +176,7 @@ module.exports = class Payment extends BaseModel {
   // PaymentFactory
   // wordt aangeroepen vanuit Reservering.createPaymentIfNeeded()
   static async newPayment(reservering) {
-    const Ticket = require('./Ticket');
+    const Ticket = require("./Ticket");
 
     const tickets = reservering.onbetaaldeTickets;
 
@@ -190,24 +186,24 @@ module.exports = class Payment extends BaseModel {
     // request a new Mollie payment
     const payment = await mollie.payments.create({
       amount: {
-        currency: 'EUR',
-        value: Ticket.totaalBedrag(tickets).toFixed(2)
+        currency: "EUR",
+        value: Ticket.totaalBedrag(tickets).toFixed(2),
       },
       description: description,
       redirectUrl: reservering.redirectUrl,
       webhookUrl: reservering.webhookUrl,
       metadata: {
-        reservering_id: reservering.id
-      }
+        reservering_id: reservering.id,
+      },
     });
 
     // add the status
     await reservering.setStatus(payment.status);
 
     // insert a new Payment record
-    let newPayment = await reservering.$relatedQuery('payments').insert({
+    let newPayment = await reservering.$relatedQuery("payments").insert({
       paymentId: payment.id,
-      description: description
+      description: description,
     });
     newPayment.payment = payment;
 
@@ -217,7 +213,7 @@ module.exports = class Payment extends BaseModel {
         ticket.PaymentId = newPayment.id;
         // ticket.setPayment(this);
         await ticket.$query().update(ticket);
-      })
+      }),
     );
 
     return newPayment;
@@ -227,9 +223,9 @@ module.exports = class Payment extends BaseModel {
     const refund = await mollie.payments_refunds.create({
       paymentId: this.paymentId,
       amount: {
-        currency: 'EUR',
-        value: amount.toFixed(2)
-      }
+        currency: "EUR",
+        value: amount.toFixed(2),
+      },
     });
     return refund;
   }
@@ -246,26 +242,26 @@ module.exports = class Payment extends BaseModel {
   // };
 
   static get relationMappings() {
-    const Reservering = require('./Reservering');
-    const Ticket = require('./Ticket');
+    const Reservering = require("./Reservering");
+    const Ticket = require("./Ticket");
 
     return {
       reservering: {
         relation: Model.BelongsToOneRelation,
         modelClass: Reservering,
         join: {
-          from: 'payments.reserveringId',
-          to: 'reserveringen.id'
-        }
+          from: "payments.reserveringId",
+          to: "reserveringen.id",
+        },
       },
       tickets: {
         relation: Model.HasManyRelation,
         modelClass: Ticket,
         join: {
-          from: 'tickets.paymentId',
-          to: 'payments.id'
-        }
-      }
+          from: "tickets.paymentId",
+          to: "payments.id",
+        },
+      },
     };
   }
 };
