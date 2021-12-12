@@ -3,6 +3,7 @@ import { Payment, Reservering, Ticket, Log } from "../models";
 import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import { ReserveringMail } from "../components/ReserveringMail";
+import winston from "winston";
 
 export class RefundHandler {
   private tickets: Ticket[];
@@ -84,7 +85,8 @@ export class RefundHandler {
   }
 
   static async verwerkRefunds() {
-    const em: EntityManager = Container.get("em");
+    const em: EntityManager = (Container.get("em") as EntityManager).fork();
+    winston.info(`verwerkRefunds`);
     await em.transactional(async (em) => {
       const repository = em.getRepository(Reservering);
       const reserveringen = await repository.find(

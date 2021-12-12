@@ -12,29 +12,29 @@ module.exports = class Prijs extends BaseModel {
       required: ["description", "prijs"],
       properties: {
         id: {
-          type: "integer"
+          type: "integer",
         },
         description: {
-          type: "string"
+          type: "string",
         },
         prijs: {
           type: "number",
-          minimum: 0
+          minimum: 0,
         },
         role: {
           anyOf: [
             {
-              type: "string"
+              type: "string",
             },
             {
-              type: "null"
-            }
-          ]
+              type: "null",
+            },
+          ],
         },
         voorstellingId: {
-          type: "integer"
-        }
-      }
+          type: "integer",
+        },
+      },
     };
   }
 
@@ -62,9 +62,9 @@ module.exports = class Prijs extends BaseModel {
         modelClass: Voorstelling,
         join: {
           from: "prijzen.voorstellingId",
-          to: "voorstellingen.id"
-        }
-      }
+          to: "voorstellingen.id",
+        },
+      },
     };
   }
 };

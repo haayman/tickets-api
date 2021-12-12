@@ -1,10 +1,12 @@
 import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
+import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Uitvoering, Reservering } from "../models";
 
 export async function uitvoeringUpdated(uitvoeringId: number) {
-  const em: EntityManager = Container.get("em");
+  winston.info(`uitvoeringUpdated ${uitvoeringId}`);
+  const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.transactional(async (em) => {
     const repository = em.getRepository<Uitvoering>("Uitvoering");
     const uitvoering = await repository.findOne(uitvoeringId);
@@ -21,7 +23,11 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
       if (wachtende.aantal <= vrije_plaatsen) {
         vrije_plaatsen -= wachtende.aantal;
         wachtende.wachtlijst = false;
-        ReserveringMail.send(wachtende, "uit_wachtlijst", "uit wachtlijst");
+        await ReserveringMail.send(
+          wachtende,
+          "uit_wachtlijst",
+          "uit wachtlijst"
+        );
       }
     }
   });

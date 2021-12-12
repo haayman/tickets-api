@@ -1,6 +1,7 @@
 import NRP from "node-redis-pubsub";
 import { Container } from "typedi";
 import { reserveringUpdated } from "../handlers/reserveringUpdated";
+import { reserveringDeleted } from "../handlers/reserveringDeleted";
 import { paymentNeeded } from "../handlers/paymentNeeded";
 import { paymentReceived } from "../handlers/paymentReceived";
 import { uitvoeringUpdated } from "../handlers/uitvoeringUpdated";
@@ -16,11 +17,13 @@ export default async function () {
     db: 0,
   });
 
-  queue.on("paymentNeeded", paymentNeeded);
+  // queue.on("paymentNeeded", paymentNeeded);
   // @ts-ignore
   queue.on("paymentReceived", paymentReceived);
 
   queue.on("reserveringUpdated", reserveringUpdated);
+
+  queue.on("reserveringDeleted", reserveringDeleted);
 
   // @ts-ignore
   queue.on("uitvoeringUpdated", uitvoeringUpdated);
