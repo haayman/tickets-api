@@ -12,56 +12,45 @@ import {
 import { EntityManager } from "@mikro-orm/mysql";
 import createMollieClient from "@mollie/api-client";
 
-export async function paymentNeeded(id: string) {
-  const mollie_key: string = config.get("payment.mollie_key");
+export async function paymentNeeded(reservering: Reservering): Promise<void> {
+  await reservering.finishLoading();
+  if (reservering.newPaymentNeeded) {
+    const mollie_key: string = config.get("payment.mollie_key");
 
-  const mollie = createMollieClient({ apiKey: mollie_key });
+    const mollie = createMollieClient({ apiKey: mollie_key });
+    const tickets = reservering.onbetaaldeTickets;
 
-  const em: EntityManager = Container.get("em");
-  await em.transactional(async (em) => {
-    const repository = em.getRepository(Reservering);
-    const reservering = await repository.findOne({ id }, [
-      "tickets.prijs",
-      "payments",
-    ]);
-    await reservering.finishLoading();
-    if (reservering.newPaymentNeeded) {
-      const tickets = reservering.onbetaaldeTickets;
+    // create a description for this set of tickets
+    const description = Ticket.description(tickets);
 
-      // create a description for this set of tickets
-      const description = Ticket.description(tickets);
+    // request a new Mollie payment
+    try {
+      const payment = await mollie.payments.create({
+        amount: {
+          currency: "EUR",
+          value: Ticket.totaalBedrag(tickets).toFixed(2),
+        },
+        description: description,
+        redirectUrl: redirectUrl(reservering.id),
+        webhookUrl: webhookUrl(reservering.id),
+        metadata: {
+          reservering_id: reservering.id,
+        },
+      });
 
-      // request a new Mollie payment
-      try {
-        const payment = await mollie.payments.create({
-          amount: {
-            currency: "EUR",
-            value: Ticket.totaalBedrag(tickets).toFixed(2),
-          },
-          description: description,
-          redirectUrl: redirectUrl(reservering.id),
-          webhookUrl: webhookUrl(reservering.id),
-          metadata: {
-            reservering_id: reservering.id,
-          },
-        });
+      // add the status
+      reservering.statusupdates.add(new StatusUpdate(payment.status));
 
-        // add the status
-        reservering.statusupdates.add(new StatusUpdate(payment.status));
+      // insert a new Payment record
+      let newPayment = new Payment(payment, description);
+      reservering.payments.add(newPayment);
 
-        // insert a new Payment record
-        let newPayment = new Payment(payment, description);
-        reservering.payments.add(newPayment);
-
-        for (const ticket of tickets) {
-          ticket.payment = newPayment;
-        }
-        em.persist(reservering);
-        return newPayment;
-      } catch (e) {
-        console.error(e);
-        throw e;
+      for (const ticket of tickets) {
+        ticket.payment = newPayment;
       }
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
-  });
+  }
 }
