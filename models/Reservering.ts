@@ -2,6 +2,7 @@ import differenceInCalendarDays from "date-fns/differenceInCalendarDays";
 import config from "config";
 import { v4 } from "uuid";
 import {
+  AfterCreate,
   AfterDelete,
   AfterUpdate,
   Collection,
@@ -27,6 +28,7 @@ import {
   getResendUrl,
   getTicketUrl,
 } from "../components/urls";
+import { queue } from "../startup/queue";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -98,7 +100,7 @@ export class Reservering {
   }
 
   get onbetaaldeTickets() {
-    return this.tickets.getItems().filter((t) => !t.betaald);
+    return this.tickets.getItems().filter((t) => t.isPaid !== true && t.bedrag);
   }
 
   get newPaymentNeeded() {
@@ -109,7 +111,7 @@ export class Reservering {
     );
   }
 
-  @AfterUpdate()
+  @AfterCreate()
   @AfterDelete()
   triggerUpdated() {
     // @ts-ignore
@@ -206,23 +208,23 @@ export class Reservering {
     return undefined;
   }
 
-  getMailUrl() {
-    return getMailUrl(this.id);
+  getMailUrl(template: string) {
+    return getMailUrl(this.id, template);
   }
   getBetalingUrl() {
     return getBetalingUrl(this.id);
   }
   getEditLink() {
-    getEditLink(this.id);
+    return getEditLink(this.id);
   }
   getQrUrl() {
-    getQrUrl(this.id);
+    return getQrUrl(this.id);
   }
   getResendUrl() {
-    getResendUrl(this.id);
+    return getResendUrl(this.id);
   }
   getTicketUrl() {
-    getTicketUrl(this.id);
+    return getTicketUrl(this.id);
   }
 
   static populate() {
@@ -231,6 +233,8 @@ export class Reservering {
       "tickets.payment",
       "tickets.prijs",
       "payments",
+      "logs",
+      "statusupdates",
     ];
   }
 }

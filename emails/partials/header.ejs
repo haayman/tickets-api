@@ -1,9 +1,16 @@
-<tr><td>
-<table class="row card no-print">
-  <tr class="card-body">
-    <td >
-      <span class="small text-center">Als je deze mail niet goed kunt lezen, lees dan de <a href="<%=reservering.getMailUrl()%>?template=<%=template%>">online versie</a></span>
-    </td>
-  </tr> 
-</table>
-</td></tr>
+<tr>
+  <td>
+    <table class="row card no-print">
+      <tr class="card-body">
+        <td>
+          <span class="small text-center"
+            >Als je deze mail niet goed kunt lezen, lees dan de
+            <a href="<%=reservering.getMailUrl(template)%>"
+              >online versie</a
+            ></span
+          >
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
