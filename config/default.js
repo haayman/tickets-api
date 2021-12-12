@@ -29,10 +29,10 @@ module.exports = {
     port: 3000,
   },
   mail_transport: {
-    debug: false,
+    // debug: false,
     // logger: true,
-    sendmail: true,
-    path: "/usr/sbin/sendmail",
+    // sendmail: true,
+    // path: "/usr/sbin/sendmail",
   },
   email: {
     afzender: "Ja!Theater",
