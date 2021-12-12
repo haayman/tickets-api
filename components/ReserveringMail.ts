@@ -2,6 +2,7 @@ import { Mailer } from "./Mailer";
 import format from "date-fns/format";
 import nl from "date-fns/locale/nl";
 import { Log, Reservering } from "../models";
+import winston from "winston";
 
 export class ReserveringMail {
   static async send(
@@ -10,13 +11,6 @@ export class ReserveringMail {
     subject: string,
     params: any = {}
   ) {
-    // const trx = reservering.$transaction();
-    // const r = await Reservering.query(trx).findById(reservering.id, parseQuery(Reservering, {
-    //   include: [
-    //     'tickets',
-    //     'Payments'
-    //   ]
-    // }));
     const r = reservering;
 
     const mail = new Mailer();
@@ -34,8 +28,9 @@ export class ReserveringMail {
         nl,
       })
     );
-    // debugger;
-    await Log.addMessage(r, `Mail '${subject}' verzonden`);
+    winston.info(`Mail '${subject}' verzonden`);
+    winston.info(reservering.getMailUrl(templateName));
+    Log.addMessage(r, `Mail '${subject}' verzonden`);
   }
 
   static async render(reservering, templateName, params = {}) {
