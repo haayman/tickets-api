@@ -91,6 +91,7 @@ router.put("/:id", async (req, res) => {
 
     wrap(reservering).assign(data);
     await repository.populate(reservering, Reservering.populate());
+    await reservering.finishLoading();
     const ticketHandler = new TicketHandler(em, reservering);
     ticketHandler.update(tickets);
 
