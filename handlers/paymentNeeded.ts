@@ -1,5 +1,4 @@
 import { redirectUrl, webhookUrl } from "../components/urls";
-import { Container } from "typedi";
 import config from "config";
 
 import {
@@ -11,6 +10,7 @@ import {
 } from "../models";
 import { EntityManager } from "@mikro-orm/mysql";
 import createMollieClient from "@mollie/api-client";
+import winston from "winston";
 
 export async function paymentNeeded(reservering: Reservering): Promise<void> {
   await reservering.finishLoading();
@@ -37,6 +37,7 @@ export async function paymentNeeded(reservering: Reservering): Promise<void> {
           reservering_id: reservering.id,
         },
       });
+      winston.info(`new payment ${payment.id} for ${reservering.id}`);
 
       // add the status
       reservering.statusupdates.add(new StatusUpdate(payment.status));

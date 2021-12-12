@@ -41,7 +41,7 @@ export async function reserveringUpdated(
         await ReserveringMail.send(
           reservering,
           "aangevraagd",
-          "kaarten besteld"
+          `${reservering} besteld`
         );
       }
     });
