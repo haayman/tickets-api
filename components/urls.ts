@@ -22,11 +22,11 @@ export function getTicketUrl(id: string) {
 }
 
 export function getQrUrl(id: string) {
-  return getWebhookRoot() + `/api/reservering/${id}/qr`;
+  return getRoot() + `/api/reservering/${id}/qr`;
 }
 
-export function getMailUrl(id: string) {
-  return getRoot() + `/api/reservering/${id}/mail`;
+export function getMailUrl(id: string, template: string) {
+  return getRoot() + `/api/reservering/${id}/mail?template=${template}`;
 }
 
 export function redirectUrl(id: string) {
@@ -40,6 +40,6 @@ export function webhookUrl(id: string) {
 export function getWebhookRoot() {
   // const root = globalData.get("localtunnel")
   //   ? globalData.get("localtunnel")
-  return config.get("server.url");
+  return config.get("server.bank");
   // return root;
 }
