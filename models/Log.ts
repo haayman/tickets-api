@@ -10,6 +10,7 @@ import {
   wrap,
 } from "@mikro-orm/core";
 import { Reservering } from "./Reservering";
+import winston from "winston";
 
 @Entity({ tableName: "logs" })
 export class Log {
@@ -47,5 +48,6 @@ export class Log {
     );
 
     reservering.logs.add(log);
+    winston.info(`${reservering} ${message}`);
   }
 }
