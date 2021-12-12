@@ -43,11 +43,12 @@ export class Prijs {
     this.prijs = +this.prijs;
   }
 
-  // toJSON(strict = true, strip = [], ...args: any[]) {
-  //   const o = wrap(this, true).toObject(...args);
-  //   o.prijs = +this.prijs;
-  //   return o;
-  // }
+  toJSON(strict = true, strip = [], ...args: any[]) {
+    const o = wrap(this, true).toObject(...args);
+    o.prijs = +this.prijs;
+    delete o.voorstelling;
+    return o;
+  }
 
   constructor({ prijs, description, role }: PrijsDTO) {
     this.description = description;
