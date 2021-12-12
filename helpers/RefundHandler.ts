@@ -9,12 +9,12 @@ export class RefundHandler {
   private tickets: Ticket[];
   private payments: { [key: string]: { payment: Payment; amount: number } };
 
-  constructor(private reservering: Reservering) {
+  constructor(private em: EntityManager, private reservering: Reservering) {
     try {
       this.tickets = this.terugtebetalenTickets();
       this.payments = this.terugtebetalenPayments();
     } catch (ex) {
-      console.log("RefundHandler.constructor", ex);
+      winston.error("RefundHandler.constructor", ex);
       throw ex;
     }
   }
@@ -50,14 +50,15 @@ export class RefundHandler {
     for (const payment_id in payments) {
       const amount = payments[payment_id].amount;
       let payment = payments[payment_id].payment;
+      await this.em.populate(payment, ["tickets"]);
 
       let refunded;
       try {
         refunded = await payment.refund(amount);
       } catch (ex) {
         // al gerefund. We hadden hier niet mogen komen
-        console.error(ex);
-        throw new Error(`Payment ${payment} al teruggestort`);
+        winston.error(`Payment ${payment.payment_id} al teruggestort`);
+        refunded = true;
       }
       if (refunded) {
         const terugbetalen = payment.tickets
@@ -95,7 +96,7 @@ export class RefundHandler {
       );
       for (const reservering of reserveringen) {
         await reservering.finishLoading();
-        await new RefundHandler(reservering).refund();
+        await new RefundHandler(em, reservering).refund();
       }
     });
   }
