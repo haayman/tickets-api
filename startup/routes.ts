@@ -5,8 +5,8 @@ import users from "../routes/users";
 import voorstelling from "../routes/voorstelling";
 import reservering from "../routes/reservering";
 import uitvoering from "../routes/uitvoering";
-// import log from "../routes/log";
-// import payment from "../routes/payment";
+import log from "../routes/log";
+import payment from "../routes/payment";
 // import iframe from "../routes/iframe";
 // import mail from "../routes/mail";
 import errorHandler from "../middleware/error";
@@ -42,8 +42,8 @@ export default function (app) {
   app.use("/api/voorstelling", voorstelling);
   app.use("/api/uitvoering", uitvoering);
   app.use("/api/reservering", reservering);
-  // app.use("/api/log", log);
-  // app.use("/api/payment", payment);
+  app.use("/api/log", log);
+  app.use("/api/payment", payment);
   // app.use("/api/mail", mail);
 
   // app.use("/iframe*", iframe);

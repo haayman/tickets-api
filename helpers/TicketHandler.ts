@@ -3,6 +3,7 @@ import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
 import { Reservering } from "../models";
 import { queue } from "../startup/queue";
+import { EntityManager } from "@mikro-orm/core";
 
 /**
  * @typedef {Object} Prijs
@@ -21,7 +22,8 @@ export class TicketHandler {
   private cancelled: Ticket[] = [];
   private new: Pick<Ticket, "prijs" | "betaald">[] = [];
   private terugKopen: Ticket[] = [];
-  constructor(public reservering: Reservering) {
+
+  constructor(private em: EntityManager, public reservering: Reservering) {
     this.oldTickets = new TicketAggregator(reservering);
   }
 
@@ -38,8 +40,10 @@ export class TicketHandler {
       );
     }
 
-    newTickets.forEach(({ prijs, aantal }) => {
+    for (let { prijs, aantal } of newTickets) {
       const oldTickets = this.oldTickets.aggregates[prijs.id];
+      // vervang prijs door het échte prijs record
+      prijs = oldTickets.prijs;
       if (oldTickets.tickets.length < aantal) {
         // bijbestelling
         let oldAantal = aantal - oldTickets.aantalTekoop;
@@ -54,7 +58,7 @@ export class TicketHandler {
         }
 
         for (let i = aantal - oldTickets.tickets.length; i; i--) {
-          this.new.push({ prijs: prijs, betaald: prijs.prijs == 0 });
+          this.new.push({ prijs, betaald: prijs.prijs == 0 });
         }
       } else if (oldTickets.tickets.length > aantal) {
         const diff = oldTickets.tickets.length - aantal;
@@ -62,7 +66,7 @@ export class TicketHandler {
           oldTickets.tickets.splice(0, diff)
         );
       }
-    });
+    }
 
     this.annuleren();
     this.bestellen();
@@ -83,7 +87,7 @@ export class TicketHandler {
     }
   }
 
-  async annuleren() {
+  annuleren() {
     if (this.cancelled.length) {
       const deletable = this.cancelled.filter(
         (t) => !t.payment || t.payment.status !== "paid"
@@ -117,7 +121,7 @@ export class TicketHandler {
             this.reservering,
             `${Ticket.description(paid, " en ")} te koop zetten`
           );
-          paid.map(async (ticket) => {
+          paid.map((ticket) => {
             ticket.tekoop = true;
           });
         }
@@ -126,8 +130,14 @@ export class TicketHandler {
   }
 
   bestellen() {
+    if (!this.new.length) return;
+    const tickets = [];
     for (const { prijs, betaald } of this.new) {
-      this.reservering.tickets.add(new Ticket(prijs, betaald));
+      const ticket = new Ticket(prijs, betaald);
+      this.reservering.tickets.add(ticket);
+      tickets.push(ticket);
     }
+    const description = Ticket.description(tickets, " en ");
+    Log.addMessage(this.reservering, `${description} besteld`);
   }
 }

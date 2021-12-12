@@ -3,37 +3,47 @@ import Container from "typedi";
 import { Reservering } from "../models";
 import { RefundHandler } from "../helpers/RefundHandler";
 import { ReserveringMail } from "../components/ReserveringMail";
-import parseQuery from "~/routes/helpers/parseQuery";
+import winston from "winston";
 
 export type ReserveringUpdatedMessage = string;
 
 export async function reserveringUpdated(
   reserveringId: ReserveringUpdatedMessage
 ) {
+  winston.info(`reserveringUpdated, ${reserveringId}`);
   setTimeout(() => {
     RefundHandler.verwerkRefunds();
   }, 1000);
 
   setTimeout(async () => {
-    const em: EntityManager = Container.get("em");
-    const repository = em.getRepository<Reservering>("Reservering");
-    const reservering = await repository.findOne(
-      { id: reserveringId },
-      Reservering.populate()
-    );
-    const saldo = reservering.saldo;
-    const strReservering = reservering.toString();
-    if (!saldo) {
-      // vrijkaartjes
-      ReserveringMail.send(reservering, "ticket", strReservering);
-    } else if (reservering.wachtlijst) {
-      ReserveringMail.send(
-        reservering,
-        "wachtlijst",
-        "Je staat op de wachtlijst"
+    const em: EntityManager = (Container.get("em") as EntityManager).fork();
+    await em.transactional(async (em) => {
+      const repository = em.getRepository<Reservering>("Reservering");
+      const reservering = await repository.findOne(
+        { id: reserveringId },
+        Reservering.populate()
       );
-    } else {
-      ReserveringMail.send(reservering, "aangevraagd", "kaarten besteld");
-    }
+      await reservering.finishLoading();
+      const saldo = reservering.saldo;
+      if (!saldo) {
+        await ReserveringMail.send(
+          reservering,
+          "ticket",
+          `kaarten voor ${reservering}`
+        );
+      } else if (reservering.wachtlijst) {
+        await ReserveringMail.send(
+          reservering,
+          "wachtlijst",
+          "Je staat op de wachtlijst"
+        );
+      } else {
+        await ReserveringMail.send(
+          reservering,
+          "aangevraagd",
+          "kaarten besteld"
+        );
+      }
+    });
   }, 500);
 }

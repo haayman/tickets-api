@@ -3,17 +3,14 @@ import express from "express";
 import { Prijs, Uitvoering, Voorstelling, Reservering } from "../models";
 import { getRepository } from "../models/Repository";
 import { FilterQuery, wrap, RequestContext } from "@mikro-orm/core";
-
-// const TicketAggregate = require("../helpers/TicketAggregator");
+import { paymentNeeded } from "../handlers/paymentNeeded";
 import { TicketHandler } from "../helpers/TicketHandler";
-// const ReserveringMail = require("../components/ReserveringMail");
-// const RefundHandler = require("../helpers/RefundHandler");
-// const parseQuery = require("./helpers/parseReserveringQuery");
 import { queue } from "../startup/queue";
+import { ReserveringMail } from "../components/ReserveringMail";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", auth(true), async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
   const where: FilterQuery<Reservering> = {};
   if (req.query.uitvoeringId) {
@@ -37,12 +34,7 @@ router.get("/:id", async (req, res) => {
   const reservering = await repository.findOne(
     { id: req.params.id },
     {
-      populate: [
-        "uitvoering.voorstelling.prijzen",
-        "tickets.payment",
-        "tickets.prijs",
-        "payments",
-      ],
+      populate: Reservering.populate(),
     }
   );
   if (!reservering) {
@@ -50,289 +42,182 @@ router.get("/:id", async (req, res) => {
   }
 
   await reservering.finishLoading();
+  await paymentNeeded(reservering);
 
   res.json(reservering.toJSON());
 });
 
 router.post("/", async (req, res) => {
-  const em = RequestContext.getEntityManager();
+  const em = RequestContext.getEntityManager().fork(false);
+  await em.begin();
   try {
-    await em.transactional(async (em) => {
-      const repository = em.getRepository<Reservering>("Reservering");
+    const repository = em.getRepository<Reservering>("Reservering");
 
-      // verwijder tickets uit de body, die worden door ticketHandler.update verwerkt
-      let { tickets, ...data } = req.body;
-      let reservering = repository.create(data);
-      await repository.populate(reservering, [
-        "uitvoering.voorstelling.prijzen",
-      ]);
-      const ticketHandler = new TicketHandler(reservering);
-      ticketHandler.update(tickets);
+    // verwijder tickets uit de body, die worden door ticketHandler.update verwerkt
+    let { tickets, ...data } = req.body;
+    let reservering = repository.create(data);
+    em.persist(reservering);
 
-      // // kassa-betaling
-      // if (res.locals.user && req.body.betaald === true) {
-      //   await Promise.all(
-      //     reservering.onbetaaldeTickets.map(async (ticket) => {
-      //       ticket.betaald = true;
-      //       await ticket.save();
-      //     })
-      //   );
-      // }
+    await repository.populate(reservering, Reservering.populate());
+    const ticketHandler = new TicketHandler(em, reservering);
+    ticketHandler.update(tickets);
 
-      reservering.wachtlijst = reservering.moetInWachtrij;
+    reservering.wachtlijst = reservering.moetInWachtrij;
+    await paymentNeeded(reservering);
 
-      queue.emit("paymentNeeded", reservering.id);
+    await em.commit();
+    res.send(reservering);
 
-      // await reservering.createPaymentIfNeeded();
-      //await reservering.save();
-
-      // const saldo = reservering.saldo;
-      // const strReservering = reservering.toString();
-      // if (!saldo) {
-      //   // vrijkaartjes
-      //   await ReserveringMail.send(reservering, "ticket", strReservering);
-      // } else if (reservering.wachtlijst) {
-      //   await ReserveringMail.send(
-      //     reservering,
-      //     "wachtlijst",
-      //     "Je staat op de wachtlijst"
-      //   );
-      // } else {
-      //   await ReserveringMail.send(
-      //     reservering,
-      //     "aangevraagd",
-      //     "kaarten besteld"
-      //   );
-      // }
-
-      // await RefundHandler.verwerkRefunds(Reservering, Ticket);
-      em.persist(reservering);
-
-      res.send(reservering);
-    });
+    queue.emit("reserveringUpdated", reservering.id);
   } catch (e) {
+    em.rollback();
     throw e;
   }
 });
 
 router.put("/:id", async (req, res) => {
-  const em = RequestContext.getEntityManager();
+  const em = RequestContext.getEntityManager().fork(false);
+  await em.begin();
   try {
-    await em.transactional(async (em) => {
-      const repository = em.getRepository<Reservering>("Reservering");
+    const repository = em.getRepository<Reservering>("Reservering");
 
-      // verwijder tickets uit de body, die worden door ticketHandler.update verwerkt
-      let { tickets, ...data } = req.body;
-      let reservering = await repository.findOneOrFail({ id: req.params.id });
-      wrap(reservering).assign(data);
-      await repository.populate(reservering, Reservering.populate());
-      const ticketHandler = new TicketHandler(reservering);
-      ticketHandler.update(tickets);
+    // verwijder tickets uit de body, die worden door ticketHandler.update verwerkt
+    let { tickets, ...data } = req.body;
+    let reservering = await repository.findOneOrFail({ id: req.params.id });
 
-      reservering.wachtlijst = reservering.moetInWachtrij;
-      await reservering.finishLoading();
+    if (reservering.ingenomen) {
+      return res.status(405).send("reservering is al ingenomen");
+    }
 
-      queue.emit("paymentNeeded", reservering.id);
-      queue.emit("reserveringUpdated", reservering.id);
+    wrap(reservering).assign(data);
+    await repository.populate(reservering, Reservering.populate());
+    const ticketHandler = new TicketHandler(em, reservering);
+    ticketHandler.update(tickets);
 
-      res.send(reservering);
-    });
+    reservering.wachtlijst = reservering.moetInWachtrij;
+
+    await paymentNeeded(reservering);
+
+    await em.commit();
+
+    queue.emit("reserveringUpdated", reservering.id);
+
+    res.send(reservering);
   } catch (e) {
+    await em.rollback();
     throw e;
   }
 });
 
-// router.put("/:id", async (req, res) => {
-//   await transaction(Reservering, async (Reservering, trx) => {
-//     let id = req.params.id;
+router.delete("/:id", async (req, res) => {
+  const em = RequestContext.getEntityManager().fork(false);
+  await em.begin();
+  try {
+    const repository = em.getRepository<Reservering>("Reservering");
 
-//     if (!req.params.id) {
-//       return res.status(400).send("no id");
-//     }
+    let reservering = await repository.findOneOrFail({ id: req.params.id });
+    if (reservering.ingenomen) {
+      return res.status(405).send("reservering is al ingenomen");
+    }
 
-//     const query = parseQuery(
-//       {
-//         include: ["tickets"],
-//       },
-//       Reservering
-//     );
-//     const graphExpressionObject = query.graphExpressionObject();
+    await repository.populate(reservering, Reservering.populate());
+    const ticketHandler = new TicketHandler(em, reservering);
+    ticketHandler.update([]);
 
-//     let reservering = await query.findById(id);
-//     if (!reservering) {
-//       return res.status(404).send(`not found: ${id}`);
-//     }
+    queue.emit("reserveringDeleted", reservering.id);
 
-//     // geen wijzigingen meer toestaan nadat de reservering is ingenomen
-//     if (reservering.ingenomen) {
-//       return res.status("405").send("reservering is al ingenomen");
-//     }
+    await em.commit();
 
-//     let data = Reservering.cleanProperties(req.body);
-//     reservering = await query
-//       .withGraphFetched(graphExpressionObject)
-//       .patchAndFetchById(id, data);
-//     const ticketHandler = new TicketHandler(reservering);
+    res.send(reservering);
+  } catch (e) {
+    await em.rollback();
+    throw e;
+  }
+});
 
-//     if (req.body.tickets) {
-//       await ticketHandler.update(req.body.tickets);
-//     }
+router.put("/:id/ingenomen", async (req, res) => {
+  const em = RequestContext.getEntityManager().fork(false);
+  await em.begin();
+  try {
+    const repository = em.getRepository<Reservering>("Reservering");
 
-//     reservering.wachtlijst = await reservering.moetInWachtrij;
-//     await reservering.$query().patch({
-//       wachtlijst: reservering.wachtlijst,
-//     });
+    let reservering = await repository.findOneOrFail({ id: req.params.id });
+    if (reservering.ingenomen) {
+      return res.status(405).send("reservering is al ingenomen");
+    }
+    reservering.ingenomen = new Date();
 
-//     const saldo = reservering.saldo;
+    await em.commit();
 
-//     if (saldo < 0) {
-//       await reservering.createPaymentIfNeeded();
-//     }
+    res.send(reservering);
+  } catch (e) {
+    await em.rollback();
+    throw e;
+  }
+});
 
-//     // geef de Reservering en Ticket binnen deze transactie door
-//     await RefundHandler.verwerkRefunds(Reservering, Ticket);
+router.get("/:id/resend", async (req, res) => {
+  // const mixin = require("../models/Refund.mixin");
+  const em = RequestContext.getEntityManager();
+  const repository = em.getRepository<Reservering>("Reservering");
 
-//     // wacht op verwerking refunds.
-//     // pas als terugbetaald is, dan wachtlijst verwerken
-//     await reservering.uitvoering.verwerkWachtlijst(trx);
+  let reservering = await repository.findOne(
+    { id: req.params.id },
+    Reservering.populate()
+  );
 
-//     // nu kunnen er weer tickets doorverkocht zijn
-//     await RefundHandler.verwerkRefunds(Reservering, Ticket);
+  if (!reservering) {
+    return res.status(404).send("niet gevonden");
+  } else {
+    await reservering.finishLoading();
+    const saldo = reservering.saldo;
 
-//     const refetched = await reservering
-//       .$query()
-//       .withGraphFetched(Reservering.getStandardGraph());
-//     reservering.$set(refetched);
+    if (saldo >= 0) {
+      ReserveringMail.send(
+        reservering,
+        "ticket",
+        `Kaarten voor ${reservering}`
+      );
+    } else {
+      ReserveringMail.send(
+        reservering,
+        "paymentFailure",
+        "Betalingsherinnering"
+      );
+    }
+    res.send("OK");
+  }
+});
 
-//     if (saldo >= 0) {
-//       await ReserveringMail.send(
-//         reservering,
-//         "gewijzigd",
-//         `Gewijzigde bestelling ${reservering}`
-//       );
-//     }
+router.post("/:id/newPayment", async (req, res) => {
+  const em = RequestContext.getEntityManager();
+  await em.begin();
+  try {
+    const repository = em.getRepository<Reservering>("Reservering");
 
-//     res.send(reservering);
-//   });
-// });
+    let reservering = await repository.findOneOrFail(
+      { id: req.params.id },
+      Reservering.populate()
+    );
 
-// router.delete("/:id", async (req, res) => {
-//   await transaction(Reservering, Ticket, async (Reservering, Ticket, trx) => {
-//     const query = parseQuery(
-//       {
-//         include: ["tickets", "payments"],
-//       },
-//       Reservering
-//     );
+    await reservering.finishLoading();
+    await paymentNeeded(reservering);
 
-//     const reservering = await query.findById(req.params.id);
-//     if (!reservering) {
-//       return res.status(404).send("niet gevonden");
-//     }
+    await em.commit();
 
-//     const ticketHandler = new TicketHandler(reservering);
-//     await ticketHandler.update([]);
-
-//     // const strReservering = await reservering.toString();
-//     await Log.addMessage(reservering, `${reservering} geannuleerd`);
-
-//     await RefundHandler.verwerkRefunds(Reservering, Ticket);
-
-//     // wacht op verwerking refunds.
-//     // pas als terugbetaald is, dan wachtlijst verwerken
-//     await reservering.uitvoering.verwerkWachtlijst(trx);
-
-//     // nu kunnen er weer tickets doorverkocht zijn
-//     await RefundHandler.verwerkRefunds(Reservering, Ticket);
-
-//     const refetched = await reservering
-//       .$query()
-//       .withGraphFetched(Reservering.getStandardGraph());
-//     reservering.$set(refetched);
-
-//     if (reservering.validTickets.length === 0) {
-//       await reservering.$query(trx).delete();
-//     } else {
-//       // nog niet alles verkocht. Stuur laatste status op
-//       await ReserveringMail.send(
-//         reservering,
-//         "gewijzigd",
-//         `${reservering} te koop aangeboden`
-//       );
-//     }
-
-//     res.send("OK");
-//   });
-// });
-
-// router.put("/:id/ingenomen", auth(["kassa"]), async (req, res) => {
-//   await transaction(Reservering, trx, async (Reservering) => {
-//     let id = req.params.id;
-//     if (!req.params.id) {
-//       return res.status(400).send("no id");
-//     }
-
-//     let reservering = await Reservering.findByPk(id);
-//     if (!reservering) {
-//       return res.status(404).send(`not found: ${id}`);
-//     }
-
-//     // geen wijzigingen meer toestaan nadat de reservering is ingenomen
-//     if (reservering.ingenomen) {
-//       return res.status("405").send("reservering is al ingenomen");
-//     }
-//     await reservering.patch({ ingenomen: new Date() });
-
-//     res.send(reservering);
-//   });
-// });
-
-// router.get("/:id/resend", async (req, res) => {
-//   const query = parseQuery(req.query);
-
-//   // const mixin = require("../models/Refund.mixin");
-//   // Object.assign(Reservering.prototype, mixin);
-
-//   const reservering = await query.findById(req.params.id);
-//   if (!reservering) {
-//     return res.status(404).send("niet gevonden");
-//   } else {
-//     const saldo = reservering.saldo;
-
-//     if (saldo >= 0) {
-//       ReserveringMail.send(
-//         reservering,
-//         "ticket",
-//         `Kaarten voor ${reservering}`
-//       );
-//     } else {
-//       ReserveringMail.send(
-//         reservering,
-//         "paymentFailure",
-//         "Betalingsherinnering"
-//       );
-//     }
-//     res.send("OK");
-//   }
-// });
-
-// router.post("/:id/newPayment", async (req, res) => {
-//   const query = parseQuery({
-//     include: ["tickets"],
-//   });
-//   const reservering = await query.findById(req.params.id);
-//   if (!reservering) return res.status(404).send("niet gevonden");
-
-//   await reservering.createPaymentIfNeeded();
-//   const paymentUrl = reservering.paymentUrl;
-//   if (paymentUrl) {
-//     res.send({
-//       paymentUrl,
-//     });
-//   } else {
-//     res.send({});
-//   }
-// });
+    const paymentUrl = reservering.paymentUrl;
+    if (paymentUrl) {
+      res.send({
+        paymentUrl,
+      });
+    } else {
+      res.send({});
+    }
+  } catch (e) {
+    await em.rollback();
+    throw e;
+  }
+});
 
 // router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
 //   const params = parseQuery({
@@ -374,19 +259,25 @@ router.put("/:id", async (req, res) => {
 //   res.send("OK");
 // });
 
-// router.get("/:id/mail", async (req, res) => {
-//   const query = parseQuery({
-//     include: ["tickets"],
-//   });
-//   const reservering = await query.findById(req.params.id);
-//   if (!reservering) return res.status(404).send("niet gevonden");
-//   const html = await ReserveringMail.render(
-//     reservering,
-//     req.query.template || "ticket",
-//     req.query
-//   );
-//   res.send(html);
-// });
+router.get("/:id/mail", async (req, res) => {
+  const repository = getRepository<Reservering>("Reservering");
+
+  const reservering = await repository.findOneOrFail(
+    { id: req.params.id },
+    Reservering.populate()
+  );
+  if (!reservering) {
+    return res.status(404).send("niet gevonden");
+  }
+  await reservering.finishLoading();
+
+  const html = await ReserveringMail.render(
+    reservering,
+    req.query.template || "ticket",
+    req.query
+  );
+  res.send(html);
+});
 
 router.get("/:id/qr", async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");

@@ -57,7 +57,7 @@ export class Aggregate {
   }
 
   get aantalBetaald() {
-    return this.validTickets.filter((t) => t.betaald).length;
+    return this.validTickets.filter((t) => t.isPaid).length;
   }
 
   get tekoop() {

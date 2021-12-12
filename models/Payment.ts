@@ -22,6 +22,7 @@ import { Payment as MolliePayment } from "@mollie/api-client";
 @Entity({ tableName: "payments" })
 export class Payment {
   constructor(payment: MolliePayment, description: string) {
+    this.payment = payment;
     this.payment_id = payment.id;
     this.description = description;
   }
@@ -56,7 +57,8 @@ export class Payment {
   // --------- virtual attributes -----------
   @Property({ persist: false })
   get paymentUrl() {
-    return this.payment?.getPaymentUrl();
+    const paymentUrl = this.payment?.getPaymentUrl();
+    return paymentUrl;
   }
 
   @Property({ persist: false })
