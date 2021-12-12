@@ -29,6 +29,7 @@ import {
   getTicketUrl,
 } from "../components/urls";
 import { queue } from "../startup/queue";
+import winston from "winston";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -147,6 +148,7 @@ export class Reservering {
     saldo = this.tickets
       .getItems()
       .filter((t) => !t.tekoop)
+      .filter((t) => !t.terugbetalen)
       .reduce((saldo, t) => saldo - t.bedrag, saldo);
     // saldo = this.TicketHandlers.reduce((saldo, ta) => {
     //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
@@ -198,14 +200,18 @@ export class Reservering {
 
   @Property({ persist: false })
   get paymentUrl() {
+    let paymentUrl;
     if (!this.payments) {
       return undefined;
     }
-    let payment;
-    if ((payment = this.payments.getItems().find((p) => p.paymentUrl))) {
-      return payment.paymentUrl;
+    if (this.payments) {
+      let payment;
+      if ((payment = this.payments.getItems().find((p) => p.paymentUrl))) {
+        paymentUrl = payment.paymentUrl;
+      }
     }
-    return undefined;
+    winston.info(`paymentUrl: ${paymentUrl}`);
+    return paymentUrl;
   }
 
   getMailUrl(template: string) {
