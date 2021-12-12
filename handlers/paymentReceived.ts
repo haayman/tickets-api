@@ -1,5 +1,6 @@
 import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
+import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Reservering, Payment, Ticket, Log } from "../models";
 
@@ -8,14 +9,15 @@ export type PaymentReceiveMessage = {
   payment_id: string;
 };
 
-export async function paymentReceived({
-  reservering_id,
-  payment_id,
-}: PaymentReceiveMessage) {
-  const em: EntityManager = Container.get("em");
+export async function paymentReceived(
+  reservering_id: string,
+  payment_id: string
+) {
+  winston.info(`paymentReceived(${reservering_id}, ${payment_id}})`);
+  const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.transactional(async (em) => {
     const repository = em.getRepository(Reservering);
-    const reservering = await repository.findOne({ id: reservering_id }, [
+    const reservering = await repository.findOneOrFail({ id: reservering_id }, [
       "tickets.prijs",
       "payments.tickets",
     ]);
@@ -29,14 +31,17 @@ export async function paymentReceived({
       .getItems()
       .find((p) => p.payment_id == mollie_payment.id);
 
+    if (!payment) {
+      throw new Error(`Payment ${mollie_payment.id} niet gevonden`);
+    }
     const tickets = payment.tickets.getItems();
     const description = Ticket.description(tickets);
     await Log.addMessage(
       reservering,
-      `Status ${description}: ${payment.betaalstatus}`
+      `Status ${description}: ${payment.status}`
     );
 
-    if (payment.betaalstatus == "paid") {
+    if (payment.status == "paid") {
       await ReserveringMail.send(
         reservering,
         "confirmationPayment",
