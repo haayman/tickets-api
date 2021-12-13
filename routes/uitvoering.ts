@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   const repository = getRepository<Uitvoering>("Uitvoering");
   const uitvoeringen = await repository.findAll({
-    orderBy: { aanvang: QueryOrder.DESC },
+    orderBy: { aanvang: QueryOrder.ASC },
   });
   res.send(uitvoeringen);
 });
