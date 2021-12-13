@@ -15,6 +15,7 @@ import { Voorstelling } from "./Voorstelling";
 import { Reservering } from "./Reservering";
 import { Ticket } from "./Ticket";
 import { queue } from "../startup/queue";
+import { EntityManager } from "@mikro-orm/mysql";
 
 export type UitvoeringDTO = {
   aantal_plaatsen: number;
@@ -103,14 +104,6 @@ export class Uitvoering {
   //   return o;
   // }
 
-  // gereserveerd(reservering_id?: string) {
-  //   const gereserveerd = this.countTickets({
-  //     wachtlijst: false,
-  //     reservering_id: reservering_id,
-  //   });
-  //   return gereserveerd;
-  // }
-
   // wachtlijst(reservering_id = null) {
   //   const wachtlijst = this.countTickets({
   //     wachtlijst: true,
@@ -126,12 +119,26 @@ export class Uitvoering {
   //   return tekoop;
   // }
 
-  // vrije_plaatsen(reservering_id = null) {
-  //   return Math.max(
-  //     this.aantal_plaatsen - this.gereserveerd(reservering_id) + this.tekoop(),
-  //     0
-  //   );
-  // }
+  async countGereserveerd(em: EntityManager, reservering_id): Promise<number> {
+    const result = await em
+      .createQueryBuilder(Ticket)
+      .count("id")
+      .where({
+        reservering_id: { $nin: [reservering_id] },
+        tekoop: false,
+      })
+      .execute();
+
+    // @ts-ignore
+    return result[0].count;
+  }
+
+  async countVrijePlaatsen(em: EntityManager, reservering_id: string) {
+    return Math.max(
+      this.aantal_plaatsen - (await this.countGereserveerd(em, reservering_id)),
+      0
+    );
+  }
 
   @Property({ persist: false })
   get status(): string {
@@ -158,30 +165,30 @@ export class Uitvoering {
     return retval;
   }
 
-  // countTickets(options: {
-  //   tekoop?: boolean;
-  //   reservering_id?: string;
-  //   wachtlijst?: boolean;
-  // }) {
-  //   let tickets = this.tickets;
+  countTickets(options: {
+    tekoop?: boolean;
+    reservering_id?: string;
+    wachtlijst?: boolean;
+  }) {
+    let tickets = this.tickets;
 
-  //   if (options.tekoop !== undefined) {
-  //     tickets = tickets.filter((t) => !!t.tekoop == !!options.tekoop);
-  //   }
+    if (options.tekoop !== undefined) {
+      tickets = tickets.filter((t) => !!t.tekoop == !!options.tekoop);
+    }
 
-  //   if (options.reservering_id) {
-  //     tickets = tickets.filter(
-  //       (t) => t.reservering.id !== options.reservering_id
-  //     );
-  //   }
-  //   if (options.wachtlijst !== undefined) {
-  //     tickets = tickets.filter(
-  //       (t) => !!t.reservering.wachtlijst == !!options.wachtlijst
-  //     );
-  //   }
+    if (options.reservering_id) {
+      tickets = tickets.filter(
+        (t) => t.reservering.id !== options.reservering_id
+      );
+    }
+    if (options.wachtlijst !== undefined) {
+      tickets = tickets.filter(
+        (t) => !!t.reservering.wachtlijst == !!options.wachtlijst
+      );
+    }
 
-  //   return tickets.length;
-  // }
+    return tickets.length;
+  }
 
   toString() {
     // https://date-fns.org/v2.0.0-alpha.9/docs/format

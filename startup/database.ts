@@ -44,7 +44,8 @@ export default async function (): Promise<void> {
     ],
     loadStrategy: LoadStrategy.SELECT_IN,
     tsNode: true,
-    debug: ["info"],
+    // debug: ["info"],
+    debug: true,
     options: {
       cacheDir: tmpdir(),
     },

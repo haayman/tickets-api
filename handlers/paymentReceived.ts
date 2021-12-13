@@ -2,7 +2,7 @@ import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
-import { Reservering, Payment, Ticket, Log } from "../models";
+import { Reservering, Payment, Ticket, Log, StatusUpdate } from "../models";
 
 export type PaymentReceiveMessage = {
   reservering_id: string;
@@ -17,10 +17,10 @@ export async function paymentReceived(
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.transactional(async (em) => {
     const repository = em.getRepository(Reservering);
-    const reservering = await repository.findOneOrFail({ id: reservering_id }, [
-      "tickets.prijs",
-      "payments.tickets",
-    ]);
+    const reservering = await repository.findOneOrFail(
+      { id: reservering_id },
+      Reservering.populate()
+    );
     await reservering.finishLoading();
     const mollie = Payment.mollieClient();
     const mollie_payment = await mollie.payments.get(payment_id);
@@ -32,8 +32,14 @@ export async function paymentReceived(
       .find((p) => p.payment_id == mollie_payment.id);
 
     if (!payment) {
-      throw new Error(`Payment ${mollie_payment.id} niet gevonden`);
+      winston.error(`Payment ${mollie_payment.id} niet gevonden`);
+      return;
     }
+    await em.populate(payment, ["tickets"]);
+
+    // add the status
+    reservering.setStatus(payment.status);
+
     const tickets = payment.tickets.getItems();
     const description = Ticket.description(tickets);
     await Log.addMessage(

@@ -14,17 +14,17 @@ import winston from "winston";
 
 export async function paymentNeeded(reservering: Reservering): Promise<void> {
   await reservering.finishLoading();
-  if (reservering.newPaymentNeeded) {
-    const mollie_key: string = config.get("payment.mollie_key");
+  try {
+    if (reservering.newPaymentNeeded) {
+      const mollie_key: string = config.get("payment.mollie_key");
 
-    const mollie = createMollieClient({ apiKey: mollie_key });
-    const tickets = reservering.onbetaaldeTickets;
+      const mollie = createMollieClient({ apiKey: mollie_key });
+      const tickets = reservering.onbetaaldeTickets;
 
-    // create a description for this set of tickets
-    const description = Ticket.description(tickets);
+      // create a description for this set of tickets
+      const description = Ticket.description(tickets);
 
-    // request a new Mollie payment
-    try {
+      // request a new Mollie payment
       const payment = await mollie.payments.create({
         amount: {
           currency: "EUR",
@@ -40,7 +40,7 @@ export async function paymentNeeded(reservering: Reservering): Promise<void> {
       winston.info(`new payment ${payment.id} for ${reservering.id}`);
 
       // add the status
-      reservering.statusupdates.add(new StatusUpdate(payment.status));
+      reservering.setStatus(payment.status);
 
       // insert a new Payment record
       let newPayment = new Payment(payment, description);
@@ -49,9 +49,9 @@ export async function paymentNeeded(reservering: Reservering): Promise<void> {
       for (const ticket of tickets) {
         ticket.payment = newPayment;
       }
-    } catch (e) {
-      console.error(e);
-      throw e;
     }
+  } catch (e) {
+    winston.error(e);
+    throw e;
   }
 }

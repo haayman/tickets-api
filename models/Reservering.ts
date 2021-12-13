@@ -30,6 +30,7 @@ import {
 } from "../components/urls";
 import { queue } from "../startup/queue";
 import winston from "winston";
+import { EntityManager } from "@mikro-orm/core";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -53,6 +54,9 @@ export class Reservering {
 
   @Property()
   ingenomen?: Date;
+
+  @Property()
+  status?: string;
 
   @ManyToOne({ onDelete: "cascade" })
   uitvoering!: Uitvoering;
@@ -121,7 +125,7 @@ export class Reservering {
 
   @Property({ persist: false })
   get openstaandBedrag() {
-    return -this.saldo;
+    return Math.max(0, -this.saldo);
   }
 
   @Property({ persist: false })
@@ -133,10 +137,6 @@ export class Reservering {
 
     // totaal betaald
     let saldo = this.payments.getItems().reduce((saldo, payment) => {
-      // if (!payment.payment && payment.paymentId) {
-      //   debugger;
-      //   throw new Error("payment not initialized");
-      // }
       if (payment.isPaid) {
         return saldo + (+payment.amount - (payment.amountRefunded || 0));
       } else {
@@ -160,7 +160,7 @@ export class Reservering {
   @Property({ persist: false })
   get bedrag() {
     return this.tickets
-      .getItems()
+      ?.getItems()
       .reduce((bedrag, t: Ticket) => bedrag + +t.bedrag, 0);
   }
 
@@ -177,10 +177,17 @@ export class Reservering {
     return this.tickets.length;
   }
 
-  @Property({ persist: false })
-  get moetInWachtrij() {
+  async moetInWachtrij(em: EntityManager, existing: boolean): Promise<boolean> {
     const vrije_plaatsen = this.uitvoering.vrije_plaatsen;
-    return this.id ? vrije_plaatsen < this.aantal : vrije_plaatsen <= 0;
+    return existing
+      ? // @ts-ignore
+        (await this.uitvoering.countVrijePlaatsen(em, this.id)) <= 0
+      : vrije_plaatsen <= 0;
+  }
+
+  setStatus(status: string) {
+    this.status = status;
+    this.statusupdates.add(new StatusUpdate(status));
   }
 
   /**

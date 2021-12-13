@@ -83,7 +83,11 @@ export class Payment {
 
   @Property({ persist: false })
   get status() {
-    return this.payment?.status;
+    const betaalstatus = this.payment?.status;
+    if (betaalstatus) {
+      this.betaalstatus = betaalstatus;
+    }
+    return betaalstatus;
   }
 
   @Property({ persist: false })

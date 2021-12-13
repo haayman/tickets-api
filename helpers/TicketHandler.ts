@@ -134,6 +134,7 @@ export class TicketHandler {
     const tickets = [];
     for (const { prijs, betaald } of this.new) {
       const ticket = new Ticket(prijs, betaald);
+      this.em.persist(ticket);
       this.reservering.tickets.add(ticket);
       tickets.push(ticket);
     }
