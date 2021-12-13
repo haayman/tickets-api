@@ -23,6 +23,10 @@ export async function reserveringUpdated(
         { id: reserveringId },
         Reservering.populate()
       );
+      if (!reservering) {
+        winston.error(`reservering ${reserveringId} niet gevondden`);
+        return;
+      }
       await reservering.finishLoading();
       const saldo = reservering.saldo;
       if (!saldo) {

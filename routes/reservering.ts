@@ -7,6 +7,7 @@ import { paymentNeeded } from "../handlers/paymentNeeded";
 import { TicketHandler } from "../helpers/TicketHandler";
 import { queue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
+import winston from "winston";
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.post("/", async (req, res) => {
     const ticketHandler = new TicketHandler(em, reservering);
     ticketHandler.update(tickets);
 
-    reservering.wachtlijst = reservering.moetInWachtrij;
+    reservering.wachtlijst = await reservering.moetInWachtrij(em, false);
     await paymentNeeded(reservering);
 
     await em.commit();
@@ -70,6 +71,7 @@ router.post("/", async (req, res) => {
 
     queue.emit("reserveringUpdated", reservering.id);
   } catch (e) {
+    winston.error(e);
     em.rollback();
     throw e;
   }
@@ -95,7 +97,7 @@ router.put("/:id", async (req, res) => {
     const ticketHandler = new TicketHandler(em, reservering);
     ticketHandler.update(tickets);
 
-    reservering.wachtlijst = reservering.moetInWachtrij;
+    reservering.wachtlijst = await reservering.moetInWachtrij(em, true);
 
     await paymentNeeded(reservering);
 
@@ -105,6 +107,8 @@ router.put("/:id", async (req, res) => {
 
     res.send(reservering);
   } catch (e) {
+    winston.error(e);
+
     await em.rollback();
     throw e;
   }
@@ -131,6 +135,8 @@ router.delete("/:id", async (req, res) => {
 
     res.send(reservering);
   } catch (e) {
+    winston.error(e);
+
     await em.rollback();
     throw e;
   }
@@ -152,6 +158,8 @@ router.put("/:id/ingenomen", async (req, res) => {
 
     res.send(reservering);
   } catch (e) {
+    winston.error(e);
+
     await em.rollback();
     throw e;
   }

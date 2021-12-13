@@ -16,6 +16,7 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
       await uitvoering.reserveringen.matching({
         limit: vrije_plaatsen,
         orderBy: { created_at: "asc" },
+        populate: Reservering.populate(),
       })
     ).filter((reservering) => reservering.wachtlijst);
 
