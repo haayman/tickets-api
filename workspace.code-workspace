@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "📚 API",
+      "path": "."
+    },
+    {
+      "name": "✨ Jatheater Frontend",
+      "path": "../jatheater"
+    }
+  ],
+  "settings": {}
+}
