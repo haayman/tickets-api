@@ -87,7 +87,9 @@ export class Reservering {
 
   toJSON(strict = true, strip = [], ...args: any[]) {
     const o = wrap(this, true).toObject(...args);
-    o.tickets = new TicketAggregator(this).toJSON();
+    if (this.tickets.isInitialized()) {
+      o.tickets = new TicketAggregator(this).toJSON();
+    }
     return o;
   }
 
@@ -105,6 +107,7 @@ export class Reservering {
   }
 
   get onbetaaldeTickets() {
+    if (!this.tickets.isInitialized()) return undefined;
     return this.tickets.getItems().filter((t) => t.isPaid !== true && t.bedrag);
   }
 
@@ -125,13 +128,17 @@ export class Reservering {
 
   @Property({ persist: false })
   get openstaandBedrag() {
+    if (!this.payments.isInitialized()) {
+      return undefined;
+    }
     return Math.max(0, -this.saldo);
   }
 
   @Property({ persist: false })
   get saldo() {
     // bereken het totaal betaalde bedrag
-    if (!this.payments) {
+    if (!this.payments.isInitialized() || !this.tickets.isInitialized()) {
+      winston.debug(`saldo: payments or tickets not initialized`);
       return undefined;
     }
 
@@ -159,6 +166,10 @@ export class Reservering {
 
   @Property({ persist: false })
   get bedrag() {
+    if (!this.tickets.isInitialized()) {
+      winston.debug("bedrag undefined");
+      return undefined;
+    }
     return this.tickets
       ?.getItems()
       .reduce((bedrag, t: Ticket) => bedrag + +t.bedrag, 0);
@@ -174,6 +185,11 @@ export class Reservering {
    */
   @Property({ persist: false })
   get aantal() {
+    if (!this.tickets.isInitialized()) {
+      winston.debug("aantal undefined");
+      return undefined;
+    }
+
     return this.tickets.length;
   }
 
@@ -208,7 +224,7 @@ export class Reservering {
   @Property({ persist: false })
   get paymentUrl() {
     let paymentUrl;
-    if (!this.payments) {
+    if (!this.payments.isInitialized()) {
       return undefined;
     }
     if (this.payments) {
