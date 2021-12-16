@@ -5,7 +5,7 @@ import {
   QueryOrderKeys,
 } from "@mikro-orm/core";
 
-interface Params<T> {
+export interface Params<T> {
   include?: string[];
   order?: string | string[];
   limit?: number;
@@ -18,7 +18,7 @@ function intersect<T>(o1: string[], o2: string[]) {
 /**
  * @param {{include:[table,...],order:['column']}} params
  */
-export default function parseQuery<T>(
+export function parseQuery<T>(
   allowed: string[],
   params: Params<T>
 ): FindOptions<T> {

@@ -2,7 +2,7 @@ import { getRepository } from "../models/Repository";
 import express from "express";
 import auth from "../middleware/auth";
 import { Log } from "../models";
-import parseQuery from "./helpers/parseQuery";
+import { parseQuery } from "./helpers/parseQuery";
 import { LoadStrategy } from "@mikro-orm/core";
 
 const router = express.Router();
