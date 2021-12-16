@@ -8,23 +8,25 @@ import { TicketHandler } from "../helpers/TicketHandler";
 import { queue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
+import { parseQuery } from "./helpers/parseReserveringQuery";
 
 const router = express.Router();
 
 router.get("/", auth(true), async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
+  const options = parseQuery<Reservering>(Reservering.populate(), req.query);
   const where: FilterQuery<Reservering> = {};
-  if (req.query.uitvoeringId) {
-    where.uitvoering = { id: req.query.uitvoeringId };
+  if (req.query.uitvoering_id) {
+    where.uitvoering = { id: +req.query.uitvoering_id };
   }
 
-  let reserveringen = await repository.findAll(where);
-  await repository.populate(reserveringen, [
-    "uitvoering.voorstelling.prijzen",
-    "tickets.payment",
-    "tickets.prijs",
-    "payments",
-  ]);
+  let reserveringen = await repository.find(where, options);
+  // await repository.populate(reserveringen, [
+  //   "uitvoering.voorstelling.prijzen",
+  //   "tickets.payment",
+  //   "tickets.prijs",
+  //   "payments",
+  // ]);
 
   res.json(reserveringen);
 });
