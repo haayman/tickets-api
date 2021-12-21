@@ -14,7 +14,7 @@ export function getResendUrl(id: string) {
 }
 
 export function getEditLink(id: string) {
-  return getRoot() + `/reserveren/${id}/edit`;
+  return getRoot() + `/reserveren/${id}`;
 }
 
 export function getTicketUrl(id: string) {
