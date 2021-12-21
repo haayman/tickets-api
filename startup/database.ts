@@ -1,4 +1,5 @@
 import { LoadStrategy, MikroORM } from "@mikro-orm/core";
+import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
 import { EntityManager } from "@mikro-orm/mariadb";
 import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
 import config from "config";
@@ -31,6 +32,7 @@ export default async function (): Promise<void> {
     password,
     dbName,
     type: "mysql",
+    highlighter: new SqlHighlighter(),
     entities: [
       Log,
       Payment,
@@ -44,8 +46,8 @@ export default async function (): Promise<void> {
     ],
     loadStrategy: LoadStrategy.SELECT_IN,
     tsNode: true,
-    // debug: ["info"],
-    debug: true,
+    debug: ["info"],
+    // debug: ["query"],
     options: {
       cacheDir: tmpdir(),
     },
