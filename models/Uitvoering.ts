@@ -89,48 +89,23 @@ export class Uitvoering {
       : undefined;
   }
 
-  // toJSON(strict = true, strip = [], ...args: any[]): { [p: string]: any } {
-  //   const o = wrap(this, true).toObject(...args);
-
-  //   o.gereserveerd = this.gereserveerd();
-  //   o.wachtlijst = this.wachtlijst();
-  //   o.tekoop = this.tekoop();
-  //   o.vrije_plaatsen = this.vrije_plaatsen();
-
-  //   if (strict) {
-  //     strip.forEach((k) => delete o[k]);
-  //   }
-
-  //   return o;
-  // }
-
-  // wachtlijst(reservering_id = null) {
-  //   const wachtlijst = this.countTickets({
-  //     wachtlijst: true,
-  //     reservering_id,
-  //   });
-  //   return wachtlijst;
-  // }
-
-  // tekoop() {
-  //   const tekoop = this.countTickets({
-  //     tekoop: true,
-  //   });
-  //   return tekoop;
-  // }
-
   async countGereserveerd(em: EntityManager, reservering_id): Promise<number> {
-    const result = await em
-      .createQueryBuilder(Ticket)
-      .count("id")
-      .where({
-        reservering_id: { $nin: [reservering_id] },
-        tekoop: false,
-      })
-      .execute();
+    const connection = em.getConnection();
+    const result = await connection.execute(
+      `
+      SELECT count(*) as count FROM tickets 
+      WHERE reservering_id in 
+      (select id from reserveringen where uitvoering_id = ?) 
+      and reservering_id <> ? 
+      and not tekoop 
+      and not geannuleerd 
+      AND not verkocht`,
+      [this.id, reservering_id]
+    );
 
     // @ts-ignore
-    return result[0].count;
+    const count = result[0].count;
+    return count;
   }
 
   async countVrijePlaatsen(em: EntityManager, reservering_id: string) {
