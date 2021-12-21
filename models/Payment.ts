@@ -63,7 +63,7 @@ export class Payment {
 
   @Property({ persist: false })
   get amount() {
-    return this.payment?.amount?.value;
+    return +this.payment?.amount?.value;
   }
 
   @Property({ persist: false })
@@ -78,16 +78,16 @@ export class Payment {
 
   @Property({ persist: false })
   get paidAt() {
-    return this.payment?.paidAt;
+    return this.payment?.paidAt ? new Date(this.payment.paidAt) : undefined;
   }
 
   @Property({ persist: false })
   get status() {
     const betaalstatus = this.payment?.status;
-    if (betaalstatus) {
+    if (betaalstatus && betaalstatus !== this.betaalstatus) {
       this.betaalstatus = betaalstatus;
     }
-    return betaalstatus;
+    return this.betaalstatus;
   }
 
   @Property({ persist: false })
@@ -96,8 +96,11 @@ export class Payment {
   }
 
   @Property({ persist: false })
-  get isPaid() {
-    return this.payment ? this.payment.isPaid() : undefined;
+  get isPaid(): boolean {
+    return (
+      this.betaalstatus === "paid" ||
+      (this.payment ? this.payment.isPaid() : undefined)
+    );
   }
 
   toJSON(strict = true, strip = [], ...args: any[]) {
