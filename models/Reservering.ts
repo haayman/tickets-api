@@ -233,7 +233,7 @@ export class Reservering {
         paymentUrl = payment.paymentUrl;
       }
     }
-    winston.info(`paymentUrl: ${paymentUrl}`);
+    winston.debug(`paymentUrl: ${paymentUrl}`);
     return paymentUrl;
   }
 
