@@ -21,12 +21,6 @@ router.get("/", auth(true), async (req, res) => {
   }
 
   let reserveringen = await repository.find(where, options);
-  // await repository.populate(reserveringen, [
-  //   "uitvoering.voorstelling.prijzen",
-  //   "tickets.payment",
-  //   "tickets.prijs",
-  //   "payments",
-  // ]);
 
   res.json(reserveringen);
 });
@@ -230,46 +224,6 @@ router.post("/:id/newPayment", async (req, res) => {
   }
 });
 
-// router.post("/:id/terugbetaald", auth(["admin"]), async (req, res) => {
-//   const params = parseQuery({
-//     include: ["tickets"],
-//   });
-//   const reservering = await Reservering.findByPk(req.params.id, params);
-//   if (!reservering) return res.status(404).send("niet gevonden");
-//   const refund = new RefundHandler(reservering);
-
-//   const bedrag = refund.nonRefundableAmount();
-//   if (bedrag) {
-//     const tickets = refund.terugtebetalenTickets();
-//     await Promise.all(
-//       tickets.map(async (ticket) => {
-//         ticket.terugbetalen = false;
-//         ticket.geannuleerd = true;
-//         const payment = ticket.payment;
-//         payment.paidBack = (payment.paidBack || 0) + ticket.prijs.prijs;
-//         await payment.update({
-//           paidBack: payment.paidBack,
-//         });
-//         await ticket.update({
-//           terugbetalen: ticket.terugbetalen,
-//           geannuleerd: ticket.geannuleerd,
-//         });
-//       })
-//     );
-//     await Log.addMessage(reservering, `€ ${bedrag.toFixed(2)} terugbetaald`);
-
-//     await ReserveringMail.send(
-//       reservering,
-//       "terugbetaald",
-//       `Openstaand bedrag € ${bedrag.toFixed(2)} terugbetaald`,
-//       {
-//         bedrag: bedrag,
-//       }
-//     );
-//   }
-//   res.send("OK");
-// });
-
 router.get("/:id/mail", async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
 
@@ -307,39 +261,5 @@ router.get("/:id/qr", async (req, res) => {
   });
   res.type("png").send(png);
 });
-
-// // router.get('/:id/qr_teruggave', async (req, res) => {
-// //   const mixin = require('../models/RefundHandler');
-// //   Object.assign(Reservering.prototype, mixin);
-// //   const params = parseQuery(Reservering, {
-// //     include: ['tickets', 'Payments']
-// //   });
-// //   const reservering = await Reservering.findByPk(req.params.id, params);
-// //   const getBic = require('bic-from-iban');
-// //   if (!reservering) return res.status(404).send('niet gevonden');
-
-// //   const qr = require('qr-image');
-// //   // https://gathering.tweakers.net/forum/list_messages/1800141
-// //   // https://www.europeanpaymentscouncil.eu/document-library/guidance-documents/quick-response-code-guidelines-enable-data-capture-initiation
-// //   const bedrag = await reservering.nonRefundableAmount();
-// //   const IBAN = reservering.iban.replace(/\s/g, '');
-// //   const BIC = getBic.getBIC(IBAN) || 'TRIONL2U';
-// //   const content = `BCD
-// // 001
-// // 1
-// // SCT
-// // ${BIC}
-// // ${reservering.tennamevan}
-// // ${IBAN}
-// // EUR${bedrag.toFixed(2)}
-// // Terugstorting PlusLeo`;
-
-// //   const png = qr.imageSync(content, {
-// //     type: 'png',
-// //     size: 5,
-// //     margin: 3
-// //   });
-// //   res.type('png').send(png);
-// // });
 
 export default router;
