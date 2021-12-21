@@ -87,17 +87,18 @@ export class RefundHandler {
 
   static async verwerkRefunds() {
     const em: EntityManager = (Container.get("em") as EntityManager).fork();
-    winston.info(`verwerkRefunds`);
-    await em.transactional(async (em) => {
-      const repository = em.getRepository(Reservering);
-      const reserveringen = await repository.find(
-        { tickets: { terugbetalen: true } },
-        Reservering.populate()
-      );
-      for (const reservering of reserveringen) {
-        await reservering.finishLoading();
-        await new RefundHandler(em, reservering).refund();
-      }
-    });
+    const repository = em.getRepository(Reservering);
+    const reserveringen = await repository.find(
+      { tickets: { terugbetalen: true } },
+      Reservering.populate()
+    );
+
+    if (!reserveringen.length) return;
+
+    winston.info(`verwerkRefunds ${reserveringen.length}`);
+    for (const reservering of reserveringen) {
+      await reservering.finishLoading();
+      await new RefundHandler(em, reservering).refund();
+    }
   }
 }
