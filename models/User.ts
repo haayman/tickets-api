@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import {
+  BeforeCreate,
   BeforeUpdate,
   Entity,
   Filter,
@@ -55,19 +56,22 @@ export class User {
   }
 
   @BeforeUpdate()
-  @BeforeUpdate()
+  async testPassword() {
+    if (this.tmpPassword !== this.password) {
+      this.hashPassword();
+    }
+  }
+
   async hashPassword() {
     const SALT_FACTOR = 5;
 
-    if (this.tmpPassword !== this.password) {
-      try {
-        const salt = await bcrypt.genSalt(SALT_FACTOR);
-        const hash = bcrypt.hashSync(this.password, salt);
+    try {
+      const salt = await bcrypt.genSalt(SALT_FACTOR);
+      const hash = bcrypt.hashSync(this.password, salt);
 
-        this.password = hash;
-      } catch (e) {
-        console.error(e);
-      }
+      this.password = hash;
+    } catch (e) {
+      console.error(e);
     }
   }
 

@@ -26,6 +26,7 @@ router.post("/", auth(["admin"]), async (req, res) => {
     }
 
     user = userRepository.create(req.body);
+    await user.hashPassword();
     await userRepository.persistAndFlush(user);
     res.json(user);
   } catch (e) {
