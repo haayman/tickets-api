@@ -8,7 +8,7 @@ import uitvoering from "../routes/uitvoering";
 import log from "../routes/log";
 import payment from "../routes/payment";
 // import iframe from "../routes/iframe";
-// import mail from "../routes/mail";
+import mail from "../routes/mail";
 import errorHandler from "../middleware/error";
 import setUser from "../middleware/user";
 import { RequestContext, EntityManager } from "@mikro-orm/core";
@@ -44,7 +44,7 @@ export default function (app) {
   app.use("/api/reservering", reservering);
   app.use("/api/log", log);
   app.use("/api/payment", payment);
-  // app.use("/api/mail", mail);
+  app.use("/api/mail", mail);
 
   // app.use("/iframe*", iframe);
 
