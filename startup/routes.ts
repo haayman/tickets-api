@@ -7,7 +7,7 @@ import reservering from "../routes/reservering";
 import uitvoering from "../routes/uitvoering";
 import log from "../routes/log";
 import payment from "../routes/payment";
-// import iframe from "../routes/iframe";
+import iframe from "../routes/iframe";
 import mail from "../routes/mail";
 import errorHandler from "../middleware/error";
 import setUser from "../middleware/user";
@@ -46,7 +46,7 @@ export default function (app) {
   app.use("/api/payment", payment);
   app.use("/api/mail", mail);
 
-  // app.use("/iframe*", iframe);
+  app.use("/iframe*", iframe);
 
   // error handler last
   app.use(errorHandler);
