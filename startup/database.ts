@@ -16,6 +16,7 @@ import {
   User,
   Voorstelling,
 } from "../models";
+import winston from "winston";
 
 export default async function (): Promise<void> {
   const type: string = config.get("database.client");
@@ -24,6 +25,7 @@ export default async function (): Promise<void> {
     user,
     database: dbName,
     password,
+    debug,
   } = config.get("database.connection");
   const orm = await MikroORM.init({
     metadataProvider: TsMorphMetadataProvider,
@@ -46,13 +48,12 @@ export default async function (): Promise<void> {
     ],
     loadStrategy: LoadStrategy.SELECT_IN,
     tsNode: true,
-    debug: ["info"],
-    // debug: ["query"],
+    validate: true,
+    debug,
     options: {
       cacheDir: tmpdir(),
     },
-    // debug: ["info"],
   });
-  console.log("db set");
+  winston.info("db set");
   Container.set("em", orm.em);
 }

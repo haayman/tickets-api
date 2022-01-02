@@ -75,7 +75,7 @@ module.exports = function () {
         // format: winston.format.simple(),
         prettyPrint: true,
         colorize: true,
-        level: "info",
+        level: config.get("logLevel"),
       }),
       // new winston.transports.File({
       //   filename: "error.log",
