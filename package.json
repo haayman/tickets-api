@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "date-fns": "^2.9.0",
     "ejs": "^3.0.1",
+    "ejs-lint": "^1.2.1",
     "email-templates": "^8.0.8",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",

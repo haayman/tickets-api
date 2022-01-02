@@ -7,6 +7,7 @@ import {
   BeforeCreate,
   BeforeUpdate,
   Entity,
+  Enum,
   Filter,
   Index,
   ManyToOne,
@@ -17,6 +18,17 @@ import {
   wrap,
 } from "@mikro-orm/core";
 import { v4 } from "uuid";
+
+export type IRole = "admin" | "speler" | "kassa";
+
+export type IUser = {
+  id?: string;
+  username: string;
+  name: string;
+  password?: string;
+  email: string;
+  role: IRole;
+};
 
 @Entity({ tableName: "users" })
 export class User {
@@ -38,8 +50,16 @@ export class User {
   @Property()
   email!: string;
 
-  @Property()
-  role!: "admin" | "speler" | "kassa";
+  @Enum({ items: ["admin", "speler", "kassa"] })
+  role!: IRole;
+
+  // constructor(username, name, email, password, role) {
+  //   this.username = username;
+  //   this.name = name;
+  //   this.email = email;
+  //   this.password = password;
+  //   this.role = role;
+  // }
 
   /**
    *
@@ -134,5 +154,13 @@ export class User {
       case "kassa":
         return this.isKassa();
     }
+  }
+
+  static fromJson(json: IUser): User {
+    const user = new User();
+    for (const key in json) {
+      user[key] = json[key];
+    }
+    return user;
   }
 }

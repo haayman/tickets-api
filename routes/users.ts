@@ -19,10 +19,12 @@ router.post("/", auth(["admin"]), async (req, res) => {
   const userRepository = getRepository<User>("User");
   try {
     let user = await userRepository.findOne({
-      name: req.body.name,
+      username: req.body.username,
     });
     if (user) {
-      return res.status(400).send(`Gebruiker ${user.name} al geregistreerd`);
+      return res
+        .status(400)
+        .send(`Gebruiker ${user.username} al geregistreerd`);
     }
 
     user = userRepository.create(req.body);
@@ -66,12 +68,11 @@ router.put("/:id", async (req, res) => {
 router.get("/:id", auth(["admin", "speler"]), async (req, res) => {
   const userRepository = getRepository<User>("User");
   const me = res.locals.user;
-  console.log(me);
   if (!me.isAdministrator() && me.id !== req.params.id) {
     return res.status(403).send("Access denied");
   }
 
-  const user = await userRepository.findOne(req.params.id);
+  const user = await userRepository.findOne({ id: req.params.id });
   if (!user) {
     return res.status(404).send("niet gevonden");
   }

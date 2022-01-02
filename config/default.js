@@ -3,6 +3,7 @@ const path = require("path");
 module.exports = {
   name: "PlusLeo tickets",
   useMorgan: true,
+  logLevel: "info",
   database: {
     client: "mysql",
     connection: {
