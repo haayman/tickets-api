@@ -4,6 +4,7 @@ import { Reservering } from "../models";
 import { RefundHandler } from "../helpers/RefundHandler";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
+import { queue } from "../startup/queue";
 
 export async function reserveringDeleted(reserveringId: string) {
   winston.info(`reserveringDeleted ${reserveringId}`);
@@ -29,6 +30,8 @@ export async function reserveringDeleted(reserveringId: string) {
           `${reservering} te koop aangeboden`
         );
       }
+
+      queue.emit("reserveringDeletedDone", "");
     });
   }, 500);
 }

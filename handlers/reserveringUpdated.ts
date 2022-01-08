@@ -4,6 +4,7 @@ import { Reservering } from "../models";
 import { RefundHandler } from "../helpers/RefundHandler";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
+import { queue } from "../startup/queue";
 
 export type ReserveringUpdatedMessage = string;
 
@@ -48,6 +49,7 @@ export async function reserveringUpdated(
           `${reservering} besteld`
         );
       }
+      queue.emit("reserveringUpdatedDone", "");
     });
   }, 500);
 }
