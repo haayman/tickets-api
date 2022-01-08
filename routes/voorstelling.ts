@@ -16,9 +16,12 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const repository = getRepository<Voorstelling>("Voorstelling");
-  const voorstelling = await repository.findOne(+req.params.id, {
-    populate: ["uitvoeringen", "prijzen"],
-  });
+  const voorstelling = await repository.findOne(
+    { id: +req.params.id },
+    {
+      populate: ["uitvoeringen", "prijzen"],
+    }
+  );
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   } else {
@@ -31,7 +34,8 @@ router.post("/", auth(["admin"]), async (req, res) => {
     delete req.body.id; // verwijder id=null
     const repository = getRepository<Voorstelling>("Voorstelling");
     const voorstelling = repository.create(req.body);
-    wrap(voorstelling).assign(req.body, { mergeObjects: true });
+    // wrap(voorstelling).assign(req.body, { mergeObjects: true });
+    console.log();
     await repository.persistAndFlush(voorstelling);
     res.send(voorstelling);
   } catch (e) {
