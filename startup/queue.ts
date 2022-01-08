@@ -6,6 +6,7 @@ import { paymentNeeded } from "../handlers/paymentNeeded";
 import { paymentReceived } from "../handlers/paymentReceived";
 import { uitvoeringUpdated } from "../handlers/uitvoeringUpdated";
 import { verwerkTekoop } from "../handlers/verwerkTekoop";
+import winston from "winston";
 
 let queue: NRP.NodeRedisPubSub;
 
@@ -30,6 +31,10 @@ export default async function () {
 
   // @ts-ignore
   queue.on("verwerkTekoop", verwerkTekoop);
+
+  queue.on("*", (data, channel) => {
+    winston.info(`onQueue ${channel}`, data);
+  });
 
   Container.set("queue", queue);
 }

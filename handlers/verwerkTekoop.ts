@@ -1,6 +1,7 @@
 import { EntityManager } from "@mikro-orm/core";
 import { Container } from "typedi";
 import winston from "winston";
+import { queue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Log, Ticket, Reservering } from "../models";
 
@@ -41,4 +42,6 @@ export async function verwerkTekoop(aantal: number) {
     Log.addMessage(reservering, `${description} verkocht`);
     ReserveringMail.send(reservering, "verkocht", `${description} verkocht`);
   }
+
+  queue.emit("verwerkTekoopDone", "");
 }

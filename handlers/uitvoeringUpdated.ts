@@ -3,6 +3,7 @@ import Container from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Uitvoering, Reservering } from "../models";
+import { queue } from "../startup/queue";
 
 export async function uitvoeringUpdated(uitvoeringId: number) {
   winston.info(`uitvoeringUpdated ${uitvoeringId}`);
@@ -31,5 +32,6 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
         );
       }
     }
+    queue.emit("uitvoeringUpdatedDone", "");
   });
 }

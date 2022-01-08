@@ -4,6 +4,7 @@ import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
+import { queue } from "../startup/queue";
 
 export class RefundHandler {
   private tickets: Ticket[];
@@ -86,19 +87,25 @@ export class RefundHandler {
   }
 
   static async verwerkRefunds() {
-    const em: EntityManager = (Container.get("em") as EntityManager).fork();
-    const repository = em.getRepository(Reservering);
-    const reserveringen = await repository.find(
-      { tickets: { terugbetalen: true } },
-      Reservering.populate()
-    );
+    try {
+      const em: EntityManager = (Container.get("em") as EntityManager).fork();
+      const repository = em.getRepository(Reservering);
+      const reserveringen = await repository.find(
+        { tickets: { terugbetalen: true } },
+        Reservering.populate()
+      );
 
-    if (!reserveringen.length) return;
+      if (!reserveringen.length) return;
 
-    winston.info(`verwerkRefunds ${reserveringen.length}`);
-    for (const reservering of reserveringen) {
-      await reservering.finishLoading();
-      await new RefundHandler(em, reservering).refund();
+      winston.info(`verwerkRefunds ${reserveringen.length}`);
+      for (const reservering of reserveringen) {
+        await reservering.finishLoading();
+        await new RefundHandler(em, reservering).refund();
+      }
+    } catch (e) {
+      winston.error(e);
+    } finally {
+      queue.emit("verwerkRefundsDone", "");
     }
   }
 }
