@@ -1,24 +1,16 @@
 import { redirectUrl, webhookUrl } from "../components/urls";
-import config from "config";
 
-import {
-  Reservering,
-  Payment,
-  Ticket,
-  StatusUpdate,
-  getRepository,
-} from "../models";
-import { EntityManager } from "@mikro-orm/mysql";
-import createMollieClient from "@mollie/api-client";
+import { Reservering, Payment, Ticket } from "../models";
 import winston from "winston";
+import { MOLLIECLIENT, MollieClient } from "../helpers/MollieClient";
+import Container from "typedi";
 
 export async function paymentNeeded(reservering: Reservering): Promise<void> {
   await reservering.finishLoading();
   try {
+    const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
     if (reservering.newPaymentNeeded) {
-      const mollie_key: string = config.get("payment.mollie_key");
-
-      const mollie = createMollieClient({ apiKey: mollie_key });
+      const mollie = mollieClient.mollie;
       const tickets = reservering.onbetaaldeTickets;
 
       // create a description for this set of tickets

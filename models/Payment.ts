@@ -1,9 +1,3 @@
-const { createMollieClient } = require("@mollie/api-client");
-import config from "config";
-
-const mollie_key = config.get("payment.mollie_key");
-
-const mollie = createMollieClient({ apiKey: mollie_key });
 import {
   Collection,
   Entity,
@@ -17,10 +11,13 @@ import {
 } from "@mikro-orm/core";
 import { Ticket } from "./Ticket";
 import { Reservering } from "./Reservering";
+import { MollieClient, MOLLIECLIENT } from "../helpers/MollieClient";
 import { Payment as MolliePayment } from "@mollie/api-client";
+import { Container } from "typedi";
 
 @Entity({ tableName: "payments" })
 export class Payment {
+  private mollieClient: MollieClient;
   constructor(payment: MolliePayment, description: string) {
     this.payment = payment;
     this.payment_id = payment.id;
@@ -28,10 +25,6 @@ export class Payment {
   }
 
   private payment: MolliePayment;
-
-  static mollieClient() {
-    return mollie;
-  }
 
   @PrimaryKey()
   public id!: number;
@@ -116,14 +109,16 @@ export class Payment {
   async initPayment() {
     if (!this.payment) {
       if (this.payment_id) {
-        const payment = await mollie.payments.get(this.payment_id);
+        const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
+        const payment = await mollieClient.mollie.payments.get(this.payment_id);
         this.payment = payment;
       }
     }
   }
 
   async refund(amount: number) {
-    const refund = await mollie.payments_refunds.create({
+    const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
+    const refund = await mollieClient.mollie.payments_refunds.create({
       paymentId: this.payment_id,
       amount: {
         currency: "EUR",
