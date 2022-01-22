@@ -3,7 +3,7 @@
 import { User } from "../../../models/User";
 import jwt from "jsonwebtoken";
 import config from "config";
-import faker from "faker";
+import faker from "community-faker";
 
 describe("getAuthToken", () => {
   it("should be valid token", () => {

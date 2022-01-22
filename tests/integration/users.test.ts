@@ -9,7 +9,7 @@ import appLoader from "../../app";
 import { User } from "../../models/User";
 import getAuthToken from "../getAuthToken";
 import Container from "typedi";
-import faker from "faker";
+import faker from "community-faker";
 import close from "../close";
 
 let authToken;

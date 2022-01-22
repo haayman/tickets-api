@@ -3,7 +3,6 @@ import winston from "winston";
 import { RequestContext } from "@mikro-orm/core";
 import { Request, Response } from "express";
 import { Reservering } from "../models";
-import { queue } from "../startup/queue";
 import {
   paymentReceived,
   PaymentReceiveMessage,
@@ -14,12 +13,6 @@ const router = express.Router();
 router.post("/bank/:id", async (req, res) => {
   winston.info(req.body);
   const id = req.params.id;
-  // const message: PaymentReceiveMessage = {
-  //   reservering_id: id,
-  //   payment_id: req.body.id,
-  // };
-  // // @ts-ignore
-  // queue.emit("paymentReceived", message);
   await paymentReceived(id, req.body.id as string);
   res.send("OK");
 });

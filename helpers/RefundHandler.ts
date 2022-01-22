@@ -4,7 +4,7 @@ import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 
 export class RefundHandler {
   private tickets: Ticket[];
@@ -46,49 +46,55 @@ export class RefundHandler {
   }
 
   async refund() {
-    const payments = this.payments;
+    try {
+      const payments = this.payments;
 
-    for (const payment_id in payments) {
-      const amount = payments[payment_id].amount;
-      let payment = payments[payment_id].payment;
-      await this.em.populate(payment, ["tickets"]);
+      for (const payment_id in payments) {
+        const amount = payments[payment_id].amount;
+        let payment = payments[payment_id].payment;
+        await this.em.populate(payment, ["tickets"]);
 
-      let refunded;
-      try {
-        refunded = await payment.refund(amount);
-      } catch (ex) {
-        // al gerefund. We hadden hier niet mogen komen
-        winston.error(`Payment ${payment.payment_id} al teruggestort`);
-        refunded = true;
-      }
-      if (refunded) {
-        const terugbetalen = payment.tickets
-          .getItems()
-          .filter((t) => t.terugbetalen);
-        for (const ticket of terugbetalen) {
-          ticket.terugbetalen = false;
-          ticket.geannuleerd = true;
+        let refunded;
+        try {
+          refunded = await payment.refund(amount);
+        } catch (ex) {
+          // al gerefund. We hadden hier niet mogen komen
+          winston.error(`Payment ${payment.payment_id} al teruggestort`);
+          refunded = true;
         }
-        const paymentDescription = Ticket.description(terugbetalen);
-        await ReserveringMail.send(
-          this.reservering,
-          "teruggestort",
-          `${paymentDescription} wordt teruggestort`,
-          {
-            bedrag: amount,
+        if (refunded) {
+          const terugbetalen = payment.tickets
+            .getItems()
+            .filter((t) => t.terugbetalen);
+          for (const ticket of terugbetalen) {
+            ticket.terugbetalen = false;
+            ticket.geannuleerd = true;
           }
-        );
-        await Log.addMessage(
-          this.reservering,
-          `${paymentDescription} teruggestort`
-        );
+          const paymentDescription = Ticket.description(terugbetalen);
+          await ReserveringMail.send(
+            this.reservering,
+            "teruggestort",
+            `${paymentDescription} wordt teruggestort`,
+            {
+              bedrag: amount,
+            }
+          );
+          await Log.addMessage(
+            this.reservering,
+            `${paymentDescription} teruggestort`
+          );
+        }
       }
+    } catch (e) {
+      winston.error(e);
+      throw e;
     }
   }
 
   static async verwerkRefunds() {
+    const em: EntityManager = (Container.get("em") as EntityManager).fork();
+    await em.begin();
     try {
-      const em: EntityManager = (Container.get("em") as EntityManager).fork();
       const repository = em.getRepository(Reservering);
       const reserveringen = await repository.find(
         { tickets: { terugbetalen: true } },
@@ -102,9 +108,12 @@ export class RefundHandler {
         await reservering.finishLoading();
         await new RefundHandler(em, reservering).refund();
       }
+      await em.commit();
     } catch (e) {
       winston.error(e);
+      await em.rollback();
     } finally {
+      const queue = getQueue();
       queue.emit("verwerkRefundsDone", "");
     }
   }

@@ -1,4 +1,5 @@
 import config from "config";
+import { makeid } from "../reservering/makeid";
 const url = config.get("server.url");
 
 let payments = {};
@@ -27,7 +28,7 @@ export function paymentResponse(
         resource: "payment",
         id: paymentId,
         mode: "test",
-        createdAt: "2018-11-22T20:20:12+00:00",
+        createdAt: new Date().toISOString(),
         paidAt: status === "paid" ? new Date().toISOString() : null,
         // "amount": requestBody.amount,
         // "description": "2x volwassenen: €20.00",
@@ -78,7 +79,7 @@ export function refundResponse(
 ) {
   let { status, paymentId, refundId } = options;
   if (!refundId) {
-    refundId = "re_" + require("./makeid")();
+    refundId = `re_${makeid()}`;
   }
   return (uri, requestBody) => {
     let response = Object.assign(

@@ -19,8 +19,13 @@ module.exports = {
     },
   },
 
+  mail_transport: {
+    jsonTransport: true,
+  },
+
   server: {
     url: "https://kaarten.dev.plusleo.nl",
+    bank: "https://jatheater.haayman.nl",
     port: 3001,
   },
   email: {

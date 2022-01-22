@@ -26,7 +26,6 @@ import {
   Property,
   wrap,
 } from "@mikro-orm/core";
-import { queue } from "../startup/queue";
 import { Payment } from "./Payment";
 import { Prijs } from "./Prijs";
 import { Reservering } from "./Reservering";
@@ -145,6 +144,10 @@ export class Ticket {
   }
 
   async finishLoading() {
-    await this.payment?.finishLoading();
+    try {
+      await this.payment?.finishLoading();
+    } catch (e) {
+      throw e;
+    }
   }
 }

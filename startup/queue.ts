@@ -1,4 +1,4 @@
-import NRP from "node-redis-pubsub";
+import EventEmitter from "events";
 import { Container } from "typedi";
 import { reserveringUpdated } from "../handlers/reserveringUpdated";
 import { reserveringDeleted } from "../handlers/reserveringDeleted";
@@ -8,15 +8,10 @@ import { uitvoeringUpdated } from "../handlers/uitvoeringUpdated";
 import { verwerkTekoop } from "../handlers/verwerkTekoop";
 import winston from "winston";
 
-let queue: NRP.NodeRedisPubSub;
+let queue;
 
 export default async function () {
-  queue = NRP({
-    port: 6379, // Redis port
-    host: "linux", // Redis host
-    family: 4, // 4 (IPv4) or 6 (IPv6)
-    db: 0,
-  });
+  queue = new EventEmitter();
 
   // queue.on("paymentNeeded", paymentNeeded);
   // @ts-ignore

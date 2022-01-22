@@ -1,6 +1,6 @@
 import { EntityManager } from "@mikro-orm/core";
 
-export default async function (em: EntityManager) {
+export default function (em: EntityManager) {
   const connection = em.getConnection();
-  await connection.close();
+  return connection.close();
 }

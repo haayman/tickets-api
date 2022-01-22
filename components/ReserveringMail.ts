@@ -34,16 +34,20 @@ export class ReserveringMail {
   }
 
   static async render(reservering, templateName, params = {}) {
-    const mail = new Mailer();
-    const content = await mail.setTemplate("index").render(
-      Object.assign({}, params, {
-        template: templateName,
-        reservering: reservering,
-        format,
-        nl,
-      })
-    );
+    try {
+      const mail = new Mailer();
+      const content = await mail.setTemplate("index").render(
+        Object.assign({}, params, {
+          template: templateName,
+          reservering: reservering,
+          format,
+          nl,
+        })
+      );
 
-    return content;
+      return content;
+    } catch (e) {
+      throw e;
+    }
   }
 }

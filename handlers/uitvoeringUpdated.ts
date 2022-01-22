@@ -1,37 +1,51 @@
-import { EntityManager } from "@mikro-orm/core";
+import { EntityManager, QueryOrder } from "@mikro-orm/core";
 import Container from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Uitvoering, Reservering } from "../models";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 
 export async function uitvoeringUpdated(uitvoeringId: number) {
-  winston.info(`uitvoeringUpdated ${uitvoeringId}`);
-  const em: EntityManager = (Container.get("em") as EntityManager).fork();
-  await em.transactional(async (em) => {
-    const repository = em.getRepository<Uitvoering>("Uitvoering");
-    const uitvoering = await repository.findOne(uitvoeringId);
-    let vrije_plaatsen = uitvoering.vrije_plaatsen;
+  setTimeout(async () => {
+    winston.info(`uitvoeringUpdated ${uitvoeringId}`);
+    let aantalGekocht = 0;
+    const em: EntityManager = (Container.get("em") as EntityManager).fork(
+      false
+    );
+    await em.begin();
+    try {
+      const repository = em.getRepository<Uitvoering>("Uitvoering");
+      const uitvoering = await repository.findOne(uitvoeringId);
+      let vrije_plaatsen = uitvoering.vrije_plaatsen;
+      const reserveringRepository =
+        em.getRepository<Reservering>("Reservering");
 
-    const wachtenden = (
-      await uitvoering.reserveringen.matching({
-        limit: vrije_plaatsen,
-        orderBy: { created_at: "asc" },
-        populate: Reservering.populate(),
-      })
-    ).filter((reservering) => reservering.wachtlijst);
-
-    for (const wachtende of wachtenden) {
-      if (wachtende.aantal <= vrije_plaatsen) {
-        vrije_plaatsen -= wachtende.aantal;
-        wachtende.wachtlijst = false;
-        await ReserveringMail.send(
-          wachtende,
-          "uit_wachtlijst",
-          "uit wachtlijst"
-        );
+      const wachtenden = await reserveringRepository.find(
+        { uitvoering: uitvoering, wachtlijst: true },
+        Reservering.populate(),
+        { created_at: QueryOrder.ASC }
+      );
+      for (const wachtende of wachtenden) {
+        if (wachtende.aantal <= vrije_plaatsen) {
+          vrije_plaatsen -= wachtende.aantal;
+          aantalGekocht += wachtende.aantal;
+          wachtende.wachtlijst = false;
+          await em.populate(wachtende, Reservering.populate());
+          await ReserveringMail.send(
+            wachtende,
+            "uit_wachtlijst",
+            "uit wachtlijst"
+          );
+        }
       }
+      await em.commit();
+    } catch (e) {
+      winston.error(e);
+      await em.rollback();
+    } finally {
+      const queue = getQueue();
+      queue.emit("verwerkTekoop", aantalGekocht);
+      queue.emit("uitvoeringUpdatedDone", "");
     }
-    queue.emit("uitvoeringUpdatedDone", "");
-  });
+  }, 500);
 }

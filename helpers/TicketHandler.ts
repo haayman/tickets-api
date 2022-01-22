@@ -2,7 +2,7 @@ import { TicketAggregator, TicketDTO } from "./TicketAggregator";
 import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
 import { Reservering } from "../models";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 import { EntityManager } from "@mikro-orm/core";
 
 /**
@@ -70,9 +70,9 @@ export class TicketHandler {
 
     this.annuleren();
     this.bestellen();
-    // @ts-ignore
+
+    const queue = getQueue();
     queue.emit("uitvoeringUpdated", this.reservering.uitvoering.id);
-    // @ts-ignore
     queue.emit("verwerkTekoop", this.new.length);
   }
 

@@ -5,7 +5,7 @@ import { getRepository } from "../models/Repository";
 import { FilterQuery, wrap, RequestContext } from "@mikro-orm/core";
 import { paymentNeeded } from "../handlers/paymentNeeded";
 import { TicketHandler } from "../helpers/TicketHandler";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
 import { parseQuery } from "./helpers/parseReserveringQuery";
@@ -27,13 +27,9 @@ router.get("/", auth(true), async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const repository = getRepository<Reservering>("Reservering");
+  const options = parseQuery<Reservering>(Reservering.populate(), req.query);
 
-  const reservering = await repository.findOne(
-    { id: req.params.id },
-    {
-      populate: Reservering.populate(),
-    }
-  );
+  const reservering = await repository.findOne({ id: req.params.id }, options);
   if (!reservering) {
     return res.status(404).send("niet gevonden");
   }
@@ -61,10 +57,12 @@ router.post("/", async (req, res) => {
 
     reservering.wachtlijst = await reservering.moetInWachtrij(em, false);
     await paymentNeeded(reservering);
+    await reservering.finishLoading();
 
     await em.commit();
     res.send(reservering);
 
+    const queue = getQueue();
     queue.emit("reserveringUpdated", reservering.id);
   } catch (e) {
     winston.error(e);
@@ -99,6 +97,7 @@ router.put("/:id", async (req, res) => {
 
     await em.commit();
 
+    const queue = getQueue();
     queue.emit("reserveringUpdated", reservering.id);
 
     res.send(reservering);
@@ -125,6 +124,7 @@ router.delete("/:id", async (req, res) => {
     const ticketHandler = new TicketHandler(em, reservering);
     ticketHandler.update([]);
 
+    const queue = getQueue();
     queue.emit("reserveringDeleted", reservering.id);
 
     await em.commit();

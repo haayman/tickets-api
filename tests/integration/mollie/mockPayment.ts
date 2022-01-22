@@ -1,14 +1,17 @@
-import { paymentResponse, refundResponse } from "./mollie_response";
-import mollieMock from "./mollie-mock";
+import { paymentResponse, refundResponse } from "./mollieResponses";
+import { mollieNock } from "./mollie-nock";
+import winston from "winston";
+import { makeid } from "../reservering/makeid";
 
 let lastPaymentId = 0;
 
-export default function mockPayment(status) {
-  mollieMock
-    .post(/payments/)
+export function mockPayment(status) {
+  mollieNock
+    .post("/payments")
     .once()
     .reply(200, (uri, requestBody) => {
-      const paymentId = "tr_" + ++lastPaymentId;
+      const paymentId = `tr_${makeid()}`;
+      winston.info(`mocking paymentId ${paymentId}`);
 
       // in eerste instantie op 'open' zetten
       const postResponse = paymentResponse({
@@ -17,7 +20,7 @@ export default function mockPayment(status) {
       });
 
       // .times(99) zodat heel vaak het request 'gemocked' wordt
-      mollieMock
+      mollieNock
         .get("/v2/payments/" + paymentId)
         .times(99)
         .reply(
@@ -27,7 +30,7 @@ export default function mockPayment(status) {
             status: status,
           })
         );
-      mollieMock.post("/v2/payments/" + paymentId + "/refunds").reply(
+      mollieNock.post("/v2/payments/" + paymentId + "/refunds").reply(
         200,
         refundResponse({
           paymentId: paymentId,
