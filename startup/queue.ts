@@ -36,7 +36,13 @@ export default async function () {
     winston.info(`onQueue ${channel}`, data);
   });
 
+  queue.on("error", (data, channel) => {
+    winston.error(`onQueue ${channel}`, data);
+  });
+
   Container.set("queue", queue);
 }
 
-export { queue };
+export function getQueue() {
+  return queue;
+}
