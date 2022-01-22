@@ -1,13 +1,13 @@
 import "axios-debug-log";
 import request from "supertest";
-import faker from "faker";
+import faker from "community-faker";
 import { Reservering, Voorstelling } from "../../../../models";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
 import createVoorstelling from "../createVoorstelling";
 import getAuthToken from "../../../getAuthToken";
 import appLoader from "../../../../app";
 
-import { beforeAllReserveringen, beforeEachReserveringen } from "../cleanup";
+import { beforeAllReserveringen, beforeEachReserveringen } from "../initialize";
 import Container from "typedi";
 jest.setTimeout(3000000);
 

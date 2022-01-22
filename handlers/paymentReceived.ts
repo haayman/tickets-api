@@ -3,7 +3,7 @@ import Container from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Reservering, Payment, Ticket, Log, StatusUpdate } from "../models";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 import { MOLLIECLIENT, MollieClient } from "../helpers/MollieClient";
 
 export type PaymentReceiveMessage = {
@@ -16,9 +16,10 @@ export async function paymentReceived(
   payment_id: string
 ) {
   winston.info(`paymentReceived(${reservering_id}, ${payment_id}})`);
-  const em: EntityManager = (Container.get("em") as EntityManager).fork();
+  const em: EntityManager = (Container.get("em") as EntityManager).fork(false);
   const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
-  await em.transactional(async (em) => {
+  await em.begin();
+  try {
     const repository = em.getRepository(Reservering);
     const reservering = await repository.findOneOrFail(
       { id: reservering_id },
@@ -63,6 +64,12 @@ export async function paymentReceived(
         "Betaling mislukt"
       );
     }
+    await em.commit();
+  } catch (e) {
+    winston.error(e);
+    await em.rollback();
+  } finally {
+    const queue = getQueue();
     queue.emit("paymentReceivedDone", "");
-  });
+  }
 }

@@ -57,24 +57,32 @@ export class Mailer {
   }
 
   async send(params) {
-    const template = this.initTemplate();
-    const html = await template.render(this.template, params);
-    const options = {
-      from: this.from,
-      to: this.to,
-      subject: this.subject,
-      html: html,
-      bcc: undefined,
-    };
-    if (config.has("email.bcc")) {
-      options.bcc = config.get("email.bcc");
+    try {
+      const template = this.initTemplate();
+      const html = await template.render(this.template, params);
+      const options = {
+        from: this.from,
+        to: this.to,
+        subject: this.subject,
+        html: html,
+        bcc: undefined,
+      };
+      if (config.has("email.bcc")) {
+        options.bcc = config.get("email.bcc");
+      }
+      await this.transporter.sendMail(options);
+    } catch (e) {
+      throw e;
     }
-    await this.transporter.sendMail(options);
   }
 
   async render(params) {
-    const template = this.initTemplate();
-    return await template.render(this.template, params);
+    try {
+      const template = this.initTemplate();
+      return await template.render(this.template, params);
+    } catch (e) {
+      throw e;
+    }
   }
 
   getRecipient(email: string, naam?: string, override = true) {

@@ -1,22 +1,26 @@
-import "axios-debug-log";
 import nock from "nock";
-import nodemailerMock from "nodemailer-mock";
-import "./mollie-mock";
-import Container from "typedi";
-import { EntityManager } from "@mikro-orm/core";
+import "../mollie/mollie-nock";
 
-jest.setMock("nodemailer", nodemailerMock);
+import { EntityManager } from "@mikro-orm/core";
+import { getQueue } from "../../../startup/queue";
+
+jest.mock("nodemailer");
 
 export async function beforeAllReserveringen(em: EntityManager) {
+  // jest.setMock("nodemailer", nodemailerMock);
   const connection = em.getConnection();
   await connection.execute("delete from voorstellingen");
-  await em.flush();
 }
 
 export async function beforeEachReserveringen(em: EntityManager) {
   const connection = em.getConnection();
   await connection.execute("delete from reserveringen");
-  await em.flush();
-  nodemailerMock.mock.reset();
-  nock.cleanAll();
+  const { mock } = require("nodemailer-mock");
+  mock.reset();
+  nock.abortPendingRequests();
+}
+
+export async function afterAllReserveringen() {
+  const queue = getQueue();
+  queue.quit();
 }

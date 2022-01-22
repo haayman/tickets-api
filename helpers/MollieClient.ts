@@ -19,8 +19,11 @@ export interface IMollieClient {
 }
 
 export class MollieClient {
-  public mollie: IMollieClient;
+  private client: IMollieClient;
   constructor() {
-    this.mollie = createMollieClient({ apiKey });
+    this.client = createMollieClient({ apiKey });
+  }
+  get mollie() {
+    return this.client;
   }
 }

@@ -1,4 +1,4 @@
-export default function makeid() {
+export function makeid() {
   var text = "";
   var possible =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

@@ -14,8 +14,9 @@ import {
 import { Voorstelling } from "./Voorstelling";
 import { Reservering } from "./Reservering";
 import { Ticket } from "./Ticket";
-import { queue } from "../startup/queue";
+import { getQueue } from "../startup/queue";
 import { EntityManager } from "@mikro-orm/mysql";
+import winston from "winston";
 
 export type UitvoeringDTO = {
   aantal_plaatsen: number;
@@ -70,6 +71,7 @@ export class Uitvoering {
 
   @AfterUpdate()
   triggerUpdated() {
+    const queue = getQueue();
     // @ts-ignore
     queue.emit("uitvoeringUpdated", this.id);
   }
@@ -90,9 +92,10 @@ export class Uitvoering {
   }
 
   async countGereserveerd(em: EntityManager, reservering_id): Promise<number> {
-    const connection = em.getConnection();
-    const result = await connection.execute(
-      `
+    try {
+      const connection = em.getConnection();
+      const result = await connection.execute(
+        `
       SELECT count(*) as count FROM tickets 
       WHERE reservering_id in 
       (select id from reserveringen where uitvoering_id = ?) 
@@ -100,19 +103,28 @@ export class Uitvoering {
       and not tekoop 
       and not geannuleerd 
       AND not verkocht`,
-      [this.id, reservering_id]
-    );
+        [this.id, reservering_id]
+      );
 
-    // @ts-ignore
-    const count = result[0].count;
-    return count;
+      // @ts-ignore
+      const count = result[0].count;
+      return count;
+    } catch (e) {
+      winston.error(e);
+      throw e;
+    }
   }
 
   async countVrijePlaatsen(em: EntityManager, reservering_id: string) {
-    return Math.max(
-      this.aantal_plaatsen - (await this.countGereserveerd(em, reservering_id)),
-      0
-    );
+    try {
+      return Math.max(
+        this.aantal_plaatsen -
+          (await this.countGereserveerd(em, reservering_id)),
+        0
+      );
+    } catch (e) {
+      throw e;
+    }
   }
 
   @Property({ persist: false })

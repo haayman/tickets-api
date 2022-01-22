@@ -14,10 +14,10 @@ import { Reservering } from "./Reservering";
 import { MollieClient, MOLLIECLIENT } from "../helpers/MollieClient";
 import { Payment as MolliePayment } from "@mollie/api-client";
 import { Container } from "typedi";
+import winston from "winston";
 
 @Entity({ tableName: "payments" })
 export class Payment {
-  private mollieClient: MollieClient;
   constructor(payment: MolliePayment, description: string) {
     this.payment = payment;
     this.payment_id = payment.id;
@@ -92,7 +92,7 @@ export class Payment {
   get isPaid(): boolean {
     return (
       this.betaalstatus === "paid" ||
-      (this.payment ? this.payment.isPaid() : undefined)
+      (this.payment?.isPaid ? this.payment.isPaid() : undefined)
     );
   }
 
@@ -102,29 +102,40 @@ export class Payment {
     return o;
   }
 
-  async finishLoading() {
-    await this.initPayment();
+  finishLoading() {
+    return this.initPayment();
   }
 
   async initPayment() {
     if (!this.payment) {
       if (this.payment_id) {
-        const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
-        const payment = await mollieClient.mollie.payments.get(this.payment_id);
-        this.payment = payment;
+        try {
+          const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
+          const payment = await mollieClient.mollie.payments.get(
+            this.payment_id
+          );
+          this.payment = payment;
+        } catch (e) {
+          throw e;
+        }
       }
     }
   }
 
   async refund(amount: number) {
-    const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
-    const refund = await mollieClient.mollie.payments_refunds.create({
-      paymentId: this.payment_id,
-      amount: {
-        currency: "EUR",
-        value: amount.toFixed(2),
-      },
-    });
-    return refund;
+    try {
+      const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
+      const refund = await mollieClient.mollie.payments_refunds.create({
+        paymentId: this.payment_id,
+        amount: {
+          currency: "EUR",
+          value: amount.toFixed(2),
+        },
+      });
+      return refund;
+    } catch (e) {
+      winston.error(e);
+      throw e;
+    }
   }
 }

@@ -4,10 +4,8 @@ import { v4 } from "uuid";
 import {
   AfterCreate,
   AfterDelete,
-  AfterUpdate,
   Collection,
   Entity,
-  Index,
   ManyToOne,
   OneToMany,
   PrimaryKey,
@@ -19,7 +17,7 @@ import { Log } from "./Log";
 import { Ticket } from "./Ticket";
 import { Payment } from "./Payment";
 import { StatusUpdate } from "./StatusUpdate";
-import { Aggregate, TicketAggregator } from "../helpers/TicketAggregator";
+import { TicketAggregator } from "../helpers/TicketAggregator";
 import {
   getMailUrl,
   getBetalingUrl,
@@ -28,9 +26,9 @@ import {
   getResendUrl,
   getTicketUrl,
 } from "../components/urls";
-import { queue } from "../startup/queue";
 import winston from "winston";
 import { EntityManager } from "@mikro-orm/core";
+import { getQueue } from "../startup/queue";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -94,11 +92,15 @@ export class Reservering {
   }
 
   async finishLoading() {
-    for (const payment of this.payments.getItems()) {
-      await payment.finishLoading();
-    }
-    for (const ticket of this.tickets.getItems()) {
-      await ticket.finishLoading();
+    try {
+      for (const payment of this.payments.getItems()) {
+        await payment.finishLoading();
+      }
+      for (const ticket of this.tickets.getItems()) {
+        await ticket.finishLoading();
+      }
+    } catch (e) {
+      throw e;
     }
   }
 
@@ -122,6 +124,7 @@ export class Reservering {
   @AfterCreate()
   @AfterDelete()
   triggerUpdated() {
+    const queue = getQueue();
     // @ts-ignore
     queue.emit("reserveringUpdated", this.id);
   }
@@ -195,10 +198,14 @@ export class Reservering {
 
   async moetInWachtrij(em: EntityManager, existing: boolean): Promise<boolean> {
     const vrije_plaatsen = this.uitvoering.vrije_plaatsen;
-    return existing
-      ? // @ts-ignore
-        (await this.uitvoering.countVrijePlaatsen(em, this.id)) <= 0
-      : vrije_plaatsen <= 0;
+    try {
+      return existing
+        ? // @ts-ignore
+          (await this.uitvoering.countVrijePlaatsen(em, this.id)) <= 0
+        : vrije_plaatsen < this.aantal;
+    } catch (e) {
+      throw e;
+    }
   }
 
   setStatus(status: string) {

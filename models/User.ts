@@ -18,6 +18,7 @@ import {
   wrap,
 } from "@mikro-orm/core";
 import { v4 } from "uuid";
+import winston from "winston";
 
 export type IRole = "admin" | "speler" | "kassa";
 
@@ -91,7 +92,8 @@ export class User {
 
       this.password = hash;
     } catch (e) {
-      console.error(e);
+      winston.error(e);
+      throw e;
     }
   }
 
