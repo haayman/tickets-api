@@ -8,7 +8,6 @@ import { getQueue } from "../startup/queue";
 export async function uitvoeringUpdated(uitvoeringId: number) {
   setTimeout(async () => {
     winston.info(`uitvoeringUpdated ${uitvoeringId}`);
-    let verkochtBedrag = 0;
     const em: EntityManager = (Container.get("em") as EntityManager).fork();
     await em.begin();
     try {
@@ -26,7 +25,6 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
       for (const wachtende of wachtenden) {
         if (wachtende.aantal <= vrije_plaatsen) {
           vrije_plaatsen -= wachtende.aantal;
-          verkochtBedrag += wachtende.bedrag;
           wachtende.wachtlijst = false;
           await em.populate(wachtende, Reservering.populate());
           await ReserveringMail.send(
@@ -42,7 +40,6 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
       await em.rollback();
     } finally {
       const queue = getQueue();
-      queue.emit("verwerkTekoop", verkochtBedrag);
       queue.emit("uitvoeringUpdatedDone", "");
     }
   }, 500);
