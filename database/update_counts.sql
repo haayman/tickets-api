@@ -15,7 +15,11 @@ BEGIN
     SET V_gereserveerd =  (
         SELECT count(*) 
         FROM tickets t 
-        WHERE NOT t.geannuleerd AND NOT t.verkocht AND t.reservering_id IN (
+        WHERE 
+            NOT t.geannuleerd 
+            AND NOT t.verkocht 
+            AND NOT t.terugbetalen
+            AND t.reservering_id IN (
             SELECT id from reserveringen where uitvoering_id = V_uitvoering_id AND NOT wachtlijst));
 
     SET V_wachtlijst = (
