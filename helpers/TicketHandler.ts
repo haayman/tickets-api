@@ -22,9 +22,11 @@ export class TicketHandler {
   private cancelled: Ticket[] = [];
   private new: Pick<Ticket, "prijs" | "betaald">[] = [];
   private terugKopen: Ticket[] = [];
+  private teruggeefbaar: boolean;
 
   constructor(private em: EntityManager, public reservering: Reservering) {
     this.oldTickets = new TicketAggregator(reservering);
+    this.teruggeefbaar = reservering.teruggeefbaar;
   }
 
   update(newTickets: TicketDTO[]): void {
@@ -59,6 +61,10 @@ export class TicketHandler {
 
         for (let i = aantal - oldTickets.tickets.length; i; i--) {
           this.new.push({ prijs, betaald: prijs.prijs == 0 });
+          // als er vrijkaarten zijn uitgegeven, dan worden de geannuleerde kaarten meteen teruggegeven
+          if (prijs.prijs === 0) {
+            this.teruggeefbaar = true;
+          }
         }
       } else if (oldTickets.tickets.length > aantal) {
         const diff = oldTickets.tickets.length - aantal;
@@ -114,7 +120,7 @@ export class TicketHandler {
       }
 
       if (paid.length) {
-        if (this.reservering.teruggeefbaar) {
+        if (this.teruggeefbaar) {
           Log.addMessage(
             this.reservering,
             `${Ticket.description(paid, " en ")} terugbetalen`
