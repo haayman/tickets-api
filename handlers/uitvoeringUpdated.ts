@@ -9,9 +9,7 @@ export async function uitvoeringUpdated(uitvoeringId: number) {
   setTimeout(async () => {
     winston.info(`uitvoeringUpdated ${uitvoeringId}`);
     let aantalGekocht = 0;
-    const em: EntityManager = (Container.get("em") as EntityManager).fork(
-      false
-    );
+    const em: EntityManager = (Container.get("em") as EntityManager).fork();
     await em.begin();
     try {
       const repository = em.getRepository<Uitvoering>("Uitvoering");

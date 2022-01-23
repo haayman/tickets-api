@@ -10,7 +10,7 @@ export async function reserveringDeleted(reserveringId: string) {
   winston.info(`reserveringDeleted ${reserveringId}`);
   RefundHandler.verwerkRefunds();
 
-  const em: EntityManager = (Container.get("em") as EntityManager).fork(false);
+  const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.begin();
 
   try {
