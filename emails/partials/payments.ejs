@@ -30,9 +30,9 @@
                   <a href="<%= payment.paymentUrl %>">Nog te betalen</a>
                   <% } else {%> <%= payment.status %> <% } %>
                 </td>
-                <td>€ <%= payment.amount.toFixed(2) %></td>
+                <td>€&nbsp;<%= payment.amount.toFixed(2) %></td>
                 <% if( payment.amountRefunded ) { %>
-                <td>€ <%= payment.amountRefunded.toFixed(2) %></td>
+                <td>€&nbsp;<%= payment.amountRefunded.toFixed(2) %></td>
                 <% } %>
               </tr>
               <% } %>
