@@ -73,7 +73,7 @@ export class TicketHandler {
 
     const queue = getQueue();
     queue.emit("uitvoeringUpdated", this.reservering.uitvoering.id);
-    queue.emit("verwerkTekoop", this.new.length);
+    queue.emit("verwerkTekoop", this.totaalBedrag(this.new));
   }
 
   haalUitVerkoop() {
@@ -85,6 +85,12 @@ export class TicketHandler {
         ticket.tekoop = false;
       }
     }
+  }
+
+  totaalBedrag(tickets: Pick<Ticket, "prijs" | "betaald">[]) {
+    return tickets.reduce((total: number, ticket: Ticket) => {
+      return total + ticket.prijs.prijs;
+    }, 0);
   }
 
   annuleren() {
