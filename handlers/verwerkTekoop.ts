@@ -5,10 +5,10 @@ import { getQueue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Log, Ticket, Reservering } from "../models";
 
-export async function verwerkTekoop(aantal: number) {
-  if (!aantal) return;
+export async function verwerkTekoop(verkochtBedrag: number) {
+  if (!verkochtBedrag) return;
   setTimeout(async () => {
-    winston.info(`verwerkTekoop(${aantal})`);
+    winston.info(`verwerkTekoop(${verkochtBedrag})`);
     const em: EntityManager = (Container.get("em") as EntityManager).fork(
       false
     );
@@ -20,25 +20,29 @@ export async function verwerkTekoop(aantal: number) {
         { tekoop: true },
         {
           orderBy: { created_at: "asc" },
-          limit: aantal,
           populate: ["prijs", "reservering.logs", "reservering.uitvoering"],
         }
       );
 
       for (const ticket of tekoop) {
         const reservering = ticket.reservering;
-        if (!reserveringen.has(reservering)) {
-          reserveringen.set(reservering, []);
+        if (ticket.prijs.prijs <= verkochtBedrag) {
+          verkochtBedrag -= ticket.prijs.prijs;
+          if (!reserveringen.has(reservering)) {
+            reserveringen.set(reservering, []);
+          }
+          const tickets = reserveringen.get(reservering);
+
+          await ticket.finishLoading();
+
+          ticket.verkocht = true;
+          ticket.tekoop = false;
+          ticket.terugbetalen = true;
+
+          reserveringen.set(reservering, [...tickets, ticket]);
+        } else {
+          winston.info(`${ticket} niet verkocht vanwege te laag bedrag`);
         }
-        const tickets = reserveringen.get(reservering);
-
-        await ticket.finishLoading();
-
-        ticket.verkocht = true;
-        ticket.tekoop = false;
-        ticket.terugbetalen = true;
-
-        reserveringen.set(reservering, [...tickets, ticket]);
       }
       for (let [reservering, tickets] of reserveringen) {
         await em.populate(reservering, Reservering.populate());
