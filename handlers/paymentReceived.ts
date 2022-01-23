@@ -19,6 +19,8 @@ export async function paymentReceived(
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
   await em.begin();
+  const queue = getQueue();
+
   try {
     const repository = em.getRepository(Reservering);
     const reservering = await repository.findOneOrFail(
@@ -52,6 +54,7 @@ export async function paymentReceived(
     );
 
     if (payment.status == "paid") {
+      queue.emit("verwerkTekoop", Ticket.totaalBedrag(tickets));
       await ReserveringMail.send(
         reservering,
         "confirmationPayment",
@@ -69,7 +72,6 @@ export async function paymentReceived(
     winston.error(e);
     await em.rollback();
   } finally {
-    const queue = getQueue();
     queue.emit("paymentReceivedDone", "");
   }
 }
