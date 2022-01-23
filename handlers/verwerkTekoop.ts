@@ -58,5 +58,5 @@ export async function verwerkTekoop(aantal: number) {
       const queue = getQueue();
       queue.emit("verwerkTekoopDone", "");
     }
-  }, 500);
+  }, 1);
 }

@@ -16,7 +16,7 @@ export async function paymentReceived(
   payment_id: string
 ) {
   winston.info(`paymentReceived(${reservering_id}, ${payment_id}})`);
-  const em: EntityManager = (Container.get("em") as EntityManager).fork(false);
+  const em: EntityManager = (Container.get("em") as EntityManager).fork();
   const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
   await em.begin();
   try {
