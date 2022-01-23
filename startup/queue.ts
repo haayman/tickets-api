@@ -1,6 +1,7 @@
 import EventEmitter from "events";
 import { Container } from "typedi";
 import { reserveringUpdated } from "../handlers/reserveringUpdated";
+import { reserveringCreated } from "../handlers/reserveringCreated";
 import { reserveringDeleted } from "../handlers/reserveringDeleted";
 import { paymentNeeded } from "../handlers/paymentNeeded";
 import { paymentReceived } from "../handlers/paymentReceived";
@@ -18,6 +19,8 @@ export default async function () {
   queue.on("paymentReceived", paymentReceived);
 
   queue.on("reserveringUpdated", reserveringUpdated);
+
+  queue.on("reserveringCreated", reserveringCreated);
 
   queue.on("reserveringDeleted", reserveringDeleted);
 

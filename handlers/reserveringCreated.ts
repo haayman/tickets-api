@@ -6,12 +6,12 @@ import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
 import { getQueue } from "../startup/queue";
 
-export type ReserveringUpdatedMessage = string;
+export type ReserveringCreatedMessage = string;
 
-export async function reserveringUpdated(
-  reserveringId: ReserveringUpdatedMessage
+export async function reserveringCreated(
+  reserveringId: ReserveringCreatedMessage
 ) {
-  winston.info(`reserveringUpdated, ${reserveringId}`);
+  winston.info(`reserveringCreated, ${reserveringId}`);
   RefundHandler.verwerkRefunds();
 
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
@@ -43,8 +43,8 @@ export async function reserveringUpdated(
     } else {
       await ReserveringMail.send(
         reservering,
-        "gewijzigd",
-        `${reservering} gewijzigd`
+        "aangevraagd",
+        `${reservering} besteld`
       );
     }
     await em.commit();
@@ -53,6 +53,6 @@ export async function reserveringUpdated(
     await em.rollback();
   } finally {
     const queue = getQueue();
-    queue.emit("reserveringUpdatedDone", "");
+    queue.emit("reserveringCreatedDone", "");
   }
 }

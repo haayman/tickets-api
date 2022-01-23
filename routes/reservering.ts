@@ -41,7 +41,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const em = RequestContext.getEntityManager().fork(false);
+  const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
     const repository = em.getRepository<Reservering>("Reservering");
@@ -63,7 +63,7 @@ router.post("/", async (req, res) => {
     res.send(reservering);
 
     const queue = getQueue();
-    queue.emit("reserveringUpdated", reservering.id);
+    queue.emit("reserveringCreated", reservering.id);
   } catch (e) {
     winston.error(e);
     em.rollback();
@@ -72,7 +72,7 @@ router.post("/", async (req, res) => {
 });
 
 router.put("/:id", async (req, res) => {
-  const em = RequestContext.getEntityManager().fork(false);
+  const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
     const repository = em.getRepository<Reservering>("Reservering");
@@ -96,11 +96,10 @@ router.put("/:id", async (req, res) => {
     await paymentNeeded(reservering);
 
     await em.commit();
+    res.send(reservering);
 
     const queue = getQueue();
     queue.emit("reserveringUpdated", reservering.id);
-
-    res.send(reservering);
   } catch (e) {
     winston.error(e);
 
@@ -110,7 +109,7 @@ router.put("/:id", async (req, res) => {
 });
 
 router.delete("/:id", async (req, res) => {
-  const em = RequestContext.getEntityManager().fork(false);
+  const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
     const repository = em.getRepository<Reservering>("Reservering");
@@ -139,7 +138,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 router.put("/:id/ingenomen", async (req, res) => {
-  const em = RequestContext.getEntityManager().fork(false);
+  const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
     const repository = em.getRepository<Reservering>("Reservering");
