@@ -123,12 +123,11 @@ router.delete("/:id", async (req, res) => {
     const ticketHandler = new TicketHandler(em, reservering);
     ticketHandler.update([]);
 
+    await em.commit();
+    res.send(reservering);
+
     const queue = getQueue();
     queue.emit("reserveringDeleted", reservering.id);
-
-    await em.commit();
-
-    res.send(reservering);
   } catch (e) {
     winston.error(e);
 
