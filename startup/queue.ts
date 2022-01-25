@@ -1,4 +1,4 @@
-import EventEmitter from "events";
+import events from "events";
 import { Container } from "typedi";
 import { reserveringUpdated } from "../handlers/reserveringUpdated";
 import { reserveringCreated } from "../handlers/reserveringCreated";
@@ -10,6 +10,13 @@ import { verwerkTekoop } from "../handlers/verwerkTekoop";
 import winston from "winston";
 
 let queue;
+
+class EventEmitter extends events {
+  emit(channel, ...args) {
+    winston.info(`onQueue: ${channel}`, ...args);
+    return super.emit(channel, ...args);
+  }
+}
 
 export default async function () {
   queue = new EventEmitter();
@@ -29,14 +36,6 @@ export default async function () {
 
   // @ts-ignore
   queue.on("verwerkTekoop", verwerkTekoop);
-
-  queue.on("*", (data, channel) => {
-    winston.info(`onQueue ${channel}`, data);
-  });
-
-  queue.on("error", (data, channel) => {
-    winston.error(`onQueue ${channel}`, data);
-  });
 
   Container.set("queue", queue);
 }
