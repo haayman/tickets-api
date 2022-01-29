@@ -121,13 +121,13 @@ export class Reservering {
     );
   }
 
-  @AfterCreate()
-  @AfterDelete()
-  triggerUpdated() {
-    const queue = getQueue();
-    // @ts-ignore
-    queue.emit("reserveringUpdated", this.id);
-  }
+  // @AfterCreate()
+  // @AfterDelete()
+  // triggerUpdated() {
+  //   const queue = getQueue();
+  //   // @ts-ignore
+  //   queue.emit("reserveringUpdated", this.id);
+  // }
 
   @Property({ persist: false })
   get openstaandBedrag() {
