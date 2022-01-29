@@ -28,7 +28,9 @@ export class ReserveringMail {
         nl,
       })
     );
-    winston.info(`Mail '${subject}' verzonden`);
+    winston.info(`Mail '${subject}' verzonden`, {
+      to: reservering.email,
+    });
     winston.info(reservering.getMailUrl(templateName));
     Log.addMessage(r, `Mail '${subject}' verzonden`);
   }
