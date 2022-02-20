@@ -14,9 +14,10 @@ import {
 import { Voorstelling } from "./Voorstelling";
 import { Reservering } from "./Reservering";
 import { Ticket } from "./Ticket";
-import { getQueue } from "../startup/queue";
 import { EntityManager } from "@mikro-orm/mysql";
 import winston from "winston";
+import Container from "typedi";
+import { Queue } from "bullmq";
 
 export type UitvoeringDTO = {
   aantal_plaatsen: number;
@@ -71,9 +72,14 @@ export class Uitvoering {
 
   @AfterUpdate()
   triggerUpdated() {
-    const queue = getQueue();
-    // @ts-ignore
-    queue.emit("uitvoeringUpdated", this.id);
+    const queue: Queue = Container.get("uitvoeringUpdatedQueue");
+    queue.add("uitvoeringUpdated", this.id, {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    });
   }
 
   @ManyToOne()

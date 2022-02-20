@@ -1,66 +1,55 @@
 import { EntityManager } from "@mikro-orm/core";
 import { Container } from "typedi";
 import winston from "winston";
-import { getQueue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Log, Ticket, Reservering } from "../models";
 
 export async function verwerkTekoop(verkochtBedrag: number) {
   if (!verkochtBedrag) return;
-  setTimeout(async () => {
-    winston.info(`verwerkTekoop(${verkochtBedrag})`);
-    const em: EntityManager = (Container.get("em") as EntityManager).fork(
-      false
+  winston.info(`verwerkTekoop(${verkochtBedrag})`);
+  const em: EntityManager = (Container.get("em") as EntityManager).fork(false);
+  await em.begin();
+  try {
+    const reserveringen: Map<Reservering, Ticket[]> = new Map();
+    const repository = em.getRepository<Ticket>("Ticket");
+    const tekoop = await repository.find(
+      { tekoop: true },
+      {
+        orderBy: { created_at: "asc" },
+        populate: ["prijs", "reservering.logs", "reservering.uitvoering"],
+      }
     );
-    await em.begin();
-    try {
-      const reserveringen: Map<Reservering, Ticket[]> = new Map();
-      const repository = em.getRepository<Ticket>("Ticket");
-      const tekoop = await repository.find(
-        { tekoop: true },
-        {
-          orderBy: { created_at: "asc" },
-          populate: ["prijs", "reservering.logs", "reservering.uitvoering"],
+
+    for (const ticket of tekoop) {
+      const reservering = ticket.reservering;
+      if (ticket.prijs.prijs <= verkochtBedrag) {
+        verkochtBedrag -= ticket.prijs.prijs;
+        if (!reserveringen.has(reservering)) {
+          reserveringen.set(reservering, []);
         }
-      );
+        const tickets = reserveringen.get(reservering);
 
-      for (const ticket of tekoop) {
-        const reservering = ticket.reservering;
-        if (ticket.prijs.prijs <= verkochtBedrag) {
-          verkochtBedrag -= ticket.prijs.prijs;
-          if (!reserveringen.has(reservering)) {
-            reserveringen.set(reservering, []);
-          }
-          const tickets = reserveringen.get(reservering);
+        await ticket.finishLoading();
 
-          await ticket.finishLoading();
+        ticket.verkocht = true;
+        ticket.tekoop = false;
+        ticket.terugbetalen = true;
 
-          ticket.verkocht = true;
-          ticket.tekoop = false;
-          ticket.terugbetalen = true;
-
-          reserveringen.set(reservering, [...tickets, ticket]);
-        } else {
-          winston.info(`${ticket} niet verkocht vanwege te laag bedrag`);
-        }
+        reserveringen.set(reservering, [...tickets, ticket]);
+      } else {
+        winston.info(`${ticket} niet verkocht vanwege te laag bedrag`);
       }
-      for (let [reservering, tickets] of reserveringen) {
-        await em.populate(reservering, Reservering.populate());
-        const description = Ticket.description(tickets);
-        Log.addMessage(reservering, `${description} verkocht`);
-        ReserveringMail.send(
-          reservering,
-          "verkocht",
-          `${description} verkocht`
-        );
-      }
-      await em.commit();
-    } catch (e) {
-      winston.error(e);
-      await em.rollback();
-    } finally {
-      const queue = getQueue();
-      queue.emit("verwerkTekoopDone", "");
     }
-  }, 1);
+    for (let [reservering, tickets] of reserveringen) {
+      await em.populate(reservering, Reservering.populate());
+      const description = Ticket.description(tickets);
+      Log.addMessage(reservering, `${description} verkocht`);
+      ReserveringMail.send(reservering, "verkocht", `${description} verkocht`);
+    }
+    await em.commit();
+  } catch (e) {
+    winston.error(e);
+    await em.rollback();
+    throw e;
+  }
 }

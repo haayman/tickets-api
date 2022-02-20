@@ -2,8 +2,9 @@ import { TicketAggregator, TicketDTO } from "./TicketAggregator";
 import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
 import { Reservering } from "../models";
-import { getQueue } from "../startup/queue";
 import { EntityManager } from "@mikro-orm/core";
+import { Container } from "typedi";
+import { Queue } from "bullmq";
 
 /**
  * @typedef {Object} Prijs
@@ -77,8 +78,14 @@ export class TicketHandler {
     this.annuleren();
     this.bestellen();
 
-    const queue = getQueue();
-    queue.emit("uitvoeringUpdated", this.reservering.uitvoering.id);
+    const queue: Queue = Container.get("uitvoeringUpdatedQueue");
+    queue.add("uitvoeringUpdated", this.reservering.uitvoering.id, {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+    });
   }
 
   haalUitVerkoop() {

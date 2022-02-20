@@ -5,10 +5,11 @@ import { getRepository } from "../models/Repository";
 import { FilterQuery, wrap, RequestContext } from "@mikro-orm/core";
 import { paymentNeeded } from "../handlers/paymentNeeded";
 import { TicketHandler } from "../helpers/TicketHandler";
-import { getQueue } from "../startup/queue";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
 import { parseQuery } from "./helpers/parseReserveringQuery";
+import Container from "typedi";
+import { Queue } from "bullmq";
 
 const router = express.Router();
 
@@ -60,10 +61,11 @@ router.post("/", async (req, res) => {
     await reservering.finishLoading();
 
     await em.commit();
-    res.send(reservering);
 
-    const queue = getQueue();
-    queue.emit("reserveringCreated", reservering.id);
+    const queue: Queue = Container.get("reserveringCreatedQueue");
+    await queue.add("reserveringCreated", reservering.id);
+
+    res.send(reservering);
   } catch (e) {
     winston.error(e);
     em.rollback();
@@ -96,10 +98,11 @@ router.put("/:id", async (req, res) => {
     await paymentNeeded(reservering);
 
     await em.commit();
-    res.send(reservering);
 
-    const queue = getQueue();
-    queue.emit("reserveringUpdated", reservering.id);
+    const queue: Queue = Container.get("reserveringUpdatedQueue");
+    await queue.add("reserveringUpdated", reservering.id);
+
+    res.send(reservering);
   } catch (e) {
     winston.error(e);
 
@@ -124,10 +127,11 @@ router.delete("/:id", async (req, res) => {
     ticketHandler.update([]);
 
     await em.commit();
-    res.send(reservering);
 
-    const queue = getQueue();
-    queue.emit("reserveringDeleted", reservering.id);
+    const queue: Queue = Container.get("reserveringDeletedQueue");
+    await queue.add("reserveringDeleted", reservering.id);
+
+    res.send(reservering);
   } catch (e) {
     winston.error(e);
 

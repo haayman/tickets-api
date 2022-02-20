@@ -3,8 +3,8 @@
 
 module.exports = {
   name: "My app (dev)",
-  useMorgan: true,
-  logLevel: "error",
+  useMorgan: false,
+  logLevel: "info",
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8",
   },

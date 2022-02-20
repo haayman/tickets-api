@@ -2,7 +2,8 @@ import nock from "nock";
 import "../mollie/mollie-nock";
 
 import { EntityManager } from "@mikro-orm/core";
-import { getQueue } from "../../../startup/queue";
+import { Container } from "typedi";
+import { Queue } from "bullmq";
 
 jest.mock("nodemailer");
 
@@ -21,6 +22,6 @@ export async function beforeEachReserveringen(em: EntityManager) {
 }
 
 export async function afterAllReserveringen() {
-  const queue = getQueue();
-  queue.quit();
+  // const queue = getQueue();
+  // await queue.close();
 }

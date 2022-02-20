@@ -4,7 +4,6 @@ import { Reservering } from "../models";
 import { RefundHandler } from "../helpers/RefundHandler";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
-import { getQueue } from "../startup/queue";
 
 export async function reserveringDeleted(reserveringId: string) {
   winston.info(`reserveringDeleted ${reserveringId}`);
@@ -33,8 +32,6 @@ export async function reserveringDeleted(reserveringId: string) {
   } catch (e) {
     winston.error(e);
     await em.rollback();
-  } finally {
-    const queue = getQueue();
-    queue.emit("reserveringDeletedDone", "");
+    throw e;
   }
 }

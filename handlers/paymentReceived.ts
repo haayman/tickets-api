@@ -3,8 +3,8 @@ import Container from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Reservering, Payment, Ticket, Log, StatusUpdate } from "../models";
-import { getQueue } from "../startup/queue";
 import { MOLLIECLIENT, MollieClient } from "../helpers/MollieClient";
+import { Queue } from "bullmq";
 
 export type PaymentReceiveMessage = {
   reservering_id: string;
@@ -19,7 +19,7 @@ export async function paymentReceived(
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   const mollieClient = Container.get(MOLLIECLIENT) as MollieClient;
   await em.begin();
-  const queue = getQueue();
+  const queue: Queue = Container.get("verwerkTekoopQueue");
 
   try {
     const repository = em.getRepository(Reservering);
@@ -54,7 +54,7 @@ export async function paymentReceived(
     );
 
     if (payment.status == "paid") {
-      queue.emit("verwerkTekoop", Ticket.totaalBedrag(tickets));
+      await queue.add("verwerkTekoop", Ticket.totaalBedrag(tickets));
       await ReserveringMail.send(
         reservering,
         "confirmationPayment",
@@ -71,7 +71,5 @@ export async function paymentReceived(
   } catch (e) {
     winston.error(e);
     await em.rollback();
-  } finally {
-    queue.emit("paymentReceivedDone", "");
   }
 }

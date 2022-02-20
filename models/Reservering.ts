@@ -28,7 +28,6 @@ import {
 } from "../components/urls";
 import winston from "winston";
 import { EntityManager } from "@mikro-orm/core";
-import { getQueue } from "../startup/queue";
 
 @Entity({ tableName: "reserveringen" })
 export class Reservering {
@@ -120,14 +119,6 @@ export class Reservering {
       this.payments.getItems().filter((p) => p.status == "open").length == 0
     );
   }
-
-  // @AfterCreate()
-  // @AfterDelete()
-  // triggerUpdated() {
-  //   const queue = getQueue();
-  //   // @ts-ignore
-  //   queue.emit("reserveringUpdated", this.id);
-  // }
 
   @Property({ persist: false })
   get openstaandBedrag() {

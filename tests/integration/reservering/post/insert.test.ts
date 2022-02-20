@@ -12,9 +12,9 @@ import {
 import Container from "typedi";
 import clone from "lodash/clone";
 import { mock } from "nodemailer-mock";
-import { reserveringUpdatedDone } from "../promises";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
+import { queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -44,7 +44,7 @@ afterAll(async () => {
 describe("/reservering", () => {
   describe("/post", () => {
     it("succesvolle reservering", async () => {
-      const waitFor = Promise.all([reserveringUpdatedDone()]);
+      const waitFor = queuesAreEmpty();
       await createReservering(request(app), {
         naam: "Test",
         email: "arjen.haayman+test@gmail.com",
@@ -59,14 +59,15 @@ describe("/reservering", () => {
 
       await waitFor;
       const sentMail = mock.sentMail();
-      expect(sentMail.length).toBe(2);
-      expect(sentMail[0].subject).toMatch(/kaarten besteld/);
-      expect(sentMail[1].subject).toMatch(/Kaarten voor 2x/);
+      expect(sentMail.length).toBe(1);
+      expect(sentMail[0].subject).toMatch(/Kaarten voor 2x/);
     });
 
     it("not modify prijs", async () => {
       const newPrijs = clone(voorstelling.prijzen[0]);
       newPrijs.prijs = 200;
+      const waitFor = queuesAreEmpty();
+
       const res = await request(app)
         .post("/api/reservering")
         .send({
@@ -88,12 +89,14 @@ describe("/reservering", () => {
             },
           ],
         });
-      await Promise.all([reserveringUpdatedDone()]);
+      // await waitFor;
       expect(res.body.openstaandBedrag).toBe(20);
     });
 
-    it("should be wachtlijst", (done) => {
-      request(app)
+    it("should be wachtlijst", async () => {
+      const waitFor = queuesAreEmpty();
+
+      const res = await request(app)
         .post("/api/reservering")
         .send({
           naam: "Test",
@@ -113,25 +116,17 @@ describe("/reservering", () => {
               aantal: 0,
             },
           ],
-        })
-        .then(async (res) => {
-          await Promise.all([reserveringUpdatedDone()]);
-          expect(res.status).toBe(200);
-          expect(res.body.id).toBeDefined();
-          expect(res.body.openstaandBedrag).toBe(30);
-          // expect(res.body.onbetaaldeTickets.length).toBe(3);
-          expect(res.body.wachtlijst).toBe(true);
-
-          const sentMail = mock.sentMail();
-          expect(sentMail.length).toBe(1);
-          expect(sentMail[0].subject).toMatch(/wachtlijst/);
-        })
-        .catch((e) => {
-          console.error(e);
-        })
-        .finally(async () => {
-          await done();
         });
+      await waitFor;
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBeDefined();
+      expect(res.body.openstaandBedrag).toBe(30);
+      // expect(res.body.onbetaaldeTickets.length).toBe(3);
+      expect(res.body.wachtlijst).toBe(true);
+
+      const sentMail = mock.sentMail();
+      expect(sentMail.length).toBe(1);
+      expect(sentMail[0].subject).toMatch(/wachtlijst/);
     });
   });
 });
