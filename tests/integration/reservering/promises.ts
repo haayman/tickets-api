@@ -14,14 +14,20 @@ export function reserveringUpdatedDone() {
   return new Promise((resolve) => {
     const queue = getQueue();
     const unsubscribe = queue.on("reserveringUpdatedDone", async () => {
-      await verwerkRefundsDone();
+      // await verwerkRefundsDone();
       unsubscribe();
       resolve(true);
     });
-    // setTimeout(() => {
-    //   unsubscribe();
-    //   resolve(true);
-    // }, 10 * 1000);
+  });
+}
+
+export function reserveringCreatedDone() {
+  return new Promise((resolve) => {
+    const queue = getQueue();
+    const unsubscribe = queue.on("reserveringCreatedDone", async () => {
+      unsubscribe();
+      resolve(true);
+    });
   });
 }
 

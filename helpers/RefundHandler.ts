@@ -4,7 +4,6 @@ import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
-import { getQueue } from "../startup/queue";
 
 export class RefundHandler {
   private tickets: Ticket[];
@@ -112,9 +111,7 @@ export class RefundHandler {
     } catch (e) {
       winston.error(e);
       await em.rollback();
-    } finally {
-      const queue = getQueue();
-      queue.emit("verwerkRefundsDone", "");
+      throw e;
     }
   }
 }

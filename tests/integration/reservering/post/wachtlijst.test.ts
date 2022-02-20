@@ -6,12 +6,11 @@ import createVoorstelling from "../createVoorstelling";
 import { createReservering, updateReservering } from "../createReservering";
 import { beforeAllReserveringen, beforeEachReserveringen } from "../initialize";
 import Container from "typedi";
-import clone from "lodash/clone";
 import nodemailerMock from "nodemailer-mock";
-import { reserveringUpdatedDone, uitvoeringUpdatedDone } from "../promises";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
 import faker from "community-faker";
+import { queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -75,6 +74,7 @@ describe("/reservering", () => {
       });
       expect(res.reservering.body.wachtlijst).toBe(true);
 
+      await queuesAreEmpty();
       nodemailerMock.mock.reset(); // not interested in these mails
 
       // geef 1 kaartje vrij
@@ -88,10 +88,11 @@ describe("/reservering", () => {
           },
         ],
       });
-      await Promise.all([reserveringUpdatedDone(), uitvoeringUpdatedDone()]);
+
+      await queuesAreEmpty();
       const sentMail = nodemailerMock.mock.sentMail();
       const gewijzigdeMail = sentMail.find((m) =>
-        m.subject.match(/Gewijzigde bestelling/)
+        m.subject.match(/kaarten voor/)
       );
       expect(gewijzigdeMail).toBeTruthy();
       expect(gewijzigdeMail.html).toMatch(/1x volwassenen/);
@@ -102,6 +103,14 @@ describe("/reservering", () => {
       expect(
         sentMail.find((m) => m.subject.match(/uit wachtlijst/))
       ).toBeTruthy();
+    });
+
+    it.skip("wachtlijst niet bijwerken bij omzetting naar vrijkaarten", async () => {
+      /*
+        1) r1: reserveer 2 kaarten => vol
+        2) r2: bestel 1 kaart => wachtlijst
+        3) r1: vervang 2 kaarten door 2 vrijkaarten. r2 mag níet uit de wachtlijst
+      */
     });
 
     it("verwerk wachtlijst non refundable", async () => {
@@ -143,6 +152,7 @@ describe("/reservering", () => {
       });
       expect(res.reservering.body.wachtlijst).toBe(true);
 
+      await queuesAreEmpty();
       nodemailerMock.mock.reset(); // not interested in these mails
 
       // geef 1 kaartje vrij
@@ -156,10 +166,10 @@ describe("/reservering", () => {
           },
         ],
       });
-      await Promise.all([reserveringUpdatedDone(), uitvoeringUpdatedDone()]);
+      await queuesAreEmpty();
       const sentMail = nodemailerMock.mock.sentMail();
       const gewijzigdeMail = sentMail.find((m) =>
-        m.subject.match(/Gewijzigde bestelling/)
+        m.subject.match(/kaarten voor/)
       );
       expect(gewijzigdeMail).toBeTruthy();
       expect(gewijzigdeMail.html).toMatch(/1x volwassenen/);
@@ -181,4 +191,9 @@ p2: 1x: 1e voorstelling
 p3: 2x: 1e voorstelling => wachtlijst
 p1: annuleert
 p2: annuleert => p3 van wachtlijst
+
+-------------------------------
+p1 2x laatste voorstelling, betaling mislukt
+p2 1x laatste voorstelling: wachtlijst
+p1 verwijdert kaarten => p2 van wachtlijst
 */
