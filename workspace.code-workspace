@@ -5,8 +5,7 @@
       "path": "."
     },
     {
-      "name": "✨ Jatheater Frontend",
-      "path": "../jatheater"
+      "path": "../kaarten.jatheater/"
     }
   ],
   "settings": {}
