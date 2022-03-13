@@ -42,10 +42,10 @@ export function reserveringDeletedDone() {
   });
 }
 
-export function uitvoeringUpdatedDone() {
+export function verwerkWachtlijstDone() {
   const queue = getQueue();
   return new Promise((resolve) => {
-    const unsubscribe = queue.on("uitvoeringUpdatedDone", () => {
+    const unsubscribe = queue.on("verwerkWachtlijstDone", () => {
       unsubscribe();
       resolve(true);
     });

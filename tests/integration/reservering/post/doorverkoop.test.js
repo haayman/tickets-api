@@ -1,19 +1,24 @@
 jest.setTimeout(3000000);
-const root = '../';
+const root = "../";
 const ROOT = process.env.ROOT;
-const request = require('supertest');
+const request = require("supertest");
 // https://www.npmjs.com/package/nodemailer-mock
-const nodemailerMock = require('nodemailer-mock');
+const nodemailerMock = require("nodemailer-mock");
 
 require(`${root}/setup.js`);
 
 const {
   createReservering,
-  updateReservering
+  updateReservering,
 } = require(`${root}/createReservering`);
 
 let app = require(`${ROOT}/app`);
-const createVoorstelling = require(`${root}/createVoorstelling`);
+const {
+  createVoorstelling,
+  REFUNDABLE,
+  NON_REFUNDABLE,
+  VOLWASSENE,
+} = require(`${root}/createVoorstelling`);
 
 let voorstelling;
 
@@ -21,9 +26,9 @@ beforeAll(async () => {
   voorstelling = await createVoorstelling();
 });
 
-describe('/reservering', () => {
-  describe('/post', () => {
-    it('verwerk verkoop non refundable', async () => {
+describe("/reservering", () => {
+  describe("/post", () => {
+    it("verwerk verkoop non refundable", async () => {
       /*
       1) r1: reserveer 2 kaarten laatste voorstelling
       2) r1: annuleer 2 kaarten
@@ -36,18 +41,18 @@ describe('/reservering', () => {
         - r2 krijgt ticket
       */
       // over 10 dagen
-      const uitvoeringId = voorstelling.uitvoeringen[1].id;
+      const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
 
       let res = await createReservering(request(app), {
-        naam: 'verkoper',
-        email: 'verkoper@mail.example',
+        naam: "verkoper",
+        email: "verkoper@mail.example",
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 2
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+        ],
       });
 
       const reserveringId1 = res.reservering.body.id;
@@ -61,10 +66,10 @@ describe('/reservering', () => {
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 0
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 0,
+          },
+        ],
       });
 
       let sentMail = nodemailerMock.mock.sentMail();
@@ -75,15 +80,15 @@ describe('/reservering', () => {
 
       // nu koopt iemand een kaartje op dezelfde avond
       res = await createReservering(request(app), {
-        naam: 'koper1',
-        email: 'test2@mail.example',
+        naam: "koper1",
+        email: "test2@mail.example",
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 1
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
       });
 
       sentMail = nodemailerMock.mock.sentMail();
@@ -100,15 +105,15 @@ describe('/reservering', () => {
 
       // nu koopt iemand een kaartje op een andere avond
       res = await createReservering(request(app), {
-        naam: 'koper2',
-        email: 'test3@mail.example',
-        uitvoeringId: voorstelling.uitvoeringen[0].id,
+        naam: "koper2",
+        email: "test3@mail.example",
+        uitvoeringId: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 1
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
       });
 
       sentMail = nodemailerMock.mock.sentMail();
@@ -122,7 +127,7 @@ describe('/reservering', () => {
       expect(sentMail.find((m) => m.subject.match(/1x/))).toBeTruthy();
     });
 
-    it('meteen doorverkopen naar de wachtlijst', async () => {
+    it("meteen doorverkopen naar de wachtlijst", async () => {
       /*
       1) r1: reserveer 2 kaarten laatste voorstelling
       2) r2, r3: reserveert 1 kaart voor laatste voorstelling: wachtlijst
@@ -132,47 +137,47 @@ describe('/reservering', () => {
           - r2 en r3 krijgen uitnodiging om te betalen
       */
       // over 10 dagen
-      const uitvoeringId = voorstelling.uitvoeringen[1].id;
+      const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
 
       let res = await createReservering(request(app), {
-        naam: 'verkoper',
-        email: 'verkoper@mail.example',
+        naam: "verkoper",
+        email: "verkoper@mail.example",
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 2
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+        ],
       });
 
       const reserveringId1 = res.reservering.body.id;
       expect(res.reservering.body.wachtlijst).toBe(false);
 
       res = await createReservering(request(app), {
-        naam: 'In wachtlijst',
-        email: 'koper1@gmail.com',
+        naam: "In wachtlijst",
+        email: "koper1@gmail.com",
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 1
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
       });
       expect(res.reservering.body.wachtlijst).toBe(true);
       const reserveringId2 = res.reservering.body.id;
 
       res = await createReservering(request(app), {
-        naam: 'In wachtlijst',
-        email: 'koper2@gmail.com',
+        naam: "In wachtlijst",
+        email: "koper2@gmail.com",
         uitvoeringId: uitvoeringId,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 1
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
       });
       const reserveringId3 = res.reservering.body.id;
 
@@ -180,7 +185,7 @@ describe('/reservering', () => {
 
       nodemailerMock.mock.reset();
 
-      res = await request(app).del('/api/reservering/' + reserveringId1);
+      res = await request(app).del("/api/reservering/" + reserveringId1);
 
       let sentMail = nodemailerMock.mock.sentMail();
       expect(sentMail.length).toBe(3);
@@ -191,17 +196,17 @@ describe('/reservering', () => {
         2
       );
 
-      res = await request(app).get('/api/reservering/' + reserveringId2);
+      res = await request(app).get("/api/reservering/" + reserveringId2);
       expect(res.body.openstaandBedrag).toBe(10);
 
-      res = await request(app).get('/api/uitvoering/' + uitvoeringId);
+      res = await request(app).get("/api/uitvoering/" + uitvoeringId);
       expect(res.body.wachtlijst).toBe(0);
       expect(res.body.tekoop).toBe(0);
       expect(res.body.aantal_plaatsen).toBe(2);
     });
   });
 
-  it.skip('al betaalde kaarten in de wachtlijst worden automatisch doorverkocht', async () => {
+  it.skip("al betaalde kaarten in de wachtlijst worden automatisch doorverkocht", async () => {
     /*
     zie https://github.com/haayman/plusleo_tickets/issues/5
     1) r1: 2 kaarten laatste voorstelling (wachtlijst)
@@ -214,48 +219,48 @@ describe('/reservering', () => {
       - r2 krijgt 'uit de wachtlijst' en 'reservering gewijzigd'
     */
     // over 10 dagen
-    const uitvoering1 = voorstelling.uitvoeringen[1].id;
-    const uitvoering2 = voorstelling.uitvoeringen[0].id;
+    const uitvoering1 = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
+    const uitvoering2 = voorstelling.uitvoeringen[REFUNDABLE].id;
 
     let res = await createReservering(request(app), {
-      naam: 'verkoper',
-      email: 'verkoper@mail.example',
+      naam: "verkoper",
+      email: "verkoper@mail.example",
       uitvoeringId: uitvoering1,
       tickets: [
         {
-          prijs: voorstelling.prijzen[0],
-          aantal: 2
-        }
-      ]
+          prijs: voorstelling.prijzen[VOLWASSENE],
+          aantal: 2,
+        },
+      ],
     });
 
     const reserveringId1 = res.reservering.body.id;
 
     res = await createReservering(request(app), {
-      naam: 'Katrien',
-      email: 'katrien@gmail.com',
+      naam: "Katrien",
+      email: "katrien@gmail.com",
       uitvoeringId: uitvoering2,
       tickets: [
         {
-          prijs: voorstelling.prijzen[0],
-          aantal: 1
-        }
-      ]
+          prijs: voorstelling.prijzen[VOLWASSENE],
+          aantal: 1,
+        },
+      ],
     });
     const reserveringId2 = res.reservering.body.id;
 
     nodemailerMock.mock.reset();
 
     res = await request(app)
-      .put('/api/reservering/' + reserveringId2)
+      .put("/api/reservering/" + reserveringId2)
       .send({
         uitvoeringId: uitvoering1,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
-            aantal: 1
-          }
-        ]
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
       });
     expect(res.body.wachtlijst).toBeTruthy();
     expect(res.body.openstaandBedrag).toBe(0);
@@ -272,14 +277,14 @@ describe('/reservering', () => {
 
     // gebruiker 1 geeft kaartje vrij.
     // zou eigenlijk in de verkoop moeten, maar er is al betaald
-    res = await request(app).put('/api/reservering/' + reserveringId1, {
+    res = await request(app).put("/api/reservering/" + reserveringId1, {
       uitvoeringId: uitvoering1,
       tickets: [
         {
-          prijs: voorstelling.prijzen[0],
-          aantal: 1
-        }
-      ]
+          prijs: voorstelling.prijzen[VOLWASSENE],
+          aantal: 1,
+        },
+      ],
     });
 
     sentMail = nodemailerMock.mock.sentMail();
@@ -288,11 +293,11 @@ describe('/reservering', () => {
     // expect(sentMail.filter(m => m.subject.match(/uit wachtlijst/))).toBeTruthy()
     // expect(sentMail.filter(m => m.subject.match(/gewijzigd/)).length).toBe(1);
 
-    res = await request(app).get('/api/reservering/' + reserveringId2);
+    res = await request(app).get("/api/reservering/" + reserveringId2);
     debugger;
     expect(res.body.wachtlijst).not.toBeTruthy();
 
-    res = await request(app).get('/api/uitvoering/' + uitvoeringId1);
+    res = await request(app).get("/api/uitvoering/" + uitvoeringId1);
     expect(res.body.wachtlijst).toBe(0);
     expect(res.body.tekoop).toBe(0);
   });

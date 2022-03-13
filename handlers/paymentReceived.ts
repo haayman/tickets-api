@@ -38,8 +38,7 @@ export async function paymentReceived(
       .find((p) => p.payment_id == mollie_payment.id);
 
     if (!payment) {
-      winston.error(`Payment ${mollie_payment.id} niet gevonden`);
-      return;
+      throw new Error(`Payment ${mollie_payment.id} niet gevonden`);
     }
     await em.populate(payment, ["tickets"]);
 

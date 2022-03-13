@@ -3,7 +3,14 @@ import { Voorstelling, getRepository } from "../../../models";
 import addDays from "date-fns/addDays";
 import { EntityManager } from "@mikro-orm/core";
 
-export default async function (em: EntityManager) {
+export const REFUNDABLE = 0;
+export const NON_REFUNDABLE = 1;
+
+export const VOLWASSENE = 0;
+export const KIND = 1;
+export const VRIJKAART = 2;
+
+export async function createVoorstelling(em: EntityManager) {
   const repository = em.getRepository<Voorstelling>("Voorstelling");
   const voorstelling = repository.create({
     title: "title1",
@@ -42,7 +49,6 @@ export default async function (em: EntityManager) {
     ],
   });
   await repository.persistAndFlush(voorstelling);
-  console.log(JSON.stringify(voorstelling));
 
   return voorstelling;
 }

@@ -47,16 +47,16 @@ export class TicketHandler {
       const oldTickets = this.oldTickets.aggregates[prijs.id];
       // vervang prijs door het échte prijs record
       prijs = oldTickets.prijs;
-      if (oldTickets.tickets.length < aantal) {
+      let oldAantal = oldTickets.aantal - oldTickets.aantalTekoop;
+      if (oldAantal < aantal) {
         // bijbestelling
-        let oldAantal = aantal - oldTickets.aantalTekoop;
 
         // als er kaarten bij moeten, maar er zijn er nog in de verkoop
         // haal deze dan uit de verkoop
         if (aantal >= oldAantal && oldTickets.aantalTekoop) {
           let diff = aantal - oldAantal;
           this.terugKopen = this.terugKopen.concat(
-            this.oldTickets.tekoop.splice(0, diff)
+            oldTickets.tekoop.splice(0, diff)
           );
         }
 
@@ -75,17 +75,9 @@ export class TicketHandler {
       }
     }
 
+    this.haalUitVerkoop();
     this.annuleren();
     this.bestellen();
-
-    const queue: Queue = Container.get("uitvoeringUpdatedQueue");
-    queue.add("uitvoeringUpdated", this.reservering.uitvoering.id, {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 1000,
-      },
-    });
   }
 
   haalUitVerkoop() {

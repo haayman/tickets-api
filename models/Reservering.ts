@@ -2,8 +2,6 @@ import differenceInCalendarDays from "date-fns/differenceInCalendarDays";
 import config from "config";
 import { v4 } from "uuid";
 import {
-  AfterCreate,
-  AfterDelete,
   Collection,
   Entity,
   ManyToOne,
@@ -107,9 +105,13 @@ export class Reservering {
     return Object.values(new TicketAggregator(this).aggregates);
   }
 
-  get onbetaaldeTickets() {
+  get validTickets() {
     if (!this.tickets.isInitialized()) return undefined;
-    return this.tickets.getItems().filter((t) => t.isPaid !== true && t.bedrag);
+    return this.tickets.getItems().filter((t) => !t.verkocht && !t.geannuleerd);
+  }
+
+  get onbetaaldeTickets() {
+    return this.validTickets?.filter((t) => t.isPaid !== true && t.bedrag);
   }
 
   get newPaymentNeeded() {
@@ -146,8 +148,7 @@ export class Reservering {
     }, 0);
 
     // bereken kosten van alle te betalen tickets
-    saldo = this.tickets
-      .getItems()
+    saldo = this.validTickets
       .filter((t) => !t.tekoop)
       .filter((t) => !t.terugbetalen)
       .reduce((saldo, t) => saldo - t.bedrag, saldo);
@@ -164,9 +165,10 @@ export class Reservering {
       winston.debug("bedrag undefined");
       return undefined;
     }
-    return this.tickets
-      ?.getItems()
-      .reduce((bedrag, t: Ticket) => bedrag + +t.bedrag, 0);
+    return this.validTickets?.reduce(
+      (bedrag, t: Ticket) => bedrag + +t.bedrag,
+      0
+    );
   }
 
   // dummy setter
@@ -184,7 +186,7 @@ export class Reservering {
       return undefined;
     }
 
-    return this.tickets.length;
+    return this.validTickets?.length;
   }
 
   async moetInWachtrij(em: EntityManager, existing: boolean): Promise<boolean> {

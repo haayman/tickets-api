@@ -4,8 +4,8 @@ import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Uitvoering, Reservering } from "../models";
 
-export async function uitvoeringUpdated(uitvoeringId: number) {
-  winston.info(`uitvoeringUpdated ${uitvoeringId}`);
+export async function verwerkWachtlijst(uitvoeringId: number) {
+  winston.info(`verwerkWachtlijst ${uitvoeringId}`);
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.begin();
   try {

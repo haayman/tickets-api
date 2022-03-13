@@ -1,8 +1,10 @@
 import { EntityManager } from "@mikro-orm/core";
+import { Queue } from "bullmq";
 import { Container } from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Log, Ticket, Reservering } from "../models";
+import { RefundHandler } from "./RefundHandler";
 
 export async function verwerkTekoop(verkochtBedrag: number) {
   if (!verkochtBedrag) return;
@@ -47,6 +49,13 @@ export async function verwerkTekoop(verkochtBedrag: number) {
       ReserveringMail.send(reservering, "verkocht", `${description} verkocht`);
     }
     await em.commit();
+
+    if (tekoop.length) {
+      const queue: Queue = Container.get("verwerkRefundsQueue");
+      queue.add("verwerkRefunds", null);
+    } else {
+      winston.info("Geen kaarten te koop");
+    }
   } catch (e) {
     winston.error(e);
     await em.rollback();

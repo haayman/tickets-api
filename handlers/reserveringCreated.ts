@@ -1,7 +1,6 @@
 import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
 import { Reservering } from "../models";
-import { RefundHandler } from "../helpers/RefundHandler";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
 
@@ -11,7 +10,6 @@ export async function reserveringCreated(
   reserveringId: ReserveringCreatedMessage
 ) {
   winston.info(`reserveringCreated, ${reserveringId}`);
-  RefundHandler.verwerkRefunds();
 
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.begin();
@@ -22,8 +20,7 @@ export async function reserveringCreated(
       Reservering.populate()
     );
     if (!reservering) {
-      winston.error(`reservering ${reserveringId} niet gevonden`);
-      return;
+      throw new Error(`reservering ${reserveringId} niet gevonden`);
     }
     await reservering.finishLoading();
     const saldo = reservering.saldo;
