@@ -3,10 +3,13 @@ import { reserveringUpdated } from "../handlers/reserveringUpdated";
 import { reserveringCreated } from "../handlers/reserveringCreated";
 import { reserveringDeleted } from "../handlers/reserveringDeleted";
 import { paymentReceived } from "../handlers/paymentReceived";
-import { uitvoeringUpdated } from "../handlers/uitvoeringUpdated";
+import { verwerkWachtlijst } from "../handlers/verwerkWachtlijst";
 import { verwerkTekoop } from "../handlers/verwerkTekoop";
+import { verwerkRefunds } from "../handlers/RefundHandler";
 import winston from "winston";
 import Container from "typedi";
+
+const prefix = process.env.NODE_ENV || "dev";
 
 export const connection = {
   maxRetriesPerRequest: null,
@@ -19,6 +22,7 @@ export const connection = {
 
 function createQueue(connection, queueName: string, handler): Queue {
   const queue = new Queue(queueName, {
+    // prefix,
     connection,
     // @ts-ignore
     settings: { maxStalledCount: 0, lockDuration: 3000 },
@@ -96,13 +100,21 @@ export default async function () {
   Container.set("reserveringDeletedQueue", reserveringDeletedQueue);
   queues.push(reserveringDeletedQueue);
 
-  const uitvoeringUpdatedQueue = createQueue(
+  const verwerkWachtlijstQueue = createQueue(
     connection,
-    "uitvoeringUpdated",
-    uitvoeringUpdated
+    "verwerkWachtlijst",
+    verwerkWachtlijst
   );
-  Container.set("uitvoeringUpdatedQueue", uitvoeringUpdatedQueue);
-  queues.push(uitvoeringUpdatedQueue);
+  Container.set("verwerkWachtlijstQueue", verwerkWachtlijstQueue);
+  queues.push(verwerkWachtlijstQueue);
+
+  const verwerkRefundsQueue = createQueue(
+    connection,
+    "verwerkRefunds",
+    verwerkRefunds
+  );
+  Container.set("verwerkRefundsQueue", verwerkRefundsQueue);
+  queues.push(verwerkRefundsQueue);
 
   Container.set("queues", queues);
 }

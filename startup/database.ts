@@ -1,6 +1,5 @@
 import { LoadStrategy, MikroORM } from "@mikro-orm/core";
 import { SqlHighlighter } from "@mikro-orm/sql-highlighter";
-import { EntityManager } from "@mikro-orm/mariadb";
 import { TsMorphMetadataProvider } from "@mikro-orm/reflection";
 import config from "config";
 import Container from "typedi";

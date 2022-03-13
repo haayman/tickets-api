@@ -61,11 +61,12 @@ router.post("/", async (req, res) => {
     await reservering.finishLoading();
 
     await em.commit();
-
-    const queue: Queue = Container.get("reserveringCreatedQueue");
-    await queue.add("reserveringCreated", reservering.id);
+    0;
 
     res.send(reservering);
+
+    let queue: Queue = Container.get("reserveringCreatedQueue");
+    queue.add("reserveringCreated", reservering.id);
   } catch (e) {
     winston.error(e);
     em.rollback();
@@ -84,6 +85,7 @@ router.put("/:id", async (req, res) => {
     let reservering = await repository.findOneOrFail({ id: req.params.id });
 
     if (reservering.ingenomen) {
+      await em.rollback();
       return res.status(405).send("reservering is al ingenomen");
     }
 
@@ -99,10 +101,13 @@ router.put("/:id", async (req, res) => {
 
     await em.commit();
 
-    const queue: Queue = Container.get("reserveringUpdatedQueue");
+    res.send(reservering);
+
+    let queue: Queue = Container.get("reserveringUpdatedQueue");
     await queue.add("reserveringUpdated", reservering.id);
 
-    res.send(reservering);
+    queue = Container.get("verwerkWachtlijstQueue");
+    queue.add("verwerkWachtlijst", reservering.uitvoering.id);
   } catch (e) {
     winston.error(e);
 
@@ -119,6 +124,7 @@ router.delete("/:id", async (req, res) => {
 
     let reservering = await repository.findOneOrFail({ id: req.params.id });
     if (reservering.ingenomen) {
+      await em.rollback();
       return res.status(405).send("reservering is al ingenomen");
     }
 
@@ -128,10 +134,13 @@ router.delete("/:id", async (req, res) => {
 
     await em.commit();
 
-    const queue: Queue = Container.get("reserveringDeletedQueue");
+    let queue: Queue = Container.get("reserveringDeletedQueue");
     await queue.add("reserveringDeleted", reservering.id);
 
     res.send(reservering);
+
+    queue = Container.get("verwerkWachtlijstQueue");
+    queue.add("verwerkWachtlijst", reservering.uitvoering.id);
   } catch (e) {
     winston.error(e);
 

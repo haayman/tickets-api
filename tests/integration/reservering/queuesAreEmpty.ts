@@ -1,5 +1,6 @@
 import { Queue, QueueEvents } from "bullmq";
 import Container from "typedi";
+import queue from "~/startup/queue";
 
 function checkJobs(queue: Queue): Promise<boolean> {
   return new Promise((resolve) => {
@@ -18,11 +19,16 @@ function checkJobs(queue: Queue): Promise<boolean> {
   });
 }
 
+export async function drainAllQueues() {
+  const queues: Queue[] = Container.get("queues");
+  await Promise.all(queues.map(async (queue) => await queue.obliterate()));
+}
+
 /**
  * wacht net zo lang tot alle queues leeg zijn
  * @returns
  */
 export async function queuesAreEmpty() {
   const queues: Queue[] = Container.get("queues");
-  return await Promise.all(queues.map(checkJobs));
+  await Promise.all(queues.map(checkJobs));
 }

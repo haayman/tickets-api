@@ -2,7 +2,13 @@ import appLoader from "../../../../app";
 import request from "supertest";
 import { Reservering, Voorstelling } from "../../../../models";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
-import createVoorstelling from "../createVoorstelling";
+import {
+  createVoorstelling,
+  VOLWASSENE,
+  KIND,
+  VRIJKAART,
+  REFUNDABLE,
+} from "../createVoorstelling";
 import { createReservering, updateReservering } from "../createReservering";
 import { beforeAllReserveringen, beforeEachReserveringen } from "../initialize";
 import Container from "typedi";
@@ -10,7 +16,7 @@ import nodemailerMock from "nodemailer-mock";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
 import faker from "community-faker";
-import { queuesAreEmpty } from "../queuesAreEmpty";
+import { drainAllQueues, queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -31,6 +37,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await beforeEachReserveringen(em);
+  await drainAllQueues();
 });
 
 describe("/reservering", () => {
@@ -49,10 +56,10 @@ describe("/reservering", () => {
       let res = await createReservering(request(app), {
         naam: faker.name.findName(),
         email: faker.internet.email(),
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 2,
           },
         ],
@@ -64,10 +71,10 @@ describe("/reservering", () => {
       res = await createReservering(request(app), {
         naam: "In wachtlijst",
         email: faker.internet.email(),
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 1,
           },
         ],
@@ -80,10 +87,10 @@ describe("/reservering", () => {
       // geef 1 kaartje vrij
       res = await updateReservering(request(app), {
         id: reserveringId1,
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 1,
           },
         ],
@@ -127,10 +134,10 @@ describe("/reservering", () => {
       let res = await createReservering(request(app), {
         naam: faker.name.findName(),
         email: faker.internet.email(),
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 2,
           },
         ],
@@ -142,10 +149,10 @@ describe("/reservering", () => {
       res = await createReservering(request(app), {
         naam: "In wachtlijst",
         email: faker.internet.email(),
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 1,
           },
         ],
@@ -158,10 +165,10 @@ describe("/reservering", () => {
       // geef 1 kaartje vrij
       res = await updateReservering(request(app), {
         id: reserveringId1,
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 1,
           },
         ],

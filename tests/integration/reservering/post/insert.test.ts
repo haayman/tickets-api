@@ -2,7 +2,14 @@ import appLoader from "../../../../app";
 import request from "supertest";
 import { Reservering, Voorstelling } from "../../../../models";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
-import createVoorstelling from "../createVoorstelling";
+import {
+  REFUNDABLE,
+  NON_REFUNDABLE,
+  VOLWASSENE,
+  KIND,
+  VRIJKAART,
+  createVoorstelling,
+} from "../createVoorstelling";
 import { createReservering } from "../createReservering";
 import {
   afterAllReserveringen,
@@ -14,7 +21,7 @@ import clone from "lodash/clone";
 import { mock } from "nodemailer-mock";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
-import { queuesAreEmpty } from "../queuesAreEmpty";
+import { drainAllQueues, queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -35,6 +42,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await beforeEachReserveringen(em);
+  await drainAllQueues();
 });
 
 afterAll(async () => {
@@ -44,80 +52,76 @@ afterAll(async () => {
 describe("/reservering", () => {
   describe("/post", () => {
     it("succesvolle reservering", async () => {
-      const waitFor = queuesAreEmpty();
       await createReservering(request(app), {
         naam: "Test",
         email: "arjen.haayman+test@gmail.com",
-        uitvoering: voorstelling.uitvoeringen[0].id,
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
         tickets: [
           {
-            prijs: voorstelling.prijzen[0],
+            prijs: voorstelling.prijzen[VOLWASSENE],
             aantal: 2,
           },
         ],
       });
 
-      await waitFor;
+      await queuesAreEmpty();
       const sentMail = mock.sentMail();
       expect(sentMail.length).toBe(1);
       expect(sentMail[0].subject).toMatch(/Kaarten voor 2x/);
     });
 
     it("not modify prijs", async () => {
-      const newPrijs = clone(voorstelling.prijzen[0]);
+      const newPrijs = clone(voorstelling.prijzen[VOLWASSENE]);
       newPrijs.prijs = 200;
-      const waitFor = queuesAreEmpty();
 
       const res = await request(app)
         .post("/api/reservering")
         .send({
           naam: "Test",
           email: "arjen.haayman+test@gmail.com",
-          uitvoering: voorstelling.uitvoeringen[0].id,
+          uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
           tickets: [
             {
               prijs: newPrijs,
               aantal: 2,
             },
             {
-              prijs: voorstelling.prijzen[1],
+              prijs: voorstelling.prijzen[KIND],
               aantal: 0,
             },
             {
-              prijs: voorstelling.prijzen[2],
+              prijs: voorstelling.prijzen[VRIJKAART],
               aantal: 0,
             },
           ],
         });
-      // await waitFor;
+      await queuesAreEmpty();
       expect(res.body.openstaandBedrag).toBe(20);
     });
 
     it("should be wachtlijst", async () => {
-      const waitFor = queuesAreEmpty();
-
       const res = await request(app)
         .post("/api/reservering")
         .send({
           naam: "Test",
           email: "arjen.haayman+test@gmail.com",
-          uitvoering: voorstelling.uitvoeringen[0].id,
+          uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
           tickets: [
             {
-              prijs: voorstelling.prijzen[0],
+              prijs: voorstelling.prijzen[VOLWASSENE],
               aantal: 3,
             },
             {
-              prijs: voorstelling.prijzen[1],
+              prijs: voorstelling.prijzen[KIND],
               aantal: 0,
             },
             {
-              prijs: voorstelling.prijzen[2],
+              prijs: voorstelling.prijzen[VRIJKAART],
               aantal: 0,
             },
           ],
         });
-      await waitFor;
+      await queuesAreEmpty();
       expect(res.status).toBe(200);
       expect(res.body.id).toBeDefined();
       expect(res.body.openstaandBedrag).toBe(30);

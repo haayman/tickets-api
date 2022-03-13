@@ -37,11 +37,11 @@ export class RefundHandler {
             payment,
             amount: 0,
           };
-          payments[id].amount += ticket.prijs.prijs;
         }
+        payments[id].amount += ticket.prijs.prijs;
       }
-      return payments;
     }
+    return payments;
   }
 
   async refund() {
@@ -89,29 +89,29 @@ export class RefundHandler {
       throw e;
     }
   }
+}
 
-  static async verwerkRefunds() {
-    const em: EntityManager = (Container.get("em") as EntityManager).fork();
-    await em.begin();
-    try {
-      const repository = em.getRepository(Reservering);
-      const reserveringen = await repository.find(
-        { tickets: { terugbetalen: true } },
-        Reservering.populate()
-      );
+export async function verwerkRefunds() {
+  const em: EntityManager = (Container.get("em") as EntityManager).fork();
+  await em.begin();
+  try {
+    const repository = em.getRepository(Reservering);
+    const reserveringen = await repository.find(
+      { tickets: { terugbetalen: true } },
+      Reservering.populate()
+    );
 
-      if (!reserveringen.length) return;
+    if (!reserveringen.length) return;
 
-      winston.info(`verwerkRefunds ${reserveringen.length}`);
-      for (const reservering of reserveringen) {
-        await reservering.finishLoading();
-        await new RefundHandler(em, reservering).refund();
-      }
-      await em.commit();
-    } catch (e) {
-      winston.error(e);
-      await em.rollback();
-      throw e;
+    winston.info(`verwerkRefunds ${reserveringen.length}`);
+    for (const reservering of reserveringen) {
+      await reservering.finishLoading();
+      await new RefundHandler(em, reservering).refund();
     }
+    await em.commit();
+  } catch (e) {
+    winston.error(e);
+    await em.rollback();
+    throw e;
   }
 }

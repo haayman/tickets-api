@@ -70,17 +70,17 @@ export class Uitvoering {
 
   // /------------------- updated by triggers ----------
 
-  @AfterUpdate()
-  triggerUpdated() {
-    const queue: Queue = Container.get("uitvoeringUpdatedQueue");
-    queue.add("uitvoeringUpdated", this.id, {
-      attempts: 3,
-      backoff: {
-        type: "exponential",
-        delay: 1000,
-      },
-    });
-  }
+  // @AfterUpdate()
+  // triggerUpdated() {
+  //   const queue: Queue = Container.get("verwerkWachtlijstQueue");
+  //   queue.add("verwerkWachtlijst", this.id, {
+  //     attempts: 3,
+  //     backoff: {
+  //       type: "exponential",
+  //       delay: 1000,
+  //     },
+  //   });
+  // }
 
   @ManyToOne()
   voorstelling!: Voorstelling;

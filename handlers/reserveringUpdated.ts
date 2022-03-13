@@ -1,9 +1,9 @@
 import { EntityManager } from "@mikro-orm/core";
 import Container from "typedi";
-import { Reservering } from "../models";
-import { RefundHandler } from "../helpers/RefundHandler";
+import { Log, Reservering } from "../models";
 import { ReserveringMail } from "../components/ReserveringMail";
 import winston from "winston";
+import { RefundHandler } from "./RefundHandler";
 
 export type ReserveringUpdatedMessage = string;
 
@@ -11,8 +11,6 @@ export async function reserveringUpdated(
   reserveringId: ReserveringUpdatedMessage
 ) {
   winston.info(`reserveringUpdated, ${reserveringId}`);
-  RefundHandler.verwerkRefunds();
-
   const em: EntityManager = (Container.get("em") as EntityManager).fork();
   await em.begin();
   try {
@@ -22,12 +20,14 @@ export async function reserveringUpdated(
       Reservering.populate()
     );
     if (!reservering) {
-      winston.error(`reservering ${reserveringId} niet gevonden`);
-      return;
+      throw new Error(`reservering ${reserveringId} niet gevonden`);
     }
     await reservering.finishLoading();
+
+    await new RefundHandler(em, reservering).refund();
+
     const saldo = reservering.saldo;
-    if (saldo >= 0) {
+    if (reservering.aantal && saldo >= 0) {
       await ReserveringMail.send(
         reservering,
         "ticket",
@@ -39,12 +39,9 @@ export async function reserveringUpdated(
         "wachtlijst",
         "Je staat op de wachtlijst"
       );
-    } else {
-      await ReserveringMail.send(
-        reservering,
-        "gewijzigd",
-        `${reservering} gewijzigd`
-      );
+    } else if (!reservering.aantal) {
+      Log.addMessage(reservering, `reservering ${reservering.naam} verwijderd`);
+      repository.remove(reservering);
     }
     await em.commit();
   } catch (e) {
