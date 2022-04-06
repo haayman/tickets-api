@@ -1,37 +1,60 @@
-jest.setTimeout(3000000);
-const root = "../";
-const ROOT = process.env.ROOT;
-const request = require("supertest");
-// https://www.npmjs.com/package/nodemailer-mock
-const nodemailerMock = require("nodemailer-mock");
-
-require(`${root}/setup.js`);
-
-const { createReservering } = require(`${root}/createReservering`);
-
-let app = require(`${ROOT}/app`);
-const {
+import appLoader from "../../../../app";
+import request from "supertest";
+import { Reservering, Voorstelling } from "../../../../models";
+import { EntityManager, EntityRepository } from "@mikro-orm/core";
+import {
   REFUNDABLE,
+  NON_REFUNDABLE,
   VOLWASSENE,
   KIND,
   VRIJKAART,
   createVoorstelling,
-} = require(`${root}/createVoorstelling`);
+} from "../createVoorstelling";
+import { createReservering, updateReservering } from "../createReservering";
+import {
+  afterAllReserveringen,
+  beforeAllReserveringen,
+  beforeEachReserveringen,
+} from "../initialize";
+import Container from "typedi";
+import nodemailerMock from "nodemailer-mock";
+import { MollieClient } from "../../mollie/MockMollieClient";
+import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
+import { drainAllQueues, queuesAreEmpty } from "../queuesAreEmpty";
 
-let voorstelling;
+jest.setTimeout(3000000);
+
+let em: EntityManager;
+let reserveringRepository: EntityRepository<Reservering>;
+let app;
+
+let voorstelling: Voorstelling;
 
 beforeAll(async () => {
-  voorstelling = await createVoorstelling();
+  app = await appLoader();
+  Container.set(MOLLIECLIENT, new MollieClient());
+  em = (Container.get("em") as EntityManager).fork();
+  await beforeAllReserveringen(em);
+  reserveringRepository = em.getRepository<Reservering>("Reservering");
+  voorstelling = await createVoorstelling(em);
+});
+
+beforeEach(async () => {
+  await beforeEachReserveringen(em);
+  await drainAllQueues();
+});
+
+afterAll(async () => {
+  await afterAllReserveringen();
 });
 
 describe("/reservering", () => {
   describe("/post", () => {
     // ===============================================================================================
-
     it("should completely refund if set to 0", async () => {
       const uitvoeringId = voorstelling.uitvoeringen[REFUNDABLE].id;
 
-      let res = await createReservering(request(app), {
+      let res: any = await createReservering(request(app), {
         naam: "noshow",
         email: "noshow@mail.example",
         uitvoeringId: uitvoeringId,
@@ -76,7 +99,7 @@ describe("/reservering", () => {
     it("should refund 1 ticket ", async () => {
       const uitvoeringId = voorstelling.uitvoeringen[REFUNDABLE].id;
 
-      let res = await createReservering(request(app), {
+      let res: any = await createReservering(request(app), {
         naam: "noshow",
         email: "noshow@mail.example",
         uitvoeringId: uitvoeringId,
@@ -121,7 +144,7 @@ describe("/reservering", () => {
     it.skip("should not refund vrijkaartje ", async () => {
       const uitvoeringId = voorstelling.uitvoeringen[REFUNDABLE].id;
 
-      let res = await createReservering(request(app), {
+      let res: any = await createReservering(request(app), {
         naam: "friend",
         email: "friend@mail.example",
         uitvoeringId: uitvoeringId,
@@ -164,11 +187,10 @@ describe("/reservering", () => {
     });
 
     // ===============================================================================================
-
     it("should completely refund if deleted", async () => {
       const uitvoeringId = voorstelling.uitvoeringen[REFUNDABLE].id;
 
-      let res = await createReservering(request(app), {
+      let res: any = await createReservering(request(app), {
         naam: "noshow",
         email: "noshow@mail.example",
         uitvoeringId: uitvoeringId,
@@ -195,31 +217,20 @@ describe("/reservering", () => {
       ).toBeTruthy();
     });
 
-    it.skip("should only refund sold amount", async () => {
-      /*
-        Verkoop alleen tickets als het bedrag daadwerkelijk verkocht is
-        1. a: reserveer 2 volwassenen
-        2. a: verkoop 1 volwassene
-        3. b: koop 1 kind => geen kaarten verkocht (niet helemaal eerlijk, want dit wordt niet onthouden)
-      */
-    });
-
     // ===============================================================================================
 
-    it.skip("should partly refund", async () => {
+    it.only("should partly refund", async () => {
       /*
       1) reserveer 2 volwassen kaarten
       2) wijzig 1 kaart van volwassen naar kind
         - € 2.50 refund
-
-        N.B. WERKT NOG NIET
       */
       const uitvoeringId = voorstelling.uitvoeringen[REFUNDABLE].id;
 
-      let res = await createReservering(request(app), {
+      let res: any = await createReservering(request(app), {
         naam: "ouder",
         email: "ouder@mail.example",
-        uitvoeringId: uitvoeringId,
+        uitvoering: uitvoeringId,
         tickets: [
           {
             prijs: voorstelling.prijzen[VOLWASSENE],
@@ -230,26 +241,26 @@ describe("/reservering", () => {
 
       const reserveringId1 = res.reservering.body.id;
 
+      await queuesAreEmpty();
       nodemailerMock.mock.reset();
 
       // wijzig prijs van 1 van de kaarten
-      // gebruik niet updateReservering, want in principe komt er geen betaling aan te pas
-      res = await request(app)
-        .put("/api/reservering/" + reserveringId1)
-        .send({
-          id: reserveringId1,
-          uitvoeringId: uitvoeringId,
-          tickets: [
-            {
-              prijs: voorstelling.prijzen[VOLWASSENE],
-              aantal: 1,
-            },
-            {
-              prijs: voorstelling.prijzen[KIND],
-              aantal: 1,
-            },
-          ],
-        });
+      res = await updateReservering(request(app), {
+        id: reserveringId1,
+        uitvoering: uitvoeringId,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+          {
+            prijs: voorstelling.prijzen[KIND],
+            aantal: 1,
+          },
+        ],
+      });
+
+      await queuesAreEmpty();
 
       let sentMail = nodemailerMock.mock.sentMail();
       expect(res.body.aantal).toBe(2);
@@ -266,6 +277,20 @@ describe("/reservering", () => {
       ).toBeTruthy();
     });
 
+    // ===============================================================================================
+
+    it.skip("should not partly refund", async () => {
+      /*
+      1) reserveer 1 volwassen en 1 kind
+      2) wijzig 1 kaart van kind naar volwassene
+        - € 2.50 bijbetalen, geen refund van kind
+
+      ===>  N.B. WERKT NOG NIET <=======
+      */
+    });
+
+    // ===============================================================================================
+
     it.skip("should buy own ticket back", async () => {
       /*
       1) reserveer 2 kaarten 
@@ -274,7 +299,8 @@ describe("/reservering", () => {
 
       13-3-2022: check
       */
-      let res = await request(app)
+      const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
+      let res: any = await request(app)
         .post("/api/reservering")
         .send({
           naam: "Test",
@@ -337,12 +363,13 @@ describe("/reservering", () => {
       
       13-3-2022: check
       */
-      let res = await request(app)
+      const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
+      let res: any = await request(app)
         .post("/api/reservering")
         .send({
           naam: "Test",
           email: "arjen.haayman+test@gmail.com",
-          uitvoering: voorstelling.uitvoeringen[NON_REFUNDABLE].id,
+          uitvoering: uitvoeringId,
           tickets: [
             {
               prijs: voorstelling.prijzen[VOLWASSENE],

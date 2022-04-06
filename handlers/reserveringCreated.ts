@@ -23,8 +23,7 @@ export async function reserveringCreated(
       throw new Error(`reservering ${reserveringId} niet gevonden`);
     }
     await reservering.finishLoading();
-    const saldo = reservering.saldo;
-    if (saldo >= 0) {
+    if (reservering.saldo >= 0) {
       await ReserveringMail.send(
         reservering,
         "ticket",

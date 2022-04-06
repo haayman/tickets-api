@@ -1,4 +1,4 @@
-import { Prijs, Reservering, Ticket } from "~/models";
+import { Prijs, Reservering, Ticket } from "../models";
 
 export type TicketDTO = {
   prijs: Prijs;
@@ -65,7 +65,7 @@ export class Aggregate {
   }
 
   get terugbetalen() {
-    return this.validTickets.filter((t) => t.terugbetalen);
+    return this.validTickets.filter((t) => t.saldo > 0);
   }
 
   get aantalTerugbetalen() {
@@ -81,7 +81,7 @@ export class Aggregate {
   }
 
   get bedrag() {
-    return this.validTickets.length * this.prijs.prijs;
+    return Ticket.totaalBedrag(this.validTickets);
   }
 
   toString() {

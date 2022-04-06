@@ -14,17 +14,12 @@
   'verkocht'
 */
 import {
-  AfterCreate,
-  AfterDelete,
-  AfterUpdate,
   Entity,
   Filter,
-  Index,
   ManyToOne,
-  OneToMany,
+  OnInit,
   PrimaryKey,
   Property,
-  wrap,
 } from "@mikro-orm/core";
 import { Payment } from "./Payment";
 import { Prijs } from "./Prijs";
@@ -38,9 +33,10 @@ import { Reservering } from "./Reservering";
 })
 @Entity({ tableName: "tickets" })
 export class Ticket {
-  constructor(prijs: Prijs, betaald: boolean) {
+  constructor(prijs: Prijs, betaald: boolean, saldo: number) {
     this.prijs = prijs;
     this.betaald = betaald;
+    this.saldo = saldo;
   }
 
   @PrimaryKey()
@@ -68,7 +64,17 @@ export class Ticket {
   verkocht: boolean = false;
 
   @Property()
-  terugbetalen: boolean = false;
+  saldo: number = 0;
+
+  get openstaandBedrag() {
+    return -this.saldo;
+  }
+
+  @OnInit()
+  toNumeric() {
+    // terugbetalen is als 'decimal' opgeslagen, wat mikro-orm niet herkent
+    this.saldo = +this.saldo;
+  }
 
   @Property({ persist: false })
   get bedrag() {
@@ -80,7 +86,7 @@ export class Ticket {
 
   @Property({ persist: false })
   get isPaid() {
-    return this.payment && this.payment.isPaid;
+    return this.betaald || (this.payment && this.payment.isPaid);
   }
 
   @ManyToOne({ hidden: true })
@@ -113,9 +119,7 @@ export class Ticket {
         bedrag: number;
       };
     } = {};
-    // await Promise.all(tickets.map(async t => {
     tickets.forEach((t) => {
-      // t.prijs = await t.getPrijs();
       if (!counter[t.prijs.id]) {
         counter[t.prijs.id] = {
           prijs: t.prijs,
@@ -136,11 +140,20 @@ export class Ticket {
   }
 
   /**
+   * bereken totaal saldo over een set tickets
+   * dit kan dus positief of negatief zijn
+   * @param {*} tickets
+   */
+  static totaalSaldo(tickets: Pick<Ticket, "saldo">[]): number {
+    return tickets.reduce((totaal, t) => totaal + t.saldo, 0);
+  }
+
+  /**
    * bereken totaalbedrag over een set tickets
    * @param {*} tickets
    */
   static totaalBedrag(tickets: Ticket[]): number {
-    return tickets.reduce((totaal, t) => totaal + +t.prijs.prijs, 0);
+    return tickets.reduce((totaal, t) => totaal + t.bedrag, 0);
   }
 
   async finishLoading() {

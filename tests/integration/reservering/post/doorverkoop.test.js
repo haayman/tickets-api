@@ -301,4 +301,13 @@ describe("/reservering", () => {
     expect(res.body.wachtlijst).toBe(0);
     expect(res.body.tekoop).toBe(0);
   });
+
+  it.skip("should only refund sold amount", async () => {
+    /*
+        Verkoop alleen tickets als het bedrag daadwerkelijk verkocht is
+        1. a: reserveer 2 volwassenen
+        2. a: verkoop 1 volwassene
+        3. b: koop 1 kind => geen kaarten verkocht (niet helemaal eerlijk, want dit wordt niet onthouden)
+      */
+  });
 });

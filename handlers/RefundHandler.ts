@@ -8,10 +8,13 @@ import winston from "winston";
 export class RefundHandler {
   private tickets: Ticket[];
   private payments: { [key: string]: { payment: Payment; amount: number } };
+  private teBetalenBedrag: number;
 
   constructor(private em: EntityManager, private reservering: Reservering) {
     try {
       this.tickets = this.terugtebetalenTickets();
+      // bereken het saldo van alle openstaande bedragen (positief en negatief)
+      this.teBetalenBedrag = Ticket.totaalSaldo(this.tickets);
       this.payments = this.terugtebetalenPayments();
     } catch (ex) {
       winston.error("RefundHandler.constructor", ex);
@@ -20,17 +23,18 @@ export class RefundHandler {
   }
 
   terugtebetalenTickets(): Ticket[] {
-    return this.reservering.tickets.getItems().filter((t) => t.terugbetalen);
+    return this.reservering.tickets.getItems().filter((t) => t.saldo > 0);
   }
 
   /**
-   * verzamel de bedragen per payment van alle terug te betalen tickets
+   * verzamel alle payments waar nog een bedrag op staat dat terugbetaald kan worden
    */
   terugtebetalenPayments() {
     let payments = {};
-    for (const ticket of this.tickets) {
-      if (ticket.payment) {
-        const payment = ticket.payment;
+    let teBetalenBedrag = this.teBetalenBedrag;
+    for (const payment of this.reservering.payments) {
+      if (teBetalenBedrag <= 0) break;
+      if (payment.amountRemaining) {
         const id = payment.id;
         if (!payments[id]) {
           payments[id] = {
@@ -38,7 +42,9 @@ export class RefundHandler {
             amount: 0,
           };
         }
-        payments[id].amount += ticket.prijs.prijs;
+        const amount = Math.min(teBetalenBedrag, payment.amountRemaining);
+        payments[id].amount = amount;
+        teBetalenBedrag -= amount;
       }
     }
     return payments;
@@ -46,44 +52,41 @@ export class RefundHandler {
 
   async refund() {
     try {
+      if (!this.tickets.length) return;
       const payments = this.payments;
+      let refundedAmount = 0;
 
       for (const payment_id in payments) {
         const amount = payments[payment_id].amount;
         let payment = payments[payment_id].payment;
-        await this.em.populate(payment, ["tickets"]);
 
-        let refunded;
+        let refunded = 0;
         try {
-          refunded = await payment.refund(amount);
+          refunded = +(await payment.refund(amount)).amount.value;
         } catch (ex) {
           // al gerefund. We hadden hier niet mogen komen
           winston.error(`Payment ${payment.payment_id} al teruggestort`);
-          refunded = true;
         }
-        if (refunded) {
-          const terugbetalen = payment.tickets
-            .getItems()
-            .filter((t) => t.terugbetalen);
-          for (const ticket of terugbetalen) {
-            ticket.terugbetalen = false;
-            ticket.geannuleerd = true;
-          }
-          const paymentDescription = Ticket.description(terugbetalen);
-          await ReserveringMail.send(
-            this.reservering,
-            "teruggestort",
-            `${paymentDescription} wordt teruggestort`,
-            {
-              bedrag: amount,
-            }
-          );
-          await Log.addMessage(
-            this.reservering,
-            `${paymentDescription} teruggestort`
-          );
-        }
+        refundedAmount += refunded;
       }
+
+      const refunded = refundedAmount;
+
+      for (const ticket of this.tickets) {
+        const amount = Math.min(ticket.saldo, refundedAmount);
+        ticket.saldo -= amount;
+        if (ticket.saldo === 0) {
+          ticket.geannuleerd = true;
+        }
+        refundedAmount -= amount;
+      }
+
+      await ReserveringMail.send(
+        this.reservering,
+        "teruggestort",
+        `€ ${refunded.toFixed(2)} teruggestort`,
+        { bedrag: refunded }
+      );
     } catch (e) {
       winston.error(e);
       throw e;
@@ -97,14 +100,16 @@ export async function verwerkRefunds() {
   try {
     const repository = em.getRepository(Reservering);
     const reserveringen = await repository.find(
-      { tickets: { terugbetalen: true } },
-      Reservering.populate()
+      { tickets: { saldo: { $gt: 0 } } },
+      // de tickets zijn al verkocht, daarom default filter uitschakelen
+      { populate: Reservering.populate(), filters: false }
     );
 
     if (!reserveringen.length) return;
 
     winston.info(`verwerkRefunds ${reserveringen.length}`);
     for (const reservering of reserveringen) {
+      await em.populate(reservering, Reservering.populate());
       await reservering.finishLoading();
       await new RefundHandler(em, reservering).refund();
     }

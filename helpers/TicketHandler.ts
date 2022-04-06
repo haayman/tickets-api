@@ -3,8 +3,6 @@ import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
 import { Reservering } from "../models";
 import { EntityManager } from "@mikro-orm/core";
-import { Container } from "typedi";
-import { Queue } from "bullmq";
 
 /**
  * @typedef {Object} Prijs
@@ -18,11 +16,10 @@ import { Queue } from "bullmq";
  * @property {Number} aantal
  */
 
+type NewTicket = Pick<Ticket, "prijs" | "betaald" | "saldo">;
+
 export class TicketHandler {
   private oldTickets: TicketAggregator;
-  private cancelled: Ticket[] = [];
-  private new: Pick<Ticket, "prijs" | "betaald">[] = [];
-  private terugKopen: Ticket[] = [];
   private teruggeefbaar: boolean;
 
   constructor(private em: EntityManager, public reservering: Reservering) {
@@ -31,6 +28,10 @@ export class TicketHandler {
   }
 
   update(newTickets: TicketDTO[]): void {
+    let cancelled: Ticket[] = [];
+    const nieuw: NewTicket[] = [];
+    let terugKopen: Ticket[] = [];
+
     // aangeroepen met een lege array: maak er lege aggregates van
     if (!newTickets.length) {
       // empty array
@@ -47,6 +48,7 @@ export class TicketHandler {
       const oldTickets = this.oldTickets.aggregates[prijs.id];
       // vervang prijs door het échte prijs record
       prijs = oldTickets.prijs;
+
       let oldAantal = oldTickets.aantal - oldTickets.aantalTekoop;
       if (oldAantal < aantal) {
         // bijbestelling
@@ -55,13 +57,15 @@ export class TicketHandler {
         // haal deze dan uit de verkoop
         if (aantal >= oldAantal && oldTickets.aantalTekoop) {
           let diff = aantal - oldAantal;
-          this.terugKopen = this.terugKopen.concat(
-            oldTickets.tekoop.splice(0, diff)
-          );
+          terugKopen = terugKopen.concat(oldTickets.tekoop.splice(0, diff));
         }
 
         for (let i = aantal - oldTickets.tickets.length; i; i--) {
-          this.new.push({ prijs, betaald: prijs.prijs == 0 });
+          nieuw.push({
+            prijs,
+            betaald: prijs.prijs == 0,
+            saldo: -prijs.prijs,
+          });
           // als er vrijkaarten zijn uitgegeven, dan worden de geannuleerde kaarten meteen teruggegeven
           if (prijs.prijs === 0) {
             this.teruggeefbaar = true;
@@ -69,75 +73,104 @@ export class TicketHandler {
         }
       } else if (oldTickets.tickets.length > aantal) {
         const diff = oldTickets.tickets.length - aantal;
-        this.cancelled = this.cancelled.concat(
-          oldTickets.tickets.splice(0, diff)
-        );
+        cancelled = cancelled.concat(oldTickets.tickets.splice(0, diff));
       }
     }
 
-    this.haalUitVerkoop();
-    this.annuleren();
-    this.bestellen();
+    if (nieuw.length) this.haalUitVerkoop(terugKopen);
+    this.annuleren(cancelled, nieuw);
+    this.bestellen(nieuw);
   }
 
-  haalUitVerkoop() {
-    if (this.terugKopen.length) {
+  haalUitVerkoop(terugKopen: Ticket[]) {
+    if (terugKopen.length) {
       //
-      const description = Ticket.description(this.terugKopen, " en ");
+      const description = Ticket.description(terugKopen, " en ");
       Log.addMessage(this.reservering, `${description} uit de verkoop gehaald`);
-      for (const ticket of this.terugKopen) {
+      for (const ticket of terugKopen) {
         ticket.tekoop = false;
       }
     }
   }
 
-  annuleren() {
-    if (this.cancelled.length) {
-      const deletable = this.cancelled.filter(
-        (t) => !t.payment || t.payment.status !== "paid"
-      );
-      const paid = this.cancelled.filter(
-        (t) => t.payment && t.payment.status == "paid"
-      );
+  verwerkVerschil(paid: Ticket[], nieuw: NewTicket[], deletable: Ticket[]) {
+    // zet eerst het terug te betalen bedrag op de volle prijs
+    let terugTeBetalen = 0;
+    paid.forEach((ticket) => {
+      ticket.saldo = ticket.prijs.prijs;
+      terugTeBetalen += ticket.prijs.prijs;
+    });
 
-      // just delete
-      if (deletable.length) {
-        Log.addMessage(
-          this.reservering,
-          `${Ticket.description(deletable, " en ")} annuleren`
-        );
-        deletable.map((ticket) => {
-          this.reservering.tickets.remove(ticket);
-        });
+    let teBetalen = Ticket.totaalSaldo(nieuw);
+
+    /*
+      nieuw: [], paid: [10] => paid: [10: terugbetalen: 10]
+      nieuw: [10], paid: [7,7] => nieuw: [10:betaald], paid: [7: deleted, 7: terugbetalen: 3]
+      nieuw: [7,7]: paid: [10] => nieuw: [7:betaald,7], paid: [10: terugbetalen: 2]
+    */
+
+    while (terugTeBetalen >= teBetalen) {
+      const teBetalenTicket = nieuw.find((t) => t.saldo < 0);
+      const terugTeBetalenTicket = paid.find((t) => t.saldo > 0);
+      if (!terugTeBetalenTicket || !teBetalenTicket) break;
+
+      const bedrag = Math.min(
+        -teBetalenTicket.saldo,
+        terugTeBetalenTicket.saldo
+      );
+      teBetalenTicket.saldo += bedrag;
+      terugTeBetalenTicket.saldo -= bedrag;
+      if (teBetalenTicket.saldo == 0) {
+        teBetalenTicket.betaald = true;
       }
+      if (terugTeBetalenTicket.saldo == 0) {
+        deletable.push(terugTeBetalenTicket);
+      }
+      terugTeBetalen -= bedrag;
+      teBetalen -= bedrag;
+    }
+  }
+
+  annuleren(cancelled: Ticket[], nieuw: NewTicket[]) {
+    if (cancelled.length) {
+      const deletable = cancelled.filter((t) => !t.isPaid || !t.bedrag);
+      const paid = cancelled.filter((t) => t.isPaid);
 
       if (paid.length) {
         if (this.teruggeefbaar) {
+          this.verwerkVerschil(paid, nieuw, deletable);
           Log.addMessage(
             this.reservering,
             `${Ticket.description(paid, " en ")} terugbetalen`
           );
-          paid.map((ticket) => {
-            ticket.terugbetalen = true;
-          });
         } else {
           Log.addMessage(
             this.reservering,
             `${Ticket.description(paid, " en ")} te koop zetten`
           );
-          paid.map((ticket) => {
+          paid.forEach((ticket) => {
             ticket.tekoop = true;
           });
         }
       }
+
+      if (deletable.length) {
+        Log.addMessage(
+          this.reservering,
+          `${Ticket.description(deletable, " en ")} annuleren`
+        );
+        deletable.forEach((ticket) => {
+          this.reservering.tickets.remove(ticket);
+        });
+      }
     }
   }
 
-  bestellen() {
-    if (!this.new.length) return;
+  bestellen(nieuw: NewTicket[] = []) {
+    if (!nieuw.length) return;
     const tickets = [];
-    for (const { prijs, betaald } of this.new) {
-      const ticket = new Ticket(prijs, betaald);
+    for (const { prijs, betaald, saldo } of nieuw) {
+      const ticket = new Ticket(prijs, betaald, saldo);
       this.em.persist(ticket);
       this.reservering.tickets.add(ticket);
       tickets.push(ticket);

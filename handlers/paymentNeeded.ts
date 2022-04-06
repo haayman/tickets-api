@@ -17,10 +17,11 @@ export async function paymentNeeded(reservering: Reservering): Promise<void> {
       const description = Ticket.description(tickets);
 
       // request a new Mollie payment
+      const totaalBedrag = -Ticket.totaalSaldo(tickets);
       const payment = await mollie.payments.create({
         amount: {
           currency: "EUR",
-          value: Ticket.totaalBedrag(tickets).toFixed(2),
+          value: totaalBedrag.toFixed(2),
         },
         description: description,
         redirectUrl: redirectUrl(reservering.id),

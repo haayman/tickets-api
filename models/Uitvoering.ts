@@ -107,7 +107,7 @@ export class Uitvoering {
       (select id from reserveringen where uitvoering_id = ?) 
       and reservering_id <> ? 
       and not tekoop 
-      and not terugbetalen
+      and saldo = 0
       and not geannuleerd 
       AND not verkocht`,
         [this.id, reservering_id]
