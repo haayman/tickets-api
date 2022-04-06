@@ -4,7 +4,6 @@ import { Container } from "typedi";
 import winston from "winston";
 import { ReserveringMail } from "../components/ReserveringMail";
 import { Log, Ticket, Reservering } from "../models";
-import { RefundHandler } from "./RefundHandler";
 
 export async function verwerkTekoop(verkochtBedrag: number) {
   if (!verkochtBedrag) return;
@@ -35,7 +34,8 @@ export async function verwerkTekoop(verkochtBedrag: number) {
 
         ticket.verkocht = true;
         ticket.tekoop = false;
-        ticket.terugbetalen = true;
+        // saldo wordt positifief en moet dus uitbetaald worden
+        ticket.saldo = ticket.prijs.prijs;
 
         reserveringen.set(reservering, [...tickets, ticket]);
       } else {
@@ -50,12 +50,8 @@ export async function verwerkTekoop(verkochtBedrag: number) {
     }
     await em.commit();
 
-    if (tekoop.length) {
-      const queue: Queue = Container.get("verwerkRefundsQueue");
-      queue.add("verwerkRefunds", null);
-    } else {
-      winston.info("Geen kaarten te koop");
-    }
+    const queue: Queue = Container.get("verwerkRefundsQueue");
+    queue.add("verwerkRefunds", null);
   } catch (e) {
     winston.error(e);
     await em.rollback();

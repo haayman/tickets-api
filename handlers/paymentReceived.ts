@@ -46,6 +46,12 @@ export async function paymentReceived(
     reservering.setStatus(payment.status);
 
     const tickets = payment.tickets.getItems();
+    if (payment.status === "paid") {
+      for (const ticket of tickets) {
+        ticket.saldo = 0;
+      }
+    }
+
     const description = Ticket.description(tickets);
     await Log.addMessage(
       reservering,
@@ -53,7 +59,8 @@ export async function paymentReceived(
     );
 
     if (payment.status == "paid") {
-      await queue.add("verwerkTekoop", Ticket.totaalBedrag(tickets));
+      const amount = +mollie_payment.amount.value;
+      await queue.add("verwerkTekoop", amount);
       await ReserveringMail.send(
         reservering,
         "confirmationPayment",

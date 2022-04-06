@@ -62,12 +62,15 @@ export class Payment {
   @Property({ persist: false })
   get amountRefunded() {
     return this.payment && this.payment.amountRefunded
-      ? +this.payment.amountRefunded.value + this.paidBack
+      ? +this.payment.amountRefunded.value
       : undefined;
   }
-  // amountRemaining() {
-  //   return this.payment && this.payment.amountRemaining ? +this.payment.amountRemaining.value : undefined;
-  // },
+
+  get amountRemaining() {
+    return this.payment && this.payment.amountRemaining
+      ? +this.payment.amountRemaining?.value
+      : undefined;
+  }
 
   @Property({ persist: false })
   get paidAt() {

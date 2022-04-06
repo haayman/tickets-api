@@ -123,40 +123,15 @@ export class Reservering {
   }
 
   @Property({ persist: false })
-  get openstaandBedrag() {
-    if (!this.payments.isInitialized()) {
-      return undefined;
-    }
-    return Math.max(0, -this.saldo);
+  get saldo() {
+    return this.validTickets
+      ? Ticket.totaalSaldo(this.validTickets)
+      : undefined;
   }
 
   @Property({ persist: false })
-  get saldo() {
-    // bereken het totaal betaalde bedrag
-    if (!this.payments.isInitialized() || !this.tickets.isInitialized()) {
-      winston.debug(`saldo: payments or tickets not initialized`);
-      return undefined;
-    }
-
-    // totaal betaald
-    let saldo = this.payments.getItems().reduce((saldo, payment) => {
-      if (payment.isPaid) {
-        return saldo + (+payment.amount - (payment.amountRefunded || 0));
-      } else {
-        return saldo;
-      }
-    }, 0);
-
-    // bereken kosten van alle te betalen tickets
-    saldo = this.validTickets
-      .filter((t) => !t.tekoop)
-      .filter((t) => !t.terugbetalen)
-      .reduce((saldo, t) => saldo - t.bedrag, saldo);
-    // saldo = this.TicketHandlers.reduce((saldo, ta) => {
-    //   return saldo - ta.getBedrag(ta.aantal - ta.aantaltekoop);
-    // }, saldo);
-
-    return saldo;
+  get openstaandBedrag() {
+    return -this.saldo;
   }
 
   @Property({ persist: false })

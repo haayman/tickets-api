@@ -26,8 +26,7 @@ export async function reserveringUpdated(
 
     await new RefundHandler(em, reservering).refund();
 
-    const saldo = reservering.saldo;
-    if (reservering.aantal && saldo >= 0) {
+    if (reservering.aantal && reservering.saldo >= 0) {
       await ReserveringMail.send(
         reservering,
         "ticket",
