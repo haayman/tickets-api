@@ -54,7 +54,7 @@ export class TicketHandler {
       const oldTickets = this.oldTickets.aggregates[prijs.id];
       // vervang prijs door het échte prijs record
       prijs = oldTickets.prijs;
-      if (prijs.role) {
+      if (aantal && prijs.role) {
         if (!User.hasRole(role, prijs.role)) {
           throw new Error(
             `Onvoldoende rechten op ${prijs.description} te bestellen`

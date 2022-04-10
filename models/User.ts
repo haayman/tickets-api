@@ -172,6 +172,6 @@ export class User {
       admin: ["admin", "speler"],
       kassa: ["kassa"],
     };
-    return roles[role].includes(requiredRole);
+    return roles[role]?.includes(requiredRole);
   }
 }
