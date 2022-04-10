@@ -13,15 +13,7 @@ import config from "config";
 const appName = config.get("name");
 const prefix = `${appName}-${process.env.NODE_ENV || "dev"}`;
 
-export const connection = {
-  maxRetriesPerRequest: null,
-  enableReadyCheck: false,
-  port: 6379,
-  host: "linux",
-  family: 4,
-  db: 0,
-};
-
+export const connection = config.get("redis");
 function createQueue(connection, queueName: string, handler): Queue {
   queueName = `${prefix}-${queueName}`;
   console.log({ queueName });

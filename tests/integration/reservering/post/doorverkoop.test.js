@@ -207,6 +207,8 @@ describe("/reservering", () => {
   });
 
   it.skip("al betaalde kaarten in de wachtlijst worden automatisch doorverkocht", async () => {
+    // LIJKT NIET TE WERKEN
+
     /*
     zie https://github.com/haayman/plusleo_tickets/issues/5
     1) r1: 2 kaarten laatste voorstelling (wachtlijst)

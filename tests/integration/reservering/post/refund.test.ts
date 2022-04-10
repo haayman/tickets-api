@@ -296,8 +296,6 @@ describe("/reservering", () => {
       1) reserveer 2 kaarten 
       2) zet 1 te koop
       3) zet reservering weer op 2 => tekoop = false, nieuwe mail met tickets
-
-      13-3-2022: check
       */
       const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
       let res: any = await request(app)
@@ -360,8 +358,6 @@ describe("/reservering", () => {
       1) reserveer 1x volwassene en 1x kind
       2) zet allebei te koop
       3) koop beide weer terug
-      
-      13-3-2022: check
       */
       const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
       let res: any = await request(app)

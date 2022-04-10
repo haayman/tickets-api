@@ -127,10 +127,11 @@ describe("/reservering", () => {
       //    - mail 'wachtlijst' verzonden'
       //    - geen betaling
       // 3) r1: annuleer 1 kaart
-      //    - r1: geld terug mail
+      //    - r1: mail 2x 'waarvan 1 te koop'
       //    - r2: je bent van wachtlijst mail
       //    - r2: saldo negatief
       //    - r2: betaal
+      //    - r1: mail geld teruggestort
       let res = await createReservering(request(app), {
         naam: faker.name.findName(),
         email: faker.internet.email(),
