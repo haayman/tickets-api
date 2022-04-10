@@ -149,7 +149,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id/ingenomen", async (req, res) => {
+router.put("/:id/ingenomen", auth(["kassa"]), async (req, res) => {
   const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
@@ -172,7 +172,7 @@ router.put("/:id/ingenomen", async (req, res) => {
   }
 });
 
-router.get("/:id/resend", async (req, res) => {
+router.get("/:id/resend", auth(["admin"]), async (req, res) => {
   // const mixin = require("../models/Refund.mixin");
   const em = RequestContext.getEntityManager();
   const repository = em.getRepository<Reservering>("Reservering");
