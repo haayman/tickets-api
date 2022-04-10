@@ -1,3 +1,9 @@
+/**
+ * TicketHandler
+ * Behandelt de mutaties
+ * @example {2x volwassene, 1 kind} => {3x volwassene}
+ * @example {} => {2x vrijkaart}
+ */
 import { TicketAggregator, TicketDTO } from "./TicketAggregator";
 import { Log } from "../models/Log";
 import { Ticket } from "../models/Ticket";
