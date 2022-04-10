@@ -47,8 +47,10 @@ module.exports = {
     subject_prefix: "[Ja!Theater]",
   },
 
-  // mail-adres voor teruggave-verzoeken
-  penningmeester: "adinda@jatheater.nl",
+  email_roots: [
+    path.resolve(__dirname, "..", "emails", "jatheater"),
+    path.resolve(__dirname, "..", "emails"),
+  ],
 
   // aantal dagen
   teruggave_termijn: 14,

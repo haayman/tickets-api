@@ -1,16 +1,18 @@
-<%- include('partials/header')%>
-<tr><td>
-<table class="card row ">
-  <tr class="card-body">
-    <td>
-      <p>Hallo  <%= reservering.naam %></p>
-      <p>Je geannuleerde kaarten zijn verkocht</p>
-    </td>
-  </tr>
-</table>
-</td></tr>
+<%- include(findTemplate('partials/header'))%>
+<tr>
+  <td>
+    <table class="card row">
+      <tr class="card-body">
+        <td>
+          <p>Hallo <%= reservering.naam %></p>
+          <p>Je geannuleerde kaarten zijn verkocht</p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
 
-<%- include('partials/reservering') %>
-<%- include('partials/payments') %>
-<%- include('partials/bewaar')%>
-<%- include('partials/footer')%>
+<%- include(findTemplate('partials/reservering')) %> <%-
+include(findTemplate('partials/payments')) %> <%-
+include(findTemplate('partials/bewaar'))%> <%-
+include(findTemplate('partials/footer'))%>

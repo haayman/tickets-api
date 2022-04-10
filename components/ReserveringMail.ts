@@ -3,6 +3,23 @@ import format from "date-fns/format";
 import nl from "date-fns/locale/nl";
 import { Log, Reservering } from "../models";
 import winston from "winston";
+import config from "config";
+import { existsSync } from "fs";
+import { resolve, extname } from "path";
+
+function findTemplate(path: string) {
+  const roots: string[] = config.get("email_roots");
+  if (!extname(path)) {
+    path += ".ejs";
+  }
+  for (const root of roots) {
+    const file = resolve(root, path);
+    if (existsSync(file)) {
+      console.log(file);
+      return file;
+    }
+  }
+}
 
 export class ReserveringMail {
   static async send(
@@ -25,6 +42,7 @@ export class ReserveringMail {
         template: templateName,
         reservering: r,
         format,
+        findTemplate,
         nl,
       })
     );

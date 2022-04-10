@@ -1,3 +1,9 @@
+/**
+ * Op de frontend wordt alleen over tickets gecommuniceerd als aantal per prijs
+ * bijvoorbeeld: 3x volwassene, 2x vrijkaartje
+ * intern worden losse tickets gehanteerd
+ * Deze class verzamelt alle losse tickets en maakt er aggregates van
+ */
 import { Prijs, Reservering, Ticket } from "../models";
 
 export type TicketDTO = {
