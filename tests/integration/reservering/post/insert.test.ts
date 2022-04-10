@@ -21,7 +21,6 @@ import clone from "lodash/clone";
 import { mock } from "nodemailer-mock";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
-import { drainAllQueues, queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -42,7 +41,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await beforeEachReserveringen(em);
-  await drainAllQueues();
 });
 
 afterAll(async () => {
@@ -64,7 +62,6 @@ describe("/reservering", () => {
         ],
       });
 
-      await queuesAreEmpty();
       const sentMail = mock.sentMail();
       expect(sentMail.length).toBe(1);
       expect(sentMail[0].subject).toMatch(/Kaarten voor 2x/);
@@ -95,7 +92,6 @@ describe("/reservering", () => {
             },
           ],
         });
-      await queuesAreEmpty();
       expect(res.body.openstaandBedrag).toBe(20);
     });
 
@@ -121,7 +117,6 @@ describe("/reservering", () => {
             },
           ],
         });
-      await queuesAreEmpty();
       expect(res.status).toBe(200);
       expect(res.body.id).toBeDefined();
       expect(res.body.openstaandBedrag).toBe(30);

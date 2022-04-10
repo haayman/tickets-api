@@ -61,12 +61,11 @@ router.post("/", async (req, res) => {
     await reservering.finishLoading();
 
     await em.commit();
-    0;
 
     res.send(reservering);
 
     let queue: Queue = Container.get("reserveringCreatedQueue");
-    queue.add("reserveringCreated", reservering.id);
+    await queue.add("reserveringCreated", reservering.id);
   } catch (e) {
     winston.error(e);
     em.rollback();
@@ -107,7 +106,7 @@ router.put("/:id", async (req, res) => {
     await queue.add("reserveringUpdated", reservering.id);
 
     queue = Container.get("verwerkWachtlijstQueue");
-    queue.add("verwerkWachtlijst", reservering.uitvoering.id);
+    await queue.add("verwerkWachtlijst", reservering.uitvoering.id);
   } catch (e) {
     winston.error(e);
 
@@ -140,7 +139,7 @@ router.delete("/:id", async (req, res) => {
     res.send(reservering);
 
     queue = Container.get("verwerkWachtlijstQueue");
-    queue.add("verwerkWachtlijst", reservering.uitvoering.id);
+    await queue.add("verwerkWachtlijst", reservering.uitvoering.id);
   } catch (e) {
     winston.error(e);
 

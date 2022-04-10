@@ -51,7 +51,7 @@ export async function verwerkTekoop(verkochtBedrag: number) {
     await em.commit();
 
     const queue: Queue = Container.get("verwerkRefundsQueue");
-    queue.add("verwerkRefunds", null);
+    await queue.add("verwerkRefunds", null);
   } catch (e) {
     winston.error(e);
     await em.rollback();
