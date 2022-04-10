@@ -8,8 +8,10 @@ import { verwerkTekoop } from "../handlers/verwerkTekoop";
 import { verwerkRefunds } from "../handlers/RefundHandler";
 import winston from "winston";
 import Container from "typedi";
+import config from "config";
 
-const prefix = process.env.NODE_ENV || "dev";
+const appName = config.get("name");
+const prefix = `${appName}-${process.env.NODE_ENV || "dev"}`;
 
 export const connection = {
   maxRetriesPerRequest: null,
@@ -21,6 +23,9 @@ export const connection = {
 };
 
 function createQueue(connection, queueName: string, handler): Queue {
+  queueName = `${prefix}-${queueName}`;
+  console.log({ queueName });
+
   const queue = new Queue(queueName, {
     // prefix,
     connection,
