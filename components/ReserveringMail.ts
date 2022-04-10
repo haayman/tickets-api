@@ -15,7 +15,6 @@ function findTemplate(path: string) {
   for (const root of roots) {
     const file = resolve(root, path);
     if (existsSync(file)) {
-      console.log(file);
       return file;
     }
   }
