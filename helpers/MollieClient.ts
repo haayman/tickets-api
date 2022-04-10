@@ -1,3 +1,6 @@
+/**
+ * MollieClient adapter. MockMollieClient overrulet de productie versie
+ */
 import { createMollieClient, Payment, Refund } from "@mollie/api-client";
 import { CreateParameters as RefundParameters } from "@mollie/api-client/dist/types/src/resources/payments/refunds/parameters";
 import { CreateParameters as PaymentParameters } from "@mollie/api-client/dist/types/src/resources/payments/parameters";
