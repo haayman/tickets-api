@@ -36,14 +36,6 @@ export async function reserveringCreated(
         "Je staat op de wachtlijst"
       );
     }
-    // geen bevestigingmail meer sturen. Teveel mails
-    // else {
-    //   await ReserveringMail.send(
-    //     reservering,
-    //     "aangevraagd",
-    //     `${reservering} besteld`
-    //   );
-    // }
     await em.commit();
   } catch (e) {
     winston.error(e);

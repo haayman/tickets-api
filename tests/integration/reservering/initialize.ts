@@ -2,8 +2,7 @@ import nock from "nock";
 import "../mollie/mollie-nock";
 
 import { EntityManager } from "@mikro-orm/core";
-import { Container } from "typedi";
-import { Queue } from "bullmq";
+import { synchronousQueues } from "./synchonousQueues";
 
 jest.mock("nodemailer");
 
@@ -11,6 +10,8 @@ export async function beforeAllReserveringen(em: EntityManager) {
   // jest.setMock("nodemailer", nodemailerMock);
   const connection = em.getConnection();
   await connection.execute("delete from voorstellingen");
+
+  synchronousQueues();
 }
 
 export async function beforeEachReserveringen(em: EntityManager) {
