@@ -165,4 +165,13 @@ export class User {
     }
     return user;
   }
+
+  static hasRole(role: string, requiredRole: string) {
+    const roles = {
+      speler: ["speler"],
+      admin: ["admin", "speler"],
+      kassa: ["kassa"],
+    };
+    return roles[role].includes(requiredRole);
+  }
 }

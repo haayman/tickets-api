@@ -3,15 +3,8 @@ import config from "config";
 
 export default function (authRequired: boolean | string[] = true) {
   return function (req, res, next) {
-    //@TODO
-    //always true
-    // next();
-
-    const token = (req.get("Authorization") || "").replace("Bearer ", "");
-    if (!token) return res.status(401).send("Access denied. No token provided");
-
     try {
-      const user = jwt.verify(token, config.get("jwtPrivateKey"));
+      const user = res.locals.user;
       const role = user.role;
 
       if (authRequired === true) {

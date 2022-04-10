@@ -54,7 +54,7 @@ router.post("/", async (req, res) => {
 
     await repository.populate(reservering, Reservering.populate());
     const ticketHandler = new TicketHandler(em, reservering);
-    ticketHandler.update(tickets);
+    ticketHandler.update(tickets, res.locals?.user?.role);
 
     reservering.wachtlijst = await reservering.moetInWachtrij(em, false);
     await paymentNeeded(reservering);
@@ -93,7 +93,7 @@ router.put("/:id", async (req, res) => {
     await repository.populate(reservering, Reservering.populate());
     await reservering.finishLoading();
     const ticketHandler = new TicketHandler(em, reservering);
-    ticketHandler.update(tickets);
+    ticketHandler.update(tickets, res.locals?.user?.role);
 
     reservering.wachtlijst = await reservering.moetInWachtrij(em, true);
 
@@ -149,7 +149,7 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-router.put("/:id/ingenomen", async (req, res) => {
+router.put("/:id/ingenomen", auth(["kassa"]), async (req, res) => {
   const em = RequestContext.getEntityManager().fork();
   await em.begin();
   try {
@@ -172,7 +172,7 @@ router.put("/:id/ingenomen", async (req, res) => {
   }
 });
 
-router.get("/:id/resend", async (req, res) => {
+router.get("/:id/resend", auth(["admin"]), async (req, res) => {
   // const mixin = require("../models/Refund.mixin");
   const em = RequestContext.getEntityManager();
   const repository = em.getRepository<Reservering>("Reservering");
