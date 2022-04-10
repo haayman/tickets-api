@@ -24,10 +24,10 @@
     <script>
       // zet main domain
       var domain = window.location.hostname;
-      var parts = domain.split('.');
+      var parts = domain.split(".");
       // remove all but the last two elements
       parts.splice(0, parts.length - 2);
-      document.domain = parts.join('.');
+      document.domain = parts.join(".");
     </script>
   </head>
 
@@ -47,8 +47,8 @@
         <div class="row">
           <label>Prij<%= voorstelling.prijzen.length > 1? 'zen':'s'%></label>
           <div class="d-flex flex-column">
-            <% voorstelling.prijzen.forEach(function(prijs){ %> <% if(
-            prijs.prijs ) { %>
+            <% voorstelling.prijzen.getItems().forEach(function(prijs){ %> <%
+            if( prijs.prijs ) { %>
             <span><%= prijs %>: € <%=prijs.prijs.toFixed(2)%></span>
             <%}%> <%})%>
           </div>
@@ -82,9 +82,9 @@
               </tr>
             </thead>
             <tbody>
-              <% voorstelling.uitvoeringen .filter(u => u.aanvang > new Date())
-              .sort((a,b) => a.aanvang - b.aanvang) .forEach( function(
-              uitvoering ) {%>
+              <% voorstelling.uitvoeringen.getItems().filter(u => u.aanvang >
+              new Date()) .sort((a,b) => a.aanvang - b.aanvang) .forEach(
+              function( uitvoering ) {%>
               <tr>
                 <td>
                   <a
@@ -95,9 +95,7 @@
                     {locale:nl})%>
                   </a>
                 </td>
-                <td>
-                  <%=uitvoering.extra_text%>
-                </td>
+                <td><%=uitvoering.extra_text%></td>
                 <td>
                   <a
                     href="/reserveren/?uitvoeringId=<%=uitvoering.id%>"

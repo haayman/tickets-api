@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6"
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./*"],
+      "@/*": ["./*"]
+    }
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build"
-  ]
+  "exclude": ["node_modules", ".nuxt", "dist"]
 }
