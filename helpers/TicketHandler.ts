@@ -77,7 +77,7 @@ export class TicketHandler {
       }
     }
 
-    if (nieuw.length) this.haalUitVerkoop(terugKopen);
+    if (terugKopen.length) this.haalUitVerkoop(terugKopen);
     this.annuleren(cancelled, nieuw);
     this.bestellen(nieuw);
   }
@@ -95,23 +95,22 @@ export class TicketHandler {
 
   verwerkVerschil(paid: Ticket[], nieuw: NewTicket[], deletable: Ticket[]) {
     // zet eerst het terug te betalen bedrag op de volle prijs
-    let terugTeBetalen = 0;
     paid.forEach((ticket) => {
       ticket.saldo = ticket.prijs.prijs;
-      terugTeBetalen += ticket.prijs.prijs;
     });
 
-    let teBetalen = Ticket.totaalSaldo(nieuw);
-
     /*
-      nieuw: [], paid: [10] => paid: [10: terugbetalen: 10]
-      nieuw: [10], paid: [7,7] => nieuw: [10:betaald], paid: [7: deleted, 7: terugbetalen: 3]
-      nieuw: [7,7]: paid: [10] => nieuw: [7:betaald,7], paid: [10: terugbetalen: 2]
+      nieuw: [], paid: [+10] => paid: [+10]
+      nieuw: [-10], paid: [+7,+7] => nieuw: [0], paid: [7: deleted, 7: +3]
+      nieuw: [-7,-7]: paid: [10] => nieuw: [0,4], paid: [0]
+      nieuw: [-12]: paid: [7] => nieuw:[-5], paid: [0]
     */
 
-    while (terugTeBetalen >= teBetalen) {
-      const teBetalenTicket = nieuw.find((t) => t.saldo < 0);
-      const terugTeBetalenTicket = paid.find((t) => t.saldo > 0);
+    let terugTeBetalenTickets = paid.filter((t) => t.saldo > 0);
+    let teBetalenTickets = nieuw.filter((t) => t.saldo < 0);
+    while (terugTeBetalenTickets.length && teBetalenTickets.length) {
+      const teBetalenTicket = teBetalenTickets[0];
+      const terugTeBetalenTicket = terugTeBetalenTickets[0];
       if (!terugTeBetalenTicket || !teBetalenTicket) break;
 
       const bedrag = Math.min(
@@ -126,8 +125,8 @@ export class TicketHandler {
       if (terugTeBetalenTicket.saldo == 0) {
         deletable.push(terugTeBetalenTicket);
       }
-      terugTeBetalen -= bedrag;
-      teBetalen -= bedrag;
+      terugTeBetalenTickets = paid.filter((t) => t.saldo > 0);
+      teBetalenTickets = nieuw.filter((t) => t.saldo < 0);
     }
   }
 
