@@ -2,7 +2,6 @@
 // const defer = require("config/defer").deferConfig;
 
 module.exports = {
-  name: "My app (dev)",
   useMorgan: false,
   logLevel: "info",
   payment: {

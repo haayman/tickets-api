@@ -1,7 +1,7 @@
 const path = require("path");
 
 module.exports = {
-  name: "PlusLeo tickets",
+  name: "jatheater",
   useMorgan: true,
   logLevel: "info",
   database: {
@@ -15,14 +15,18 @@ module.exports = {
     debug: false,
   },
   redis: {
-    url: "linux",
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    port: 6379,
+    host: "linux",
+    family: 4,
+    db: 0,
   },
 
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8",
   },
 
-  namespace: "PlusLeoDbNamespace", // t.b.v transacties
   jwtPrivateKey:
     "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
