@@ -37,7 +37,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await beforeEachReserveringen(em);
-  await drainAllQueues();
 });
 
 describe("/reservering", () => {
@@ -189,6 +188,56 @@ describe("/reservering", () => {
         sentMail.find((m) => m.subject.match(/uit wachtlijst/))
       ).toBeTruthy();
     });
+
+    it.only("put extra tickets on wachtlijst", async () => {
+      /*
+      -------------------------------
+        p1 2x 1e voorstelling => uitverkocht
+        p2 2x laatste voorstelling: uitverkocht
+        p1 4x kaarten => wachtlijst en geen extra betaling
+        p2 annuleert
+        p1 krijgt mail: uit wachtlijst en moet nog 2x bijbetalen
+      */
+
+      // stap 1: koop en betaal kaarten
+      let res = await createReservering(request(app), {
+        naam: faker.name.findName(),
+        email: faker.internet.email(),
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
+      });
+      const reservering = res.reservering.body;
+
+      // zorg dat het uitverkocht wordt
+      await createReservering(request(app), {
+        naam: faker.name.findName(),
+        email: faker.internet.email(),
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 1,
+          },
+        ],
+      });
+
+      // verhoog het aantal: wachtlijst
+      res = await updateReservering(request(app), {
+        id: reservering.id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+        ],
+      });
+      expect(res.reservering.body.wachtlijst).toBe(true);
+    });
   });
 });
 
@@ -204,4 +253,6 @@ p2: annuleert => p3 van wachtlijst
 p1 2x laatste voorstelling, betaling mislukt
 p2 1x laatste voorstelling: wachtlijst
 p1 verwijdert kaarten => p2 van wachtlijst
+
+
 */
