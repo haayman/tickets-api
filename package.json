@@ -9,6 +9,8 @@
     "unit_server": "jest --watchAll tests/"
   },
   "dependencies": {
+    "@bull-board/api": "^3.10.0",
+    "@bull-board/express": "^3.10.0",
     "@mikro-orm/core": "^4.5.9",
     "@mikro-orm/mysql": "^4.5.9",
     "@mikro-orm/reflection": "^4.5.9",
