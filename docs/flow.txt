@@ -1,0 +1,7 @@
+reserveringCreated:
+- mail: 
+  - als vrijkaartje: tickets
+  - als wachtlijst: wachtlijst
+
+  reserveringUpdated:
+  - 

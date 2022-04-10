@@ -1,0 +1,13 @@
+{
+  "naam": "d@d.nl",
+  "email": "d@d.nl",
+  "uitvoering": 37,
+  "tickets": [
+    { "prijs": { "id": 44 }, "aantal": 2 },
+    { "prijs": { "id": 45 }, "aantal": 0 },
+    { "prijs": { "id": 49 }, "aantal": 0 }
+  ],
+  "opmerking": "",
+  "opmerking_gebruiker": "",
+  "wachtlijst": false
+}

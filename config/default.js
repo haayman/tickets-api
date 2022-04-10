@@ -1,8 +1,9 @@
 const path = require("path");
 
 module.exports = {
-  name: "PlusLeo tickets",
+  name: "jatheater",
   useMorgan: true,
+  logLevel: "info",
   database: {
     client: "mysql",
     connection: {
@@ -13,22 +14,30 @@ module.exports = {
     },
     debug: false,
   },
+  redis: {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    port: 6379,
+    host: "linux",
+    family: 4,
+    db: 0,
+  },
 
   payment: {
     mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8",
   },
 
-  namespace: "PlusLeoDbNamespace", // t.b.v transacties
-  jwtPrivateKey: "Dit is de sleutel waarmee de signon package wordt versleuteld",
+  jwtPrivateKey:
+    "Dit is de sleutel waarmee de signon package wordt versleuteld",
   server: {
     url: "https://kaarten.jatheater.nl",
     port: 3000,
   },
   mail_transport: {
-    debug: false,
+    // debug: false,
     // logger: true,
-    sendmail: true,
-    path: "/usr/sbin/sendmail",
+    // sendmail: true,
+    // path: "/usr/sbin/sendmail",
   },
   email: {
     afzender: "Ja!Theater",

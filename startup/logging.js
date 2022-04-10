@@ -58,16 +58,16 @@ module.exports = function () {
   const logger = winston.createLogger({
     format: winston.format.combine(
       winston.format.json({
-        replacer: replaceErrors
+        replacer: replaceErrors,
       })
     ),
-    transports: [new winston.transports.Console()]
+    transports: [new winston.transports.Console()],
   });
 
   winston.configure({
     format: winston.format.combine(
       winston.format.json({
-        replacer: replaceErrors
+        replacer: replaceErrors,
       })
     ),
     transports: [
@@ -75,21 +75,21 @@ module.exports = function () {
         // format: winston.format.simple(),
         prettyPrint: true,
         colorize: true,
-        level: "info"
+        level: config.get("logLevel"),
       }),
       // new winston.transports.File({
       //   filename: "error.log",
       //   level: "error"
       // })
-    ]
+    ],
   });
 
-  process.on("uncaughtException", ex => {
+  process.on("uncaughtException", (ex) => {
     winston.error(ex);
     // process.exit(1);
   });
 
-  process.on("unhandledRejection", ex => {
+  process.on("unhandledRejection", (ex) => {
     winston.error(ex);
     // process.exit(1);
   });

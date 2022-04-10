@@ -1,6 +1,6 @@
 {
-  "delay": "0",
-  "execMap": {
-    "ts": "node -r ts-node/register --inspect=0.0.0.0"
-  }
+  "watch": [".", ".env"],
+  "ext": "js,ts,json",
+  "ignore": ["src/**/*.spec.ts", "temp/*"],
+  "exec": "node -r ts-node/register --inspect=0.0.0.0"
 }

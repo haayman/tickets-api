@@ -8,6 +8,7 @@
       "type": "node",
       "protocol": "inspector",
       "name": "Attach",
+      "address": "linux",
       "port": 9229,
       "request": "attach",
       "skipFiles": [
