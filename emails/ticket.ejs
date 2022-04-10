@@ -1,18 +1,19 @@
-<%- include('partials/header')%>
-<tr><td>
-<table class="card row no-print">
-  <tr>
-    <td>
-    <p>Hallo <%= reservering.naam %></p>
-    <p>Dit zijn de gegevens van je reservering</p>
-    </td>
-  </tr>
-</table>
-</td></tr>
+<%- include(findTemplate('partials/header'))%>
+<tr>
+  <td>
+    <table class="card row no-print">
+      <tr>
+        <td>
+          <p>Hallo <%= reservering.naam %></p>
+          <p>Dit zijn de gegevens van je reservering</p>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
 
-<%- include('partials/voorstelling') %>
-<%- include('partials/reservering') %>
-<%- include('partials/qrcode')%>
-<%- include('partials/bewaar')%>
-<%- include('partials/footer')%>
-
+<%- include(findTemplate('partials/voorstelling')) %> <%-
+include(findTemplate('partials/reservering')) %> <%-
+include(findTemplate('partials/qrcode'))%> <%-
+include(findTemplate('partials/bewaar'))%> <%-
+include(findTemplate('partials/footer'))%>
