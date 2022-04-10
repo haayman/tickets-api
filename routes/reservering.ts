@@ -54,7 +54,7 @@ router.post("/", async (req, res) => {
 
     await repository.populate(reservering, Reservering.populate());
     const ticketHandler = new TicketHandler(em, reservering);
-    ticketHandler.update(tickets);
+    ticketHandler.update(tickets, res.locals?.user?.role);
 
     reservering.wachtlijst = await reservering.moetInWachtrij(em, false);
     await paymentNeeded(reservering);
@@ -93,7 +93,7 @@ router.put("/:id", async (req, res) => {
     await repository.populate(reservering, Reservering.populate());
     await reservering.finishLoading();
     const ticketHandler = new TicketHandler(em, reservering);
-    ticketHandler.update(tickets);
+    ticketHandler.update(tickets, res.locals?.user?.role);
 
     reservering.wachtlijst = await reservering.moetInWachtrij(em, true);
 
