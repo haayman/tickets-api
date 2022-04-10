@@ -5,10 +5,11 @@
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
-
   "eslint.enable": true,
-  "eslint.validate": ["javascript", "vue"],
-
+  "eslint.validate": [
+    "javascript",
+    "vue"
+  ],
   "[javascript]": {
     "editor.formatOnSave": true
   },
