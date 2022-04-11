@@ -20,7 +20,6 @@ import Container from "typedi";
 import nodemailerMock from "nodemailer-mock";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
-import { drainAllQueues, queuesAreEmpty } from "../queuesAreEmpty";
 
 jest.setTimeout(3000000);
 
@@ -41,7 +40,6 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await beforeEachReserveringen(em);
-  await drainAllQueues();
 });
 
 afterAll(async () => {
