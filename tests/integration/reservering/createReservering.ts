@@ -45,7 +45,7 @@ export async function updateReservering(request, reservering) {
   );
   if (notPaid) {
     const id = reserveringResult.body.id;
-    const paymentId = notPaid.paymentId;
+    const paymentId = notPaid.payment_id;
     const paymentResult = await request.post("/api/payment/bank/" + id).send({
       id: paymentId,
     });
