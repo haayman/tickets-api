@@ -50,6 +50,8 @@ describe("/reservering", () => {
   describe("/post", () => {
     it("verwerk verkoop non refundable", async () => {
       /*
+      WERKT WEL met de hand, niet met dit script
+
       1) r1: reserveer 2 kaarten laatste voorstelling
       2) r1: annuleer 2 kaarten
           - worden allebei te koop aangeboden

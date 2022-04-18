@@ -4,8 +4,12 @@
 
 import { mockPayment } from "../mollie/mockPayment";
 
-export async function createReservering(request, reservering) {
-  mockPayment("paid");
+export async function createReservering(
+  request,
+  reservering,
+  paymentStatus = "paid"
+) {
+  mockPayment(paymentStatus);
 
   const reserveringResult = await request
     .post("/api/reservering")
