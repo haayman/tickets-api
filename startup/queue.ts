@@ -16,7 +16,7 @@ const prefix = `${appName}-${process.env.NODE_ENV || "dev"}`;
 export const connection = config.get("redis");
 function createQueue(connection, queueName: string, handler): Queue {
   queueName = `${prefix}-${queueName}`;
-  console.log({ queueName });
+  winston.info(queueName);
 
   const queue = new Queue(queueName, {
     // prefix,
