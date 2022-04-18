@@ -2,6 +2,7 @@ import appLoader from "../../../../app";
 import request from "supertest";
 import { Reservering, Voorstelling } from "../../../../models";
 import { EntityManager, EntityRepository } from "@mikro-orm/core";
+import faker from "community-faker";
 import {
   REFUNDABLE,
   NON_REFUNDABLE,
@@ -128,11 +129,8 @@ describe("/reservering", () => {
 
       let sentMail = nodemailerMock.mock.sentMail();
       expect(res.body.aantal).toBe(1);
-      expect(res.body.onbetaaldeTickets.length).toBe(0);
       expect(res.body.bedrag).toBe(10);
-      expect(
-        sentMail.find((m) => m.subject.match(/Gewijzigde bestelling/))
-      ).toBeTruthy();
+      expect(sentMail.find((m) => m.subject.match(/1x/))).toBeTruthy();
       expect(
         sentMail.find((m) => m.subject.match(/€10.00 teruggestort/))
       ).toBeTruthy();
@@ -282,8 +280,6 @@ describe("/reservering", () => {
       1) reserveer 1 volwassen en 1 kind
       2) wijzig 1 kaart van kind naar volwassene
         - € 2.50 bijbetalen, geen refund van kind
-
-      ===>  N.B. WERKT NOG NIET <=======
       */
       const uitvoeringId = voorstelling.uitvoeringen[NON_REFUNDABLE].id;
       let res: any = await createReservering(request(app), {
@@ -468,5 +464,64 @@ describe("/reservering", () => {
     expect(sentMail[0].html).toMatch(/1x volwassene/);
     expect(sentMail[0].html).toMatch(/1x kind/);
     expect(sentMail[0].html).not.toMatch(/te koop/);
+  });
+
+  it("don't refund unpaid tickets", async () => {
+    /*
+        -------------------------------
+      p1 2x laatste voorstelling, betaling mislukt
+      p2 1x laatste voorstelling: wachtlijst
+      p1 verwijdert kaarten => p2 van wachtlijst
+      */
+
+    // stap 1: koop en betaal kaarten
+    let res: any = await createReservering(
+      request(app),
+      {
+        naam: faker.name.findName(),
+        email: faker.internet.email(),
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+        ],
+      },
+      "expired"
+    );
+    const reserveringId = res.reservering.body.id;
+
+    // ga op de wachtlijst staan
+    await createReservering(request(app), {
+      naam: faker.name.findName(),
+      email: faker.internet.email(),
+      uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+      tickets: [
+        {
+          prijs: voorstelling.prijzen[VOLWASSENE],
+          aantal: 1,
+        },
+      ],
+    });
+
+    nodemailerMock.mock.reset(); // not interested in these mails
+
+    // geef 1 kaartje vrij
+    res = await updateReservering(request(app), {
+      id: reserveringId,
+      uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+      tickets: [
+        {
+          prijs: voorstelling.prijzen[VOLWASSENE],
+          aantal: 0,
+        },
+      ],
+    });
+    const sentMail = nodemailerMock.mock.sentMail();
+    expect(sentMail.find((m) => m.subject.match(/teruggestort/))).toBeFalsy();
+    expect(
+      sentMail.find((m) => m.subject.match(/uit wachtlijst/))
+    ).toBeTruthy();
   });
 });

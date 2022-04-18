@@ -18,7 +18,7 @@ import {
 } from "../initialize";
 import Container from "typedi";
 import clone from "lodash/clone";
-import { mock } from "nodemailer-mock";
+import nodemailerMock from "nodemailer-mock";
 import { MollieClient } from "../../mollie/MockMollieClient";
 import { MOLLIECLIENT } from "../../../../helpers/MollieClient";
 
@@ -62,7 +62,7 @@ describe("/reservering", () => {
         ],
       });
 
-      const sentMail = mock.sentMail();
+      const sentMail = nodemailerMock.mock.sentMail();
       expect(sentMail.length).toBe(1);
       expect(sentMail[0].subject).toMatch(/Kaarten voor 2x/);
     });
@@ -96,36 +96,81 @@ describe("/reservering", () => {
     });
 
     it("should be wachtlijst", async () => {
-      const res = await request(app)
-        .post("/api/reservering")
-        .send({
-          naam: "Test",
-          email: "arjen.haayman+test@gmail.com",
-          uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
-          tickets: [
-            {
-              prijs: voorstelling.prijzen[VOLWASSENE],
-              aantal: 3,
-            },
-            {
-              prijs: voorstelling.prijzen[KIND],
-              aantal: 0,
-            },
-            {
-              prijs: voorstelling.prijzen[VRIJKAART],
-              aantal: 0,
-            },
-          ],
-        });
-      expect(res.status).toBe(200);
-      expect(res.body.id).toBeDefined();
-      expect(res.body.openstaandBedrag).toBe(30);
-      // expect(res.body.onbetaaldeTickets.length).toBe(3);
-      expect(res.body.wachtlijst).toBe(true);
+      await createReservering(request(app), {
+        naam: "Test",
+        email: "arjen.haayman+test@gmail.com",
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+          {
+            prijs: voorstelling.prijzen[KIND],
+            aantal: 0,
+          },
+          {
+            prijs: voorstelling.prijzen[VRIJKAART],
+            aantal: 0,
+          },
+        ],
+      });
+      nodemailerMock.mock.reset();
 
-      const sentMail = mock.sentMail();
+      const { reservering } = await createReservering(request(app), {
+        naam: "Test",
+        email: "arjen.haayman+test@gmail.com",
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 2,
+          },
+          {
+            prijs: voorstelling.prijzen[KIND],
+            aantal: 0,
+          },
+          {
+            prijs: voorstelling.prijzen[VRIJKAART],
+            aantal: 0,
+          },
+        ],
+      });
+      expect(reservering.status).toBe(200);
+      expect(reservering.body.id).toBeDefined();
+      expect(reservering.body.openstaandBedrag).toBe(20);
+      // expect(reservering.body.onbetaaldeTickets.length).toBe(3);
+      expect(reservering.body.wachtlijst).toBe(true);
+
+      const sentMail = nodemailerMock.mock.sentMail();
       expect(sentMail.length).toBe(1);
       expect(sentMail[0].subject).toMatch(/wachtlijst/);
+    });
+
+    /**
+     * should throw an error because 3 tickets will never be available
+     */
+    it("should not allow too many tickets", async () => {
+      const { reservering } = await createReservering(request(app), {
+        naam: "Test",
+        email: "arjen.haayman+test@gmail.com",
+        uitvoering: voorstelling.uitvoeringen[REFUNDABLE].id,
+        tickets: [
+          {
+            prijs: voorstelling.prijzen[VOLWASSENE],
+            aantal: 3,
+          },
+          {
+            prijs: voorstelling.prijzen[KIND],
+            aantal: 0,
+          },
+          {
+            prijs: voorstelling.prijzen[VRIJKAART],
+            aantal: 0,
+          },
+        ],
+      });
+      expect(reservering.status).toBe(500);
     });
   });
 });

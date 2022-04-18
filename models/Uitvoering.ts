@@ -104,10 +104,10 @@ export class Uitvoering {
         `
       SELECT count(*) as count FROM tickets 
       WHERE reservering_id in 
-      (select id from reserveringen where uitvoering_id = ?) 
+      (select id from reserveringen where uitvoering_id = ? and not wachtlijst) 
       and reservering_id <> ? 
       and not tekoop 
-      and saldo = 0
+      and saldo <= 0
       and not geannuleerd 
       AND not verkocht`,
         [this.id, reservering_id]

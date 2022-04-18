@@ -149,8 +149,8 @@ export class TicketHandler {
       const paid = cancelled.filter((t) => t.isPaid);
 
       if (paid.length) {
+        this.verwerkVerschil(paid, nieuw, deletable);
         if (this.teruggeefbaar) {
-          this.verwerkVerschil(paid, nieuw, deletable);
           Log.addMessage(
             this.reservering,
             `${Ticket.description(paid, " en ")} terugbetalen`
