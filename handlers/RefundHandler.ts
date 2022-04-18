@@ -84,7 +84,7 @@ export class RefundHandler {
       await ReserveringMail.send(
         this.reservering,
         "teruggestort",
-        `€ ${refunded.toFixed(2)} teruggestort`,
+        `€${refunded.toFixed(2)} teruggestort`,
         { bedrag: refunded }
       );
     } catch (e) {

@@ -70,6 +70,17 @@ export class Ticket {
     return -this.saldo;
   }
 
+  get isValid() {
+    return !this.verkocht && !this.geannuleerd && !this.terugBetalen;
+  }
+
+  /**
+   * het ticket wordt bijna terugbetaald, maar dat is nog niet gebeur
+   */
+  get terugBetalen() {
+    return this.saldo > 0;
+  }
+
   @OnInit()
   toNumeric() {
     // terugbetalen is als 'decimal' opgeslagen, wat mikro-orm niet herkent

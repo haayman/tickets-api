@@ -107,7 +107,7 @@ export class Reservering {
 
   get validTickets() {
     if (!this.tickets.isInitialized()) return undefined;
-    return this.tickets.getItems().filter((t) => !t.verkocht && !t.geannuleerd);
+    return this.tickets.getItems().filter((t) => t.isValid);
   }
 
   get onbetaaldeTickets() {
@@ -146,11 +146,6 @@ export class Reservering {
     );
   }
 
-  // dummy setter
-  set bedrag(value) {
-    //this.bedrag = value;
-  }
-
   /**
    * aantal gereserveerde plaatsen
    */
@@ -165,12 +160,19 @@ export class Reservering {
   }
 
   async moetInWachtrij(em: EntityManager, existing: boolean): Promise<boolean> {
-    const vrije_plaatsen = this.uitvoering.vrije_plaatsen;
     try {
-      return existing
-        ? // @ts-ignore
-          (await this.uitvoering.countVrijePlaatsen(em, this.id)) <= 0
-        : vrije_plaatsen < this.aantal;
+      if (existing) {
+        // tel het aantal vrije plaatsen als je deze reservering niet meetelt
+        const vrije_plaatsen = await this.uitvoering.countVrijePlaatsen(
+          // @ts-ignore
+          em,
+          this.id
+        );
+        return vrije_plaatsen < this.aantal;
+      } else {
+        const vrije_plaatsen = this.uitvoering.vrije_plaatsen;
+        return vrije_plaatsen < this.aantal;
+      }
     } catch (e) {
       throw e;
     }
