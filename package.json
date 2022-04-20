@@ -6,7 +6,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon --inspect=0.0.0.0 server.js",
-    "unit_server": "jest --watchAll tests/"
+    "unit_server": "jest --watchAll tests/",
+    "start": "ts-node server.js"
   },
   "dependencies": {
     "@bull-board/api": "^3.10.0",
