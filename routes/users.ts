@@ -49,15 +49,15 @@ router.put("/:id", async (req, res) => {
     return res.status(404).send(`not found: ${id}`);
   }
 
-  // if (!res.locals.user) {
-  //   // not logged in
-  //   const hash = req.query.hash;
-  //   if (!hash) {
-  //     return res.status(403).send("no hash");
-  //   } else if (hash != user.getHash()) {
-  //     return res.status(403).send("invalid hash");
-  //   }
-  // }
+  if (!res.locals.user) {
+    // not logged in
+    const hash = req.query.hash;
+    if (!hash) {
+      return res.status(403).send("no hash");
+    } else if (hash != user.getHash()) {
+      return res.status(403).send("invalid hash");
+    }
+  }
 
   wrap(user).assign(req.body);
   await userRepository.flush();
@@ -65,14 +65,26 @@ router.put("/:id", async (req, res) => {
   res.send(user);
 });
 
-router.get("/:id", auth(["admin", "speler"]), async (req, res) => {
+router.get("/:id", async (req, res) => {
   const userRepository = getRepository<User>("User");
-  const me = res.locals.user;
-  if (!me.isAdministrator() && me.id !== req.params.id) {
+  let me = res.locals.user;
+  const user = await userRepository.findOne({ id: req.params.id });
+
+  if (!res.locals.user) {
+    // not logged in
+    const hash = req.query.hash;
+    if (!hash) {
+      return res.status(403).send("no hash");
+    } else if (hash != user.getHash()) {
+      return res.status(403).send("invalid hash");
+    }
+    me = user;
+  }
+
+  if (!(me?.isAdministrator() || me?.id === req.params.id)) {
     return res.status(403).send("Access denied");
   }
 
-  const user = await userRepository.findOne({ id: req.params.id });
   if (!user) {
     return res.status(404).send("niet gevonden");
   }
