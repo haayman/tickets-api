@@ -14,7 +14,7 @@ export class Mailer {
 
   constructor(params = {}) {
     this.transporter = this.createTransport(params);
-    this.from = this.getRecipient(
+    this.setFrom(
       config.get("email.afzender_email"),
       config.get("email.afzender")
     );
@@ -36,7 +36,7 @@ export class Mailer {
   }
 
   setFrom(email: string, name?: string) {
-    this.from = this.getRecipient(email, name);
+    this.from = this.getRecipient(email, name, false);
     return this;
   }
 
