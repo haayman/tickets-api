@@ -7,7 +7,7 @@ import config from "config";
 import { existsSync } from "fs";
 import { resolve, extname } from "path";
 
-function findTemplate(path: string) {
+export function findTemplate(path: string) {
   const roots: string[] = config.get("email_roots");
   if (!extname(path)) {
     path += ".ejs";
