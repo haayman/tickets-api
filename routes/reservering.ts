@@ -171,8 +171,7 @@ router.put("/:id/ingenomen", auth(["kassa"]), async (req, res) => {
   }
 });
 
-router.get("/:id/resend", auth(["admin"]), async (req, res) => {
-  // const mixin = require("../models/Refund.mixin");
+router.get("/:id/resend", async (req, res) => {
   const em = RequestContext.getEntityManager();
   const repository = em.getRepository<Reservering>("Reservering");
 
