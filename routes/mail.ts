@@ -2,16 +2,12 @@
  * controller om iedereen een mail na te sturen
  */
 import express from "express";
-import config from "config";
 import auth from "../middleware/auth";
 import { Mailer } from "../components/Mailer";
 import ejs from "ejs";
 import { getRepository } from "../models/Repository";
-
+import { findTemplate } from "../components/ReserveringMail";
 import { Reservering, User } from "../models";
-import winston from "winston";
-import { ReserveringMail } from "../components/ReserveringMail";
-import { parseQuery } from "./helpers/parseReserveringQuery";
 
 const router = express.Router();
 
@@ -34,6 +30,7 @@ async function send(
       reservering,
       naam: reservering.naam,
       email: reservering.email,
+      findTemplate,
     })
   );
   mail
@@ -43,6 +40,7 @@ async function send(
 
   await mail.send({
     content,
+    findTemplate,
   });
 }
 
@@ -57,11 +55,13 @@ async function render(
       reservering,
       naam: reservering.naam,
       email: reservering.email,
+      findTemplate,
     })
   );
 
   const result = await mail.setTemplate("custom").render({
     content: content,
+    findTemplate,
   });
   return result;
 }
