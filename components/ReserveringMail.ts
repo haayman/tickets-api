@@ -61,6 +61,7 @@ export class ReserveringMail {
           reservering: reservering,
           format,
           nl,
+          findTemplate,
         })
       );
 
