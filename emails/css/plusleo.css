@@ -3,10 +3,14 @@ body,
   color: #ccc;
   /* color: #999; */
   background-color: #000;
-  background-image: url("images/stagelights.jpg");
+  background-image: url("/stagelights.jpg");
   background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+.v-main .container {
+  opacity: 0.95;
 }
 
 @media print {
