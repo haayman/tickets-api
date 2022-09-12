@@ -23,9 +23,9 @@ module.exports = {
     db: 0,
   },
 
-  payment: {
-    mollie_key: "test_DMVExh3QMmTN6tjUku59cjPzQJNhf8",
-  },
+  // payment: {
+  //   mollie_key: "",
+  // },
 
   jwtPrivateKey:
     "Dit is de sleutel waarmee de signon package wordt versleuteld",
