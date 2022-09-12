@@ -1,0 +1,92 @@
+body,
+.body {
+  color: #ccc;
+  /* color: #999; */
+  background-color: #000;
+  background-image: url("/stagelights.jpg");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.v-main .container {
+  opacity: 0.95;
+}
+
+@media print {
+  body,
+  .body {
+    color: #000;
+  }
+
+  .noprint {
+    display: none;
+  }
+}
+
+.card {
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  color: #ffb400;
+}
+
+a {
+  color: #ffd779;
+  color: #fff;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #ffb400;
+  text-decoration: underline;
+}
+
+a:active {
+  text-decoration: none;
+}
+
+/*--------------------------------------------------------------
+## Notebook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1280px) {
+  html {
+    font-size: 95%;
+  }
+}
+
+/*--------------------------------------------------------------
+## Netbook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1024px) {
+  html {
+    font-size: 90%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 960px) {
+  html {
+    font-size: 85%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 768px) {
+  html {
+    font-size: 80%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 480px) {
+  html {
+    font-size: 75%;
+  }
+}
