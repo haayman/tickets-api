@@ -27,19 +27,19 @@ export class Voorstelling {
   active: boolean;
 
   @Property()
-  url: string;
+  url?: string;
 
   @Property()
-  locatie: string;
+  locatie?: string;
 
   @Property()
-  opmerkingen: string;
+  opmerkingen?: string;
 
   @Property()
-  poster: string;
+  poster?: string;
 
   @Property()
-  thumbnail: string;
+  thumbnail?: string;
 
   @OneToMany(() => Prijs, (prijs) => prijs.voorstelling, {
     orphanRemoval: true,
