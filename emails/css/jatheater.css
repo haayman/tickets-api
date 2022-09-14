@@ -1,0 +1,101 @@
+:root {
+  --blue: #00a0ba;
+  --primary: #00a0ba;
+}
+
+body,
+.body {
+  color: #ccc;
+  /* color: #999; */
+  background-color: #000;
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+.v-main .container {
+  opacity: 0.95;
+}
+
+@media print {
+  body,
+  .body {
+    color: #000;
+  }
+
+  .noprint {
+    display: none;
+  }
+}
+
+.card {
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3 {
+  color: #00a0ba;
+}
+
+a {
+  color: #00a0ba;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #ffb400;
+  text-decoration: underline;
+}
+
+a:active {
+  text-decoration: none;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #00a0ba;
+  border-color: #00a0ba;
+}
+
+/*--------------------------------------------------------------
+## Notebook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1280px) {
+  html {
+    font-size: 95%;
+  }
+}
+
+/*--------------------------------------------------------------
+## Netbook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1024px) {
+  html {
+    font-size: 90%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 960px) {
+  html {
+    font-size: 85%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 768px) {
+  html {
+    font-size: 80%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 480px) {
+  html {
+    font-size: 75%;
+  }
+}
