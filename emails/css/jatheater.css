@@ -1,6 +1,6 @@
 :root {
-  --blue: #00a0ba;
-  --primary: #00a0ba;
+  --blue: #f0940a;
+  --primary: #f0940a;
 }
 
 body,
@@ -35,11 +35,11 @@ body,
 h1,
 h2,
 h3 {
-  color: #00a0ba;
+  color: #f0940a;
 }
 
 a {
-  color: #00a0ba;
+  color: #f0940a;
   text-decoration: none;
 }
 
@@ -54,8 +54,8 @@ a:active {
 
 .btn-primary {
   color: #fff;
-  background-color: #00a0ba;
-  border-color: #00a0ba;
+  background-color: #f0940a;
+  border-color: #f0940a;
 }
 
 /*--------------------------------------------------------------
