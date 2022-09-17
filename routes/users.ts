@@ -28,7 +28,6 @@ router.post("/", auth(["admin"]), async (req, res) => {
     }
 
     user = userRepository.create(req.body);
-    await user.hashPassword();
     await userRepository.persistAndFlush(user);
     res.json(user);
   } catch (e) {
@@ -60,7 +59,7 @@ router.put("/:id", async (req, res) => {
   }
 
   wrap(user).assign(req.body);
-  await userRepository.flush();
+  await userRepository.persistAndFlush(user);
 
   res.send(user);
 });

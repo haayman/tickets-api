@@ -8,6 +8,7 @@ import {
   BeforeUpdate,
   Entity,
   Enum,
+  EventArgs,
   Filter,
   Index,
   ManyToOne,
@@ -67,19 +68,16 @@ export class User {
    * @param {string} password
    * @returns {Promise}
    */
-  checkPassword(password) {
-    return bcrypt.compare(password, this.password);
-  }
-
-  @OnInit()
-  loadPassword() {
-    this.tmpPassword = this.password;
+  async checkPassword(password) {
+    const valid = await bcrypt.compare(password, this.password);
+    return valid;
   }
 
   @BeforeUpdate()
-  async testPassword() {
-    if (this.tmpPassword !== this.password) {
-      this.hashPassword();
+  @BeforeCreate()
+  async testPassword(args: EventArgs<this>) {
+    if (args.changeSet?.payload?.password) {
+      await this.hashPassword();
     }
   }
 
@@ -88,7 +86,7 @@ export class User {
 
     try {
       const salt = await bcrypt.genSalt(SALT_FACTOR);
-      const hash = bcrypt.hashSync(this.password, salt);
+      const hash = await bcrypt.hashSync(this.password, salt);
 
       this.password = hash;
     } catch (e) {
