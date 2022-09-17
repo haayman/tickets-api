@@ -18,7 +18,7 @@ router.post("/", async (req, res) => {
   });
   if (!user) return sendError();
 
-  const verified = user.checkPassword(req.body.password);
+  const verified = await user.checkPassword(req.body.password);
   if (!verified) return sendError();
 
   const token = user.getAuthToken();
