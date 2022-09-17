@@ -5,7 +5,7 @@
       "path": "."
     },
     {
-      "path": "../kaarten.jatheater/"
+      "path": "../client/"
     }
   ],
   "settings": {}
