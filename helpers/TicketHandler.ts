@@ -161,6 +161,8 @@ export class TicketHandler {
             `${Ticket.description(paid, " en ")} te koop zetten`
           );
           paid.forEach((ticket) => {
+            // zet saldo terug op 0 om te voorkomen dat ze meteen terugbetaald krijgen
+            ticket.saldo = 0;
             ticket.tekoop = true;
           });
         }
