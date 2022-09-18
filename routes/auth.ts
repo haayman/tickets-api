@@ -9,7 +9,7 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   const userRepository = getRepository<User>("User");
   const sendError = function (message = "Onbekende gebruiker of wachtwoord") {
-    return res.status(400).send(message);
+    return res.status(401).send({ message });
   };
 
   // standaard wordt password niet opgehaald. Doe nu maar wel
