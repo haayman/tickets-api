@@ -1,18 +1,22 @@
 <%- include(findTemplate('partials/header'))%>
 <tr>
   <td>
-    <table class="card row no-print">
+    <table class="card row">
       <tr class="card-body">
         <td>
-          <p>Hallo <%= reservering.naam %></p>
-          <p>Je bestelling is gewijzigd</p>
+          <p>
+            Hallo <%= reservering.naam %><br /><br />
+            We hebben je betaling ontvangen
+          </p>
         </td>
       </tr>
     </table>
   </td>
 </tr>
+
 <%- include(findTemplate('partials/voorstelling')) %> <%-
 include(findTemplate('partials/qrcode'))%> <%-
-include(findTemplate('partials/reservering'))%> <%-
+include(findTemplate('partials/reservering')) %> <%-
 include(findTemplate('partials/bewaar'))%> <%-
+include(findTemplate('partials/blijf-op-de-hoogte'))%> <%-
 include(findTemplate('partials/footer'))%>
