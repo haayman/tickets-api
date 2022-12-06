@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@bull-board/api": "^3.10.0",
-    "@bull-board/express": "^3.10.0",
+    "@bull-board/express": "^3.11.1",
     "@mikro-orm/core": "^4.5.9",
     "@mikro-orm/mysql": "^4.5.9",
     "@mikro-orm/reflection": "^4.5.9",
@@ -31,7 +31,7 @@
     "ejs": "^3.0.1",
     "ejs-lint": "^1.2.1",
     "email-templates": "^8.0.8",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "express-async-errors": "^3.1.1",
     "helmet": "^5.0.1",
     "iban": "0.0.14",
