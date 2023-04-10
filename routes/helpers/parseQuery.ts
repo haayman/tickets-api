@@ -25,6 +25,10 @@ export function parseQuery<T>(
   let findOptions: FindOptions<T> = { populate: allowed };
 
   if (params.include) {
+    if (!Array.isArray(params.include)) {
+      params.include = [params.include];
+    }
+
     findOptions.populate = intersect(params.include, allowed);
   }
 

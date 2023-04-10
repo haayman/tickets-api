@@ -7,6 +7,9 @@ export function parseQuery<T>(allowed: string[], params: Params<T>) {
   if (!params.include) {
     params.include = ["tickets"];
   }
+  if (!Array.isArray(params.include)) {
+    params.include = [params.include];
+  }
   if (params.include?.includes("tickets")) {
     params.include = params.include
       .filter((i) => i !== "tickets")
