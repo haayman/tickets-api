@@ -54,7 +54,7 @@ export default async function (): Promise<void> {
         cacheDir: tmpdir(),
       },
     });
-    winston.info("db set");
+    winston.info(`db set ${dbName}`);
     Container.set("em", orm.em);
   } catch (e) {
     throw e;
