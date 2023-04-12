@@ -53,5 +53,5 @@ module.exports = {
   ],
 
   // aantal dagen
-  teruggave_termijn: 7,
+  teruggave_termijn: 14,
 };

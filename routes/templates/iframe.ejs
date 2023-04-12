@@ -61,7 +61,7 @@
         </div>
         <%}%>
 
-        <div class="row">
+<!--        <div class="row">
           <label>Wachtlijst</label>
           <div>
             Aarzel niet om een plaats op de wachtlijst te nemen. <br />
@@ -69,7 +69,7 @@
             komen
           </div>
         </div>
-
+-->
         <div class="row">
           <table class="table ml-0">
             <thead>
@@ -88,7 +88,7 @@
               <tr>
                 <td>
                   <a
-                    href="/reserveren/?uitvoeringId=<%=uitvoering.id%>"
+                    href="/voorstelling/<%=voorstelling.id%>?uitvoeringId=<%=uitvoering.id%>"
                     target="_top"
                   >
                     <%=format(uitvoering.aanvang, "EEEE d MMMM yyyy",
@@ -98,7 +98,7 @@
                 <td><%=uitvoering.extra_text%></td>
                 <td>
                   <a
-                    href="/reserveren/?uitvoeringId=<%=uitvoering.id%>"
+                    href="/voorstelling/<%=voorstelling.id%>?uitvoeringId=<%=uitvoering.id%>"
                     target="_top"
                   >
                     <%=format(uitvoering.aanvang, "HH:mm", {locale:nl})%>
