@@ -3,6 +3,8 @@ import express from "express";
 import { Prijs, Uitvoering, Voorstelling } from "../models";
 import { getRepository } from "../models/Repository";
 import { wrap } from "@mikro-orm/core";
+import Container from "typedi";
+import { Queue } from "bullmq";
 
 const router = express.Router();
 
@@ -73,6 +75,11 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
   wrap(voorstelling).assign(req.body, { updateNestedEntities: false });
 
   await voorstellingRepository.persistAndFlush(voorstelling);
+
+  const queue: Queue = Container.get("verwerkWachtlijstQueue");
+  for (const uitvoering of voorstelling.uitvoeringen) {
+    await queue.add("verwerkWachtlijst", uitvoering.id);
+  }
 
   res.send(voorstelling);
 });
