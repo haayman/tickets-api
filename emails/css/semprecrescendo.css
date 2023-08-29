@@ -1,0 +1,85 @@
+:root {
+  --blue: #4169e3;
+  --primary: ##030303;
+}
+
+.v-main .container {
+  opacity: 0.95;
+}
+
+@media print {
+  body,
+  .body {
+    color: black;
+  }
+
+  .noprint {
+    display: none;
+  }
+}
+
+.card {
+  flex-direction: column;
+}
+
+a {
+  color: #030303;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #030303;
+  text-decoration: underline;
+}
+
+a:active {
+  text-decoration: none;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #4169e3;
+  border-color: 4169e3;
+}
+
+/*--------------------------------------------------------------
+## Notebook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1280px) {
+  html {
+    font-size: 95%;
+  }
+}
+
+/*--------------------------------------------------------------
+## Netbook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1024px) {
+  html {
+    font-size: 90%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 960px) {
+  html {
+    font-size: 85%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 768px) {
+  html {
+    font-size: 80%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 480px) {
+  html {
+    font-size: 75%;
+  }
+}
