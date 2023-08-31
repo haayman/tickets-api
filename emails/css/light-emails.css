@@ -55,7 +55,7 @@ body {
   font-size: 0.9375rem;
   font-weight: 400;
   line-height: 1.5;
-  color: rgb(70, 70, 70);
+  color: #464646;
   text-align: left;
   background-color: rgb(255, 255, 255);
 }
@@ -546,7 +546,7 @@ table.p-3 td {
 .card-header {
   padding: 0.75rem 1.25rem;
   margin-bottom: 0;
-  background-color: #adb5bd;
+  background-color: #ece5f1;
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
 }
 
