@@ -501,7 +501,7 @@ table.p-3 td {
 
 .card {
   word-wrap: break-word;
-  background-color: rgb(255, 251, 254);
+  background-color: #f7f7f7;
   background-clip: border-box;
   border: 1px solid rgba(0, 0, 0, 0.125);
   border-radius: 0.25rem;
