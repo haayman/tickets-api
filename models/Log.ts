@@ -39,15 +39,21 @@ export class Log {
   }
 
   static addMessage(reservering: Reservering, message: string) {
-    const trace = stackTrace.get();
-    const caller = trace[1];
+    try {
+      const trace = stackTrace.get();
+      const caller = trace[1];
 
-    const log = new Log(
-      message,
-      `${basename(caller.getFileName())}(${caller.getLineNumber()})`
-    );
+      const log = new Log(
+        message,
+        `${basename(caller.getFileName())}(${caller.getLineNumber()})`
+      );
 
-    reservering.logs.add(log);
-    winston.info(`${reservering} ${message}`);
+      reservering.logs.add(log);
+      winston.info(`${reservering} ${message}`);
+    } catch (e) {
+      // geen error als het loggen mislukt
+      winston.info(message);
+      winston.error(e);
+    }
   }
 }
