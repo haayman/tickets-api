@@ -1,6 +1,6 @@
 :root {
-  --blue: #f0940a;
-  --primary: #f0940a;
+  --blue: #f47e2c;
+  --primary: #f47e2c;
 }
 
 body,
@@ -35,16 +35,16 @@ body,
 h1,
 h2,
 h3 {
-  color: #f0940a;
+  color: #f47e2c;
 }
 
 a {
-  color: #f0940a;
+  color: #f47e2c;
   text-decoration: none;
 }
 
 a:hover {
-  color: #ffb400;
+  color: #f0940a;
   text-decoration: underline;
 }
 
@@ -54,8 +54,8 @@ a:active {
 
 .btn-primary {
   color: #fff;
-  background-color: #f0940a;
-  border-color: #f0940a;
+  background-color: #f47e2c;
+  border-color: #f47e2c;
 }
 
 /*--------------------------------------------------------------

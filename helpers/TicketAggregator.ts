@@ -4,6 +4,7 @@
  * intern worden losse tickets gehanteerd
  * Deze class verzamelt alle losse tickets en maakt er aggregates van
  */
+import winston from "winston";
 import { Prijs, Reservering, Ticket } from "../models";
 
 export type TicketDTO = {
@@ -16,13 +17,15 @@ export class TicketAggregator {
   constructor(public reservering: Reservering) {
     this.aggregates = {};
 
-    if (reservering.uitvoering) {
+    if (reservering.uitvoering?.voorstelling?.prijzen) {
       for (const prijs of reservering.uitvoering.voorstelling.prijzen) {
         this.aggregates[prijs.id] = new Aggregate(
           prijs,
           reservering.tickets.getItems()
         );
       }
+    } else {
+      winston.error("geen prijzen bekend");
     }
   }
 

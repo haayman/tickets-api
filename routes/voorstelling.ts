@@ -3,13 +3,17 @@ import express from "express";
 import { Prijs, Uitvoering, Voorstelling } from "../models";
 import { getRepository } from "../models/Repository";
 import { wrap } from "@mikro-orm/core";
+import Container from "typedi";
+import { Queue } from "bullmq";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
+  const filters = req.query?.all ? false : { active: true };
   const repository = getRepository<Voorstelling>("Voorstelling");
   const voorstellingen = await repository.findAll({
     populate: ["uitvoeringen", "prijzen"],
+    filters,
   });
   res.send(voorstellingen);
 });
@@ -20,6 +24,7 @@ router.get("/:id", async (req, res) => {
     { id: +req.params.id },
     {
       populate: ["uitvoeringen", "prijzen"],
+      filters: false,
     }
   );
   if (!voorstelling) {
@@ -53,10 +58,10 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
     return res.status(400).send("no id");
   }
 
-  let voorstelling = await voorstellingRepository.findOne(id, [
-    "prijzen",
-    "uitvoeringen",
-  ]);
+  let voorstelling = await voorstellingRepository.findOne(id, {
+    populate: ["prijzen", "uitvoeringen"],
+    filters: false,
+  });
   if (!voorstelling) {
     return res.status(404).send(`not found: ${id}`);
   }
@@ -70,6 +75,11 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
   wrap(voorstelling).assign(req.body, { updateNestedEntities: false });
 
   await voorstellingRepository.persistAndFlush(voorstelling);
+
+  const queue: Queue = Container.get("verwerkWachtlijstQueue");
+  for (const uitvoering of voorstelling.uitvoeringen) {
+    await queue.add("verwerkWachtlijst", uitvoering.id);
+  }
 
   res.send(voorstelling);
 });

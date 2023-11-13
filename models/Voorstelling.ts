@@ -2,6 +2,7 @@ import {
   Cascade,
   Collection,
   Entity,
+  Filter,
   Index,
   ManyToOne,
   OneToMany,
@@ -12,6 +13,11 @@ import {
 import { Uitvoering } from "./Uitvoering";
 import { Prijs } from "./Prijs";
 
+@Filter({
+  name: "active",
+  cond: { active: true },
+  default: true,
+})
 @Entity({ tableName: "voorstellingen" })
 export class Voorstelling {
   @PrimaryKey()
@@ -24,7 +30,7 @@ export class Voorstelling {
   description!: string;
 
   @Property()
-  active: boolean;
+  active: boolean = true;
 
   @Property()
   url?: string;

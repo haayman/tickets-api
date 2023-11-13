@@ -27,29 +27,34 @@ export class ReserveringMail {
     subject: string,
     params: any = {}
   ) {
-    const r = reservering;
+    try {
+      const r = reservering;
 
-    const mail = new Mailer();
-    mail.setTemplate("index").setTo(r.email, r.naam).setSubject(subject);
+      const mail = new Mailer();
+      mail.setTemplate("index").setTo(r.email, r.naam).setSubject(subject);
 
-    if (params.to) {
-      mail.setTo(params.to);
+      if (params.to) {
+        mail.setTo(params.to);
+      }
+
+      await mail.send(
+        Object.assign({}, params, {
+          template: templateName,
+          reservering: r,
+          format,
+          findTemplate,
+          nl,
+        })
+      );
+      winston.info(`Mail '${subject}' verzonden`, {
+        to: reservering.email,
+      });
+      winston.info(reservering.getMailUrl(templateName));
+      Log.addMessage(r, `Mail '${subject}' verzonden`);
+    } catch (e) {
+      // zorg dat mailer nooit een error geeft die het proces stopt
+      winston.error(e);
     }
-
-    await mail.send(
-      Object.assign({}, params, {
-        template: templateName,
-        reservering: r,
-        format,
-        findTemplate,
-        nl,
-      })
-    );
-    winston.info(`Mail '${subject}' verzonden`, {
-      to: reservering.email,
-    });
-    winston.info(reservering.getMailUrl(templateName));
-    Log.addMessage(r, `Mail '${subject}' verzonden`);
   }
 
   static async render(reservering, templateName, params = {}) {

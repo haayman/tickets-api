@@ -1,15 +1,18 @@
 import { Uitvoering } from "../models";
 import { getRepository } from "../models/Repository";
 import { QueryOrder } from "@mikro-orm/core";
+import { parseQuery } from "./helpers/parseQuery";
 import express from "express";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   const repository = getRepository<Uitvoering>("Uitvoering");
-  const uitvoeringen = await repository.findAll({
-    orderBy: { aanvang: QueryOrder.ASC },
-  });
+  let params = req.query;
+  params.orderBy = { aanvang: QueryOrder.ASC };
+  const query = parseQuery<Uitvoering>(["voorstelling"], params);
+
+  const uitvoeringen = await repository.findAll(query);
   res.send(uitvoeringen);
 });
 
