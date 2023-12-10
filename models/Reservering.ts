@@ -192,7 +192,7 @@ export class Reservering {
       return undefined;
     }
     const today = new Date();
-    const days = config.get("teruggave_termijn");
+    const days = config.get<number>("teruggave_termijn");
     const diff = differenceInCalendarDays(this.uitvoering.aanvang, today);
 
     return diff > days;
