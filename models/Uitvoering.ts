@@ -139,24 +139,24 @@ export class Uitvoering {
     const wachtlijst = this.wachtlijst;
     const vrije_plaatsen = this.vrije_plaatsen;
     const tekoop = this.te_koop;
-    let retval: string;
+    const retval: string[] = [];
 
     if (vrije_plaatsen) {
-      retval = `<span>${vrije_plaatsen} vrije plaats${
+      retval.push( `<span>${vrije_plaatsen} vrije plaats${
         vrije_plaatsen == 1 ? "" : "en"
-      }</span>`;
+      }</span>`);
     } else {
-      retval = `<b>Uitverkocht</b>`;
+      retval.push(`<b>Uitverkocht</b>`);
     }
 
     if (!vrije_plaatsen || wachtlijst) {
-      retval += ` <span>wachtlijst: ${wachtlijst || 0}</span>`;
+      retval.push( ` <span>wachtlijst: ${wachtlijst || 0}</span>`);
     }
     if (tekoop) {
-      retval += ` te koop: ${tekoop}`;
+      retval.push( ` te koop: ${tekoop}`);
     }
 
-    return retval;
+    return retval.join(", ");
   }
 
   countTickets(options: {
