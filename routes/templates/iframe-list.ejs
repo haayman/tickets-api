@@ -31,18 +31,14 @@
       </div>
       <%}%>
       <div class="card ml-0 rounded-0">
-        <div class="row">
-          <h3>Kies een voorstelling</h3>
-        </div>
+        <div class="row">Kies een voorstelling</div>
         <div class="row">
           <% voorstellingen.forEach((voorstelling) => { %>
           <div class="col">
-            <a
-              href="/iframe/?id=<%=voorstelling.id%>"
-              target="_top"
-              class="btn btn-primary"
-              ><%=voorstelling.title%></a
-            >
+            <a href="/iframe/?id=<%=voorstelling.id%>" class="btn btn-primary">
+              <img src="<%=voorstelling.thumbnail%>" height="100" /><br />
+              <%=voorstelling.title%>
+            </a>
           </div>
           <% }) %>
         </div>
