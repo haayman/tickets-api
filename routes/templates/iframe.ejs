@@ -59,9 +59,8 @@
           <label>Opmerkingen</label>
           <div><%-voorstelling.opmerkingen%></div>
         </div>
-        <%}%>
-
-        <!--        <div class="row">
+        <%}%> <% if( displayWachtrij ) { %>
+        <div class="row">
           <label>Wachtlijst</label>
           <div>
             Aarzel niet om een plaats op de wachtlijst te nemen. <br />
@@ -69,7 +68,8 @@
             komen
           </div>
         </div>
--->
+        <%}%>
+
         <div class="row">
           <table class="table ml-0">
             <thead>
