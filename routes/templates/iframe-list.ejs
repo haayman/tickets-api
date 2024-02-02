@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <title>Kaarten</title>
+    <!-- Required meta tags -->
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <link rel="stylesheet" type="text/css" href="/css/darkly.css" />
+    <link rel="stylesheet" type="text/css" href="/css/iframe.css" />
+    <style>
+      label {
+        min-width: 10em;
+      }
+
+      .row {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 1em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div>
+      <% if( env.NODE_ENV !== 'production') { %>
+      <div class="alert alert-warning rounded-0 mb-0">
+        Dit is een test omgeving
+      </div>
+      <%}%>
+      <div class="card ml-0 rounded-0">
+        <div class="row">
+          <h3>Kies een voorstelling</h3>
+        </div>
+        <div class="row">
+          <% voorstellingen.forEach((voorstelling) => { %>
+          <div class="col">
+            <a
+              href="/iframe/?id=<%=voorstelling.id%>"
+              target="_top"
+              class="btn btn-primary"
+              ><%=voorstelling.title%></a
+            >
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
