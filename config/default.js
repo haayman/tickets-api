@@ -18,7 +18,7 @@ module.exports = {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     port: 6379,
-    host: "linux",
+    host: "localhost",
     family: 4,
     db: 0,
   },
