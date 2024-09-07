@@ -21,14 +21,6 @@
         padding: 1em;
       }
     </style>
-    <script>
-      // zet main domain
-      var domain = window.location.hostname;
-      var parts = domain.split(".");
-      // remove all but the last two elements
-      parts.splice(0, parts.length - 2);
-      document.domain = parts.join(".");
-    </script>
   </head>
 
   <body>
@@ -112,7 +104,10 @@
           </table>
         </div>
         <div class="row">
-          <a href="/voorstelling/<%=voorstelling.id%>" target="_top" class="btn btn-primary"
+          <a
+            href="/voorstelling/<%=voorstelling.id%>"
+            target="_top"
+            class="btn btn-primary"
             >Reserveren
           </a>
         </div>
