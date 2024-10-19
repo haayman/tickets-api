@@ -1,0 +1,95 @@
+:root {
+  --blue: #4169e3;
+  --primary: ##030303;
+}
+
+.v-main .container {
+  opacity: 0.95;
+}
+
+/* .card-header {
+  background-color: #f9f8ff;
+} */
+
+@media print {
+  body,
+  .body {
+    color: rgb(70, 70, 70);
+  }
+
+  .noprint {
+    display: none;
+  }
+}
+
+.card {
+  flex-direction: column;
+}
+
+.btn {
+  /* styling van de vuetify button */
+  border-radius: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.0892857143em;
+}
+
+a {
+  color: #030303;
+}
+
+a:hover {
+  color: #030303;
+  text-decoration: underline;
+}
+
+a:active {
+  text-decoration: none;
+}
+
+.btn-primary {
+  color: #fff;
+  background-color: #4169e3;
+  border-color: #4169e3;
+}
+
+/*--------------------------------------------------------------
+## Notebook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1280px) {
+  html {
+    font-size: 95%;
+  }
+}
+
+/*--------------------------------------------------------------
+## Netbook
+--------------------------------------------------------------*/
+@media only screen and (max-width: 1024px) {
+  html {
+    font-size: 90%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 960px) {
+  html {
+    font-size: 85%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 768px) {
+  html {
+    font-size: 80%;
+  }
+}
+/*--------------------------------------------------------------
+## iPad
+--------------------------------------------------------------*/
+@media only screen and (max-width: 480px) {
+  html {
+    font-size: 75%;
+  }
+}
