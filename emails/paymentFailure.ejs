@@ -7,14 +7,14 @@
           Hallo <%= reservering.naam %><br />
           <br />
           De betaling voor je bestelling lijkt nog niet gelukt<br />
-          Zou je het nog een keer willen proberen?<br />
+          Zou je het nog een keer willen proberen?<br /><br />
           <a
             class="btn btn-primary text-center"
             href="<%= reservering.getBetalingUrl() %>"
             >Betalen</a
           >
           <br /><br />
-          Als je al betaald hebt, klik dan op <br />
+          Als je al betaald hebt, klik dan op <br /><br />
           <a
             class="btn btn-primary text-center"
             href="<%= reservering.getResendUrl()%>"
