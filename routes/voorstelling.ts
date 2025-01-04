@@ -1,10 +1,11 @@
 import auth from "../middleware/auth";
 import express from "express";
-import { Prijs, Uitvoering, Voorstelling } from "../models";
+import { Prijs, Reservering, Uitvoering, Voorstelling } from "../models";
 import { getRepository } from "../models/Repository";
 import { wrap } from "@mikro-orm/core";
 import Container from "typedi";
 import { Queue } from "bullmq";
+import { EntityManager } from "@mikro-orm/mysql";
 
 const router = express.Router();
 
@@ -90,7 +91,16 @@ router.delete("/:id", auth(["admin"]), async (req, res) => {
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   }
+
+  const em = Container.get("em") as EntityManager;
+  const connection = em.getConnection();
+  await connection.execute(
+    "delete from logs where reservering_id in (select id from reserveringen where uitvoering_id in (select id from uitvoeringen where voorstelling_id = ?))",
+    [voorstelling.id]
+  );
   await repository.removeAndFlush(voorstelling);
+  await connection.execute("delete from logs where reservering_id IS NULL");
+  await em.flush();
 
   res.send({ status: "OK" });
 });
