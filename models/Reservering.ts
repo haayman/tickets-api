@@ -89,13 +89,12 @@ export class Reservering {
   }
 
   async finishLoading() {
+    const promises = [
+      ...this.payments.getItems().map((p) => p.finishLoading()),
+      ...this.tickets.getItems().map((t) => t.finishLoading()),
+    ];
     try {
-      for (const payment of this.payments.getItems()) {
-        await payment.finishLoading();
-      }
-      for (const ticket of this.tickets.getItems()) {
-        await ticket.finishLoading();
-      }
+      await Promise.all(promises);
     } catch (e) {
       throw e;
     }
