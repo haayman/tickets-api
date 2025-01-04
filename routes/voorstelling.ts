@@ -86,14 +86,21 @@ router.put("/:id", auth(["admin"]), async (req, res) => {
 });
 
 router.delete("/:id", auth(["admin"]), async (req, res) => {
+  const em = Container.get("em") as EntityManager;
+  const connection = em.getConnection();
+
   const repository = getRepository<Voorstelling>("Voorstelling");
-  const voorstelling = await repository.findOne(+req.params.id);
+  const voorstelling = await em.findOne(
+    Voorstelling,
+    {
+      id: +req.params.id,
+    },
+    { filters: false } // niet-actieve voorstellingen kunnen ook verwijderd worden
+  );
   if (!voorstelling) {
     return res.status(404).send("niet gevonden");
   }
 
-  const em = Container.get("em") as EntityManager;
-  const connection = em.getConnection();
   await connection.execute(
     "delete from logs where reservering_id in (select id from reserveringen where uitvoering_id in (select id from uitvoeringen where voorstelling_id = ?))",
     [voorstelling.id]
