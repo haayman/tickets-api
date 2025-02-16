@@ -42,7 +42,7 @@
     "morgan": "^1.9.1",
     "node-redis-pubsub": "^5.0.0",
     "nodemailer": "^6.4.2",
-    "nodemon": "^2.0.2",
+    "nodemon": "^2.0.20",
     "password-hash-and-salt": "^0.1.4",
     "qr-image": "^3.2.0",
     "serve-favicon": "^2.5.0",
