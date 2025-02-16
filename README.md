@@ -1,6 +1,6 @@
 # Tickets API
 
-Deze repo is de backend die hoort bij https://github.com/haayman/tickets-client
+Deze repo is de backend die hoort bij https://github.com/haayman/tickets-frontend
 
 Het ticket systeem is in eerste instantie geschreven voor de theatergroep PlusLeo https://plusleo.nl die elk jaar een voorstelling heeft met meerdere uitvoeringen
 
