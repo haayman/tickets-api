@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# technical stack
+- nodejs for the backend
+- nuxt for the frontend
+- mysql database with triggers. Remember which triggers and procedures are used when writing services and models. So if for example something is updated by a trigger, don't write any other code for the update
+- seperate databases for dev, test and prod

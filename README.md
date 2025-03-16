@@ -1,3 +1,100 @@
+# PlusLeo Reserveringen API
+
+Een NestJS applicatie voor het beheren van theatervoorstellingen en reserveringen.
+
+## Vereisten
+
+- Node.js (>= 18.14.2)
+- MySQL (>= 8.0)
+- Redis (>= 6.0)
+
+## Installatie
+
+1. Clone de repository:
+```bash
+git clone [repository-url]
+cd plusleo-reserveren-server
+```
+
+2. Installeer dependencies:
+```bash
+npm install
+```
+
+3. Kopieer het voorbeeld configuratiebestand:
+```bash
+cp .env.example .env
+```
+
+4. Pas de configuratie aan in `.env`
+
+5. Start de database en Redis:
+```bash
+# Start MySQL en Redis volgens jouw systeem instructies
+```
+
+6. Maak de database aan:
+```bash
+mysql -u root -p
+CREATE DATABASE plusleo;
+```
+
+7. Voer de database migraties uit:
+```bash
+npm run migration:up
+```
+
+## Development
+
+Start de applicatie in development mode:
+```bash
+npm run start:dev
+```
+
+## Tests
+
+Run de tests:
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+
+## API Documentatie
+
+De API documentatie is beschikbaar via Swagger op `/api` wanneer de applicatie draait.
+
+## Database Migraties
+
+- Maak een nieuwe migratie: `npm run migration:create`
+- Voer migraties uit: `npm run migration:up`
+- Rollback migratie: `npm run migration:down`
+- Update schema: `npm run schema:update`
+- Reset database: `npm run schema:fresh`
+
+## Project Structuur
+
+```
+src/
+  ├── main.ts                 # Application entry point
+  ├── app.module.ts           # Root module
+  ├── config/                 # Configuration modules
+  ├── modules/                # Feature modules
+  │   ├── auth/              # Authentication module
+  │   ├── users/             # Users module
+  │   ├── reservations/      # Reservations module
+  │   └── voorstellingen/    # Voorstellingen module
+  ├── shared/                # Shared resources
+  └── database/              # Database related files
+      ├── entities/
+      └── migrations/
+```
+
 # Tickets API
 
 Deze repo is de backend die hoort bij https://github.com/haayman/tickets-frontend
