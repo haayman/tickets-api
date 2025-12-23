@@ -47,10 +47,10 @@ module.exports = {
     subject_prefix: "[Ja!Theater]",
   },
 
-  email_roots: [
-    path.resolve(__dirname, "..", "emails", "jatheater"),
-    path.resolve(__dirname, "..", "emails"),
-  ],
+  // email_roots: [
+  //   path.resolve(__dirname, "..", "emails", "jatheater"),
+  //   path.resolve(__dirname, "..", "emails"),
+  // ],
 
   // aantal dagen
   teruggave_termijn: 14,

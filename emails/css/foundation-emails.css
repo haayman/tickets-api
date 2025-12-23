@@ -12,7 +12,7 @@ body {
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   margin: 0;
-  Margin: 0;
+  margin: 0;
   padding: 0;
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;
@@ -34,7 +34,7 @@ body {
 
 #backgroundTable {
   margin: 0;
-  Margin: 0;
+  margin: 0;
   padding: 0;
   width: 100% !important;
   line-height: 100% !important;
@@ -61,7 +61,7 @@ a img {
 
 p {
   margin: 0 0 0 10px;
-  Margin: 0 0 0 10px;
+  margin: 0 0 0 10px;
 }
 
 table {
@@ -99,7 +99,7 @@ table.body {
 table.container {
   width: 580px;
   margin: 0 auto;
-  Margin: 0 auto;
+  margin: 0 auto;
   text-align: inherit;
 }
 
@@ -122,7 +122,7 @@ td.column,
 th.columns,
 th.column {
   margin: 0 auto;
-  Margin: 0 auto;
+  margin: 0 auto;
   padding-left: 16px;
   padding-bottom: 16px;
 }
@@ -181,8 +181,8 @@ th.large-1.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-1,
-.collapse>tbody>tr>th.large-1 {
+.collapse > tbody > tr > td.large-1,
+.collapse > tbody > tr > th.large-1 {
   padding-right: 0;
   padding-left: 0;
   width: 48.33333px;
@@ -224,8 +224,8 @@ th.large-2.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-2,
-.collapse>tbody>tr>th.large-2 {
+.collapse > tbody > tr > td.large-2,
+.collapse > tbody > tr > th.large-2 {
   padding-right: 0;
   padding-left: 0;
   width: 96.66667px;
@@ -267,8 +267,8 @@ th.large-3.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-3,
-.collapse>tbody>tr>th.large-3 {
+.collapse > tbody > tr > td.large-3,
+.collapse > tbody > tr > th.large-3 {
   padding-right: 0;
   padding-left: 0;
   width: 145px;
@@ -310,8 +310,8 @@ th.large-4.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-4,
-.collapse>tbody>tr>th.large-4 {
+.collapse > tbody > tr > td.large-4,
+.collapse > tbody > tr > th.large-4 {
   padding-right: 0;
   padding-left: 0;
   width: 193.33333px;
@@ -353,8 +353,8 @@ th.large-5.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-5,
-.collapse>tbody>tr>th.large-5 {
+.collapse > tbody > tr > td.large-5,
+.collapse > tbody > tr > th.large-5 {
   padding-right: 0;
   padding-left: 0;
   width: 241.66667px;
@@ -396,8 +396,8 @@ th.large-6.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-6,
-.collapse>tbody>tr>th.large-6 {
+.collapse > tbody > tr > td.large-6,
+.collapse > tbody > tr > th.large-6 {
   padding-right: 0;
   padding-left: 0;
   width: 290px;
@@ -439,8 +439,8 @@ th.large-7.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-7,
-.collapse>tbody>tr>th.large-7 {
+.collapse > tbody > tr > td.large-7,
+.collapse > tbody > tr > th.large-7 {
   padding-right: 0;
   padding-left: 0;
   width: 338.33333px;
@@ -482,8 +482,8 @@ th.large-8.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-8,
-.collapse>tbody>tr>th.large-8 {
+.collapse > tbody > tr > td.large-8,
+.collapse > tbody > tr > th.large-8 {
   padding-right: 0;
   padding-left: 0;
   width: 386.66667px;
@@ -525,8 +525,8 @@ th.large-9.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-9,
-.collapse>tbody>tr>th.large-9 {
+.collapse > tbody > tr > td.large-9,
+.collapse > tbody > tr > th.large-9 {
   padding-right: 0;
   padding-left: 0;
   width: 435px;
@@ -568,8 +568,8 @@ th.large-10.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-10,
-.collapse>tbody>tr>th.large-10 {
+.collapse > tbody > tr > td.large-10,
+.collapse > tbody > tr > th.large-10 {
   padding-right: 0;
   padding-left: 0;
   width: 483.33333px;
@@ -611,8 +611,8 @@ th.large-11.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-11,
-.collapse>tbody>tr>th.large-11 {
+.collapse > tbody > tr > td.large-11,
+.collapse > tbody > tr > th.large-11 {
   padding-right: 0;
   padding-left: 0;
   width: 531.66667px;
@@ -654,8 +654,8 @@ th.large-12.last {
   padding-right: 16px;
 }
 
-.collapse>tbody>tr>td.large-12,
-.collapse>tbody>tr>th.large-12 {
+.collapse > tbody > tr > td.large-12,
+.collapse > tbody > tr > th.large-12 {
   padding-right: 0;
   padding-left: 0;
   width: 580px;
@@ -910,7 +910,7 @@ img.float-right {
 img.float-center,
 img.text-center {
   margin: 0 auto;
-  Margin: 0 auto;
+  margin: 0 auto;
   float: none;
   text-align: center;
 }
@@ -919,7 +919,7 @@ table.float-center,
 td.float-center,
 th.float-center {
   margin: 0 auto;
-  Margin: 0 auto;
+  margin: 0 auto;
   float: none;
   text-align: center;
 }
@@ -936,7 +936,6 @@ th.float-center {
 }
 
 @media only screen and (max-width: 596px) {
-
   table.body table.container .hide-for-large,
   table.body table.container .row.hide-for-large {
     display: table !important;
@@ -962,7 +961,7 @@ h6 {
   font-family: Helvetica, Arial, sans-serif;
   font-weight: normal;
   margin-bottom: 10px;
-  Margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 h1 {
@@ -1000,7 +999,7 @@ th {
 
 p {
   margin-bottom: 10px;
-  Margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 p.lead {
@@ -1020,7 +1019,7 @@ table.hr th {
   border-bottom: 1px solid #0a0a0a;
   border-left: 0;
   margin: 20px auto;
-  Margin: 20px auto;
+  margin: 20px auto;
   clear: both;
 }
 
@@ -1029,9 +1028,9 @@ table.hr th {
   line-height: 1;
 }
 
-p+.stat {
+p + .stat {
   margin-top: -16px;
-  Margin-top: -16px;
+  margin-top: -16px;
 }
 
 table.button.radius table td {
@@ -1201,7 +1200,7 @@ table.button.warning:hover table a {
 
 table.callout {
   margin-bottom: 16px;
-  Margin-bottom: 16px;
+  margin-bottom: 16px;
 }
 
 th.callout-inner {
@@ -1424,67 +1423,67 @@ body.outlook p {
   table.body td.small-offset-1,
   table.body th.small-offset-1 {
     margin-left: 8.33333% !important;
-    Margin-left: 8.33333% !important;
+    margin-left: 8.33333% !important;
   }
 
   table.body td.small-offset-2,
   table.body th.small-offset-2 {
     margin-left: 16.66667% !important;
-    Margin-left: 16.66667% !important;
+    margin-left: 16.66667% !important;
   }
 
   table.body td.small-offset-3,
   table.body th.small-offset-3 {
     margin-left: 25% !important;
-    Margin-left: 25% !important;
+    margin-left: 25% !important;
   }
 
   table.body td.small-offset-4,
   table.body th.small-offset-4 {
     margin-left: 33.33333% !important;
-    Margin-left: 33.33333% !important;
+    margin-left: 33.33333% !important;
   }
 
   table.body td.small-offset-5,
   table.body th.small-offset-5 {
     margin-left: 41.66667% !important;
-    Margin-left: 41.66667% !important;
+    margin-left: 41.66667% !important;
   }
 
   table.body td.small-offset-6,
   table.body th.small-offset-6 {
     margin-left: 50% !important;
-    Margin-left: 50% !important;
+    margin-left: 50% !important;
   }
 
   table.body td.small-offset-7,
   table.body th.small-offset-7 {
     margin-left: 58.33333% !important;
-    Margin-left: 58.33333% !important;
+    margin-left: 58.33333% !important;
   }
 
   table.body td.small-offset-8,
   table.body th.small-offset-8 {
     margin-left: 66.66667% !important;
-    Margin-left: 66.66667% !important;
+    margin-left: 66.66667% !important;
   }
 
   table.body td.small-offset-9,
   table.body th.small-offset-9 {
     margin-left: 75% !important;
-    Margin-left: 75% !important;
+    margin-left: 75% !important;
   }
 
   table.body td.small-offset-10,
   table.body th.small-offset-10 {
     margin-left: 83.33333% !important;
-    Margin-left: 83.33333% !important;
+    margin-left: 83.33333% !important;
   }
 
   table.body td.small-offset-11,
   table.body th.small-offset-11 {
     margin-left: 91.66667% !important;
-    Margin-left: 91.66667% !important;
+    margin-left: 91.66667% !important;
   }
 
   table.body table.columns td.expander,
@@ -1548,7 +1547,6 @@ body.outlook p {
 }
 
 @media print {
-
   .no-print,
   .no-print {
     display: none !important;
