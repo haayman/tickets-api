@@ -19,7 +19,7 @@
     "@mollie/api-client": "^3.5.1",
     "@types/ioredis": "^4.28.7",
     "async-ejs": "^0.1.6",
-    "axios": "^0.21.1",
+    "axios": "^1.13.5",
     "bcryptjs": "^2.4.3",
     "bullmq": "^1.67.3",
     "community-faker": "^5.5.5",
